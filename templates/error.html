@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block title %}حدث خطأ - النماء{% endblock %}
+
+{% block content %}
+<div class="flex justify-center items-center py-20" dir="rtl">
+    <div class="glass-card rounded-2xl p-8 max-w-md w-full text-center space-y-6">
+        <span class="material-symbols-outlined text-[64px] text-error">error</span>
+        <h2 class="text-2xl font-bold text-on-surface">فشلت العملية المطلوبة</h2>
+        <p class="text-sm text-on-surface-variant">{{ error|default:"لقد حدث خطأ غير متوقع أثناء معالجة طلبك." }}</p>
+        <div class="pt-4">
+            <a href="javascript:history.back()" class="bg-primary text-on-primary px-6 py-2.5 rounded-lg text-sm font-bold inline-block hover:opacity-90">
+                العودة للخلف
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

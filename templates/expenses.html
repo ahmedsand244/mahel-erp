@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+
+{% block title %}إدارة المصروفات - النماء{% endblock %}
+
+{% block content %}
+<div class="space-y-6 sm:space-y-8 w-full max-w-full overflow-hidden" dir="rtl" x-data="{ showAddExpenseModal: false }">
+
+    <!-- Header Section -->
+    <header class="glass-card p-5 sm:p-8 rounded-2xl lg:rounded-3xl border border-apple-border relative overflow-hidden flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 sm:gap-6">
+        <div class="text-right space-y-1">
+            <h1 class="text-xl sm:text-2xl lg:text-3xl font-extrabold text-apple-text tracking-tight">إدارة المصروفات التشغيلية</h1>
+            <p class="text-xs sm:text-sm text-apple-secondary font-medium">تسجيل وتصنيف النفقات التشغيلية للمحل والورشة</p>
+        </div>
+        <button @click="showAddExpenseModal = true" 
+                type="button"
+                class="w-full sm:w-auto bg-primary text-white px-5 sm:px-6 py-3 rounded-2xl font-bold hover:shadow-apple-md active:scale-95 transition-all flex items-center justify-center gap-2 text-xs sm:text-sm shadow-apple-sm apple-button">
+            <span class="material-symbols-outlined text-lg sm:text-xl">add</span>
+            تسجيل مصروف جديد
+        </button>
+    </header>
+
+    <!-- Modal: Add Expense -->
+    <div x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md p-4"
+         x-show="showAddExpenseModal">
+        
+        <div class="bg-slate-900 text-slate-100 rounded-3xl p-6 sm:p-8 max-w-md w-full space-y-4 text-right border border-slate-700 shadow-2xl relative"
+             dir="rtl" @click.away="showAddExpenseModal = false">
+            <div class="flex items-center justify-between border-b border-slate-700/60 pb-3">
+                <h3 class="text-lg sm:text-xl font-extrabold text-primary flex items-center gap-2">
+                    <span class="material-symbols-outlined text-2xl">payments</span>
+                    تسجيل مصروف تشغيلي جديد
+                </h3>
+                <button type="button" @click="showAddExpenseModal = false" class="text-slate-400 hover:text-white p-1 rounded-full hover:bg-slate-800 transition-colors">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+
+            <form method="post" action="{% url 'expenses:expense_add' %}" class="space-y-4 text-sm">
+                {% csrf_token %}
+                <div>
+                    <label class="block text-xs font-bold text-slate-200 mb-1.5">نوع المصروف / الفئة</label>
+                    <select name="category" required class="w-full bg-slate-800 border border-slate-700 rounded-xl py-2.5 px-3.5 text-xs text-slate-100 font-bold focus:outline-none focus:border-primary text-right shadow-inner">
+                        {% for code, label in category_choices %}
+                            <option value="{{ code }}" class="bg-slate-900 text-slate-100">{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-200 mb-1.5">البيان / التفاصيل</label>
+                    <input type="text" name="description" required placeholder="مثال: فاتورة كهرباء شهر أغسطس"
+                           class="w-full bg-slate-800 border border-slate-700 rounded-xl py-2.5 px-3.5 text-xs text-slate-100 font-bold focus:outline-none focus:border-primary text-right placeholder:text-slate-500 shadow-inner">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-200 mb-1.5">المبلغ المدفوع (ج.م)</label>
+                    <input type="number" step="0.01" name="amount" required placeholder="0.00"
+                           class="w-full bg-slate-800 border-2 border-rose-500/40 rounded-2xl py-3 px-4 focus:outline-none focus:border-rose-400 text-right font-mono font-black text-2xl text-rose-400 shadow-inner">
+                </div>
+                <div class="flex gap-3 pt-3">
+                    <button type="submit" class="flex-1 bg-primary hover:bg-primary/90 text-white py-3 rounded-2xl font-bold shadow-lg shadow-primary/25 active:scale-95 text-xs sm:text-sm">
+                        تسجيل وحفظ
+                    </button>
+                    <button type="button" @click="showAddExpenseModal = false" class="px-5 bg-slate-800 hover:bg-slate-700 border border-slate-700 py-3 rounded-2xl text-slate-300 font-bold text-xs sm:text-sm">
+                        إلغاء
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Search Toolbar & Table Container -->
+    <div class="space-y-4">
+        <!-- Live Search Bar -->
+        <div class="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-5 border border-apple-border flex items-center">
+            <div class="relative w-full max-w-md">
+                <input id="expenseSearch"
+                       class="apple-input text-xs sm:text-sm py-2.5 px-4 pr-10 text-right shadow-apple-sm"
+                       placeholder="ابحث ببيان أو نوع المصروف..."
+                       type="text"
+                       oninput="filterExpenses(this.value)">
+                <span class="material-symbols-outlined absolute right-3.5 top-1/2 -translate-y-1/2 text-apple-secondary text-lg pointer-events-none">search</span>
+            </div>
+        </div>
+
+        <!-- Encapsulated Expenses Data Table -->
+        <div class="apple-table-container shadow-apple-md border border-apple-border max-w-full">
+            <table class="apple-table min-w-[650px]" id="expensesTable">
+                <thead>
+                    <tr>
+                        <th class="p-4 whitespace-nowrap">بند المصروف</th>
+                        <th class="p-4 whitespace-nowrap">البيان والتفاصيل</th>
+                        <th class="p-4 whitespace-nowrap">التاريخ</th>
+                        <th class="p-4 text-left whitespace-nowrap">المبلغ المصروف</th>
+                        <th class="p-4 text-center whitespace-nowrap">الإجراءات</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-apple-border text-sm">
+                    {% for exp in expenses %}
+                    <tr class="expense-row hover:bg-apple-surface-subtle transition-colors"
+                        data-desc="{{ exp.description|lower }}"
+                        data-cat="{{ exp.get_category_display|lower }}">
+                        <td class="p-4 font-semibold text-primary whitespace-nowrap">
+                            <span class="px-3 py-1 rounded-full bg-apple-surface-subtle border border-apple-border text-xs font-bold text-apple-text">{{ exp.get_category_display }}</span>
+                        </td>
+                        <td class="p-4 text-apple-text font-medium">{{ exp.description }}</td>
+                        <td class="p-4 text-apple-secondary font-mono text-xs whitespace-nowrap">{{ exp.created_at|date:"Y-m-d — H:i" }}</td>
+                        <td class="p-4 text-left font-bold text-error font-mono whitespace-nowrap text-base">{{ exp.amount|floatformat:2 }} ج.م</td>
+                        <td class="p-4 text-center whitespace-nowrap">
+                            <form method="post" action="{% url 'expenses:expense_delete' exp.id %}" style="display:inline" onsubmit="return confirm('هل تأكدت من حذف هذا المصروف؟');">
+                                {% csrf_token %}
+                                <button type="submit"
+                                        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-error/10 hover:bg-error/20 text-error text-xs font-bold transition-all border border-error/20 active:scale-95 shadow-apple-sm">
+                                    <span class="material-symbols-outlined text-[16px]">delete</span>
+                                    حذف
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="p-12 text-center text-apple-secondary italic text-sm">لا توجد مصروفات مسجلة بعد</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function filterExpenses(val) {
+    var q = val.toLowerCase().trim();
+    document.querySelectorAll('#expensesTable .expense-row').forEach(function(row) {
+        var desc = row.dataset.desc || '';
+        var cat  = row.dataset.cat  || '';
+        row.style.display = (q === '' || desc.includes(q) || cat.includes(q)) ? '' : 'none';
+    });
+}
+</script>
+{% endblock %}

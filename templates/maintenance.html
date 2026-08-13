@@ -1,0 +1,366 @@
+{% extends "base.html" %}
+
+{% block title %}الورشة والصيانة - النماء{% endblock %}
+
+{% block content %}
+<div x-data="maintenanceApp()" class="space-y-8 pb-12">
+    <!-- Header -->
+    <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 bg-surface-container-low/50 backdrop-blur-md p-6 rounded-2xl border border-white/5 gap-4" dir="rtl">
+        <div class="text-right">
+            <h1 class="text-2xl font-bold text-on-background">ورشة الصيانة والتتبع</h1>
+            <p class="text-xs text-on-surface-variant mt-1">تتبع دورة حياة صيانة محركات الرش والمواتير الزراعية</p>
+        </div>
+        <button @click="showNewTicketModal = true" class="bg-primary text-on-primary px-6 py-3 rounded-xl font-bold hover:brightness-110 transition-all shadow-[0_4px_14px_0_rgba(16,185,129,0.39)] flex items-center gap-2">
+            <span class="material-symbols-outlined">add_circle</span>
+            فتح تذكرة صيانة جديدة
+        </button>
+    </header>
+
+    <!-- Kanban Board Grid -->
+    <div class="flex flex-col lg:flex-row-reverse gap-6 overflow-x-auto pb-6" dir="rtl">
+        
+        <!-- Column 1: Received / Pending -->
+        <div class="flex-1 min-w-[280px] bg-white/[0.02] p-4 rounded-xl border border-white/5 space-y-4">
+            <div class="flex justify-between items-center border-b border-white/10 pb-2">
+                <h3 class="text-sm font-bold text-on-surface">استلام / قيد الانتظار</h3>
+                <span class="bg-white/10 px-2 py-0.5 rounded-full text-xs font-bold text-on-surface-variant">
+                    {{ pending_tickets.count }}
+                </span>
+            </div>
+            <div class="space-y-4">
+                {% for ticket in pending_tickets %}
+                    {% include "maintenance/ticket_card.html" %}
+                {% empty %}
+                    <p class="text-xs text-on-surface-variant italic text-center py-4">لا توجد أجهزة في الانتظار</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Column 2: In Progress -->
+        <div class="flex-1 min-w-[280px] bg-white/[0.02] p-4 rounded-xl border border-white/5 space-y-4">
+            <div class="flex justify-between items-center border-b border-primary/30 pb-2">
+                <h3 class="text-sm font-bold text-primary">صيانة نشطة</h3>
+                <span class="bg-primary/10 text-primary px-2 py-0.5 rounded-full text-xs font-bold">
+                    {{ in_progress_tickets.count }}
+                </span>
+            </div>
+            <div class="space-y-4">
+                {% for ticket in in_progress_tickets %}
+                    {% include "maintenance/ticket_card.html" %}
+                {% empty %}
+                    <p class="text-xs text-on-surface-variant italic text-center py-4">لا توجد صيانة نشطة حالياً</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Column 3: Completed / Ready -->
+        <div class="flex-1 min-w-[280px] bg-white/[0.02] p-4 rounded-xl border border-white/5 space-y-4">
+            <div class="flex justify-between items-center border-b border-tertiary/30 pb-2">
+                <h3 class="text-sm font-bold text-tertiary">جاهز للاستلام</h3>
+                <span class="bg-tertiary/10 text-tertiary px-2 py-0.5 rounded-full text-xs font-bold">
+                    {{ completed_tickets.count }}
+                </span>
+            </div>
+            <div class="space-y-4">
+                {% for ticket in completed_tickets %}
+                    {% include "maintenance/ticket_card.html" %}
+                {% empty %}
+                    <p class="text-xs text-on-surface-variant italic text-center py-4">لا توجد أجهزة جاهزة للاستلام</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Column 4: Delivered / Paid -->
+        <div class="flex-1 min-w-[280px] bg-white/[0.02] p-4 rounded-xl border border-white/5 space-y-4">
+            <div class="flex justify-between items-center border-b border-primary-container/30 pb-2">
+                <h3 class="text-sm font-bold text-primary-container">تم التسليم والتحصيل</h3>
+                <span class="bg-primary/10 text-primary px-2 py-0.5 rounded-full text-xs font-bold">
+                    {{ delivered_tickets.count }}
+                </span>
+            </div>
+            <div class="space-y-4">
+                {% for ticket in delivered_tickets %}
+                    {% include "maintenance/ticket_card.html" %}
+                {% empty %}
+                    <p class="text-xs text-on-surface-variant italic text-center py-4">لا توجد أجهزة مسلمة مؤخراً</p>
+                {% endfor %}
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Modal 1: Open New Maintenance Ticket -->
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+         x-show="showNewTicketModal"
+         style="display: none;">
+        <div class="glass-card rounded-2xl p-6 sm:p-8 max-w-md w-full space-y-5 text-right shadow-2xl bg-surface-container-low border border-white/10">
+            <h3 class="text-xl font-bold text-on-surface border-b border-white/10 pb-3">تذكرة صيانة جديدة</h3>
+            <form method="post" action="{% url 'maintenance:kanban' %}" class="space-y-4 text-sm">
+                {% csrf_token %}
+                
+                <!-- Customer Searchable Custom Dropdown -->
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-bold text-on-surface-variant">العميل:</label>
+                    <input type="hidden" name="customer_id" :value="selectedCustomerId" required>
+                    
+                    <div class="relative w-full" @click.away="isCustomerDropdownOpen = false">
+                        <!-- Trigger Button -->
+                        <div class="w-full bg-surface-container-high border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-on-surface flex justify-between items-center cursor-pointer hover:border-primary/50 transition-all select-none min-h-[42px]"
+                             @click="isCustomerDropdownOpen = !isCustomerDropdownOpen">
+                            <div class="flex items-center gap-2 truncate flex-1 min-w-0">
+                                <template x-if="selectedCustomerId">
+                                    <button type="button" @click.stop="selectedCustomerId = ''; customerSearchQuery = '';" class="text-on-surface-variant hover:text-error transition-colors p-0.5 rounded-full hover:bg-white/10 shrink-0">
+                                        <span class="material-symbols-outlined text-sm">close</span>
+                                    </button>
+                                </template>
+                                <span class="truncate font-semibold text-xs text-right"
+                                      :class="selectedCustomerId ? 'text-primary font-bold' : 'text-on-surface-variant'"
+                                      x-text="getSelectedCustomerLabel()">
+                                </span>
+                            </div>
+                            <span class="material-symbols-outlined text-on-surface-variant text-base shrink-0 mr-1 transition-transform duration-200"
+                                  :class="isCustomerDropdownOpen ? 'rotate-180' : ''">expand_more</span>
+                        </div>
+
+                        <!-- Dropdown Menu Panel -->
+                        <div x-show="isCustomerDropdownOpen"
+                             x-transition:enter="transition ease-out duration-150"
+                             x-transition:enter-start="opacity-0 scale-95 -translate-y-2"
+                             x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+                             x-transition:leave="transition ease-in duration-100"
+                             x-transition:leave-start="opacity-100 scale-100 translate-y-0"
+                             x-transition:leave-end="opacity-0 scale-95 -translate-y-2"
+                             class="absolute z-[60] right-0 left-0 mt-2 bg-surface-container-high border border-white/15 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-56 w-full max-w-full backdrop-blur-2xl"
+                             style="display: none;">
+
+                            <!-- Live Search Bar -->
+                            <div class="p-2 border-b border-white/10 bg-white/5 sticky top-0 z-10">
+                                <div class="relative w-full">
+                                    <input type="text"
+                                           x-model="customerSearchQuery"
+                                           placeholder="ابحث باسم العميل..."
+                                           class="w-full bg-surface-container border border-white/10 rounded-xl pr-8 pl-3 py-1.5 text-xs text-right focus:outline-none focus:border-primary text-on-surface font-medium placeholder:text-on-surface-variant/50"
+                                           @keydown.escape="isCustomerDropdownOpen = false">
+                                    <span class="material-symbols-outlined absolute right-2.5 top-1/2 -translate-y-1/2 text-on-surface-variant text-sm pointer-events-none">search</span>
+                                </div>
+                            </div>
+
+                            <!-- Options List -->
+                            <div class="overflow-y-auto divide-y divide-white/5 max-h-40">
+                                <template x-for="cust in getFilteredCustomers()" :key="cust.id">
+                                    <div class="p-2.5 text-xs hover:bg-primary/20 cursor-pointer flex justify-between items-center transition-colors group"
+                                         :class="selectedCustomerId == cust.id ? 'bg-primary/20 text-primary font-bold' : 'text-on-surface'"
+                                         @click="selectedCustomerId = cust.id; isCustomerDropdownOpen = false; customerSearchQuery = '';">
+                                        <div class="flex flex-col text-right">
+                                            <span class="font-bold group-hover:text-primary transition-colors" x-text="cust.name"></span>
+                                        </div>
+                                    </div>
+                                </template>
+
+                                <template x-if="getFilteredCustomers().length === 0">
+                                    <div class="p-3 text-center text-xs text-on-surface-variant/70">
+                                        لا يوجد عملاء مطابقين
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-bold text-on-surface-variant">اسم المعدة / الموتور:</label>
+                    <input type="text" name="device_name" required placeholder="مثال: موتور رش ياماها" class="w-full bg-surface-container-high border border-white/10 rounded-xl py-2.5 px-3.5 focus:outline-none focus:border-primary text-right text-xs">
+                </div>
+
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-bold text-on-surface-variant">رسوم المصنعية (هامش ربح 100%):</label>
+                    <input type="number" step="0.01" name="labor_fees" required placeholder="0.00" class="w-full bg-surface-container-high border border-white/10 rounded-xl py-2.5 px-3.5 focus:outline-none focus:border-primary text-right font-mono text-xs">
+                </div>
+
+                <div class="flex gap-3 pt-3">
+                    <button type="submit" class="flex-1 bg-primary hover:bg-primary/90 text-on-primary py-2.5 rounded-xl font-bold transition-all shadow-lg shadow-primary/25">فتح التذكرة</button>
+                    <button type="button" @click="showNewTicketModal = false" class="flex-1 bg-white/5 hover:bg-white/10 border border-white/10 py-2.5 rounded-xl text-on-surface-variant font-bold transition-all">إلغاء</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal 2: Consume / Add Parts to Ticket -->
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+         x-show="showAddPartsModal"
+         style="display: none;">
+        <div class="glass-card rounded-2xl p-6 sm:p-8 max-w-md w-full space-y-5 text-right shadow-2xl bg-surface-container-low border border-white/10">
+            <h3 class="text-xl font-bold text-on-surface border-b border-white/10 pb-3">
+                تركيب قطع غيار للتذكرة: <span class="text-primary font-mono" x-text="selectedTicketNumber"></span>
+            </h3>
+            <form method="post" :action="'/maintenance/add-parts/' + selectedTicketId + '/'" class="space-y-4 text-sm">
+                {% csrf_token %}
+                
+                <!-- Spare Part Searchable Custom Dropdown -->
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-bold text-on-surface-variant">اختر قطعة الغيار:</label>
+                    <input type="hidden" name="product_id" :value="selectedProductId" required>
+
+                    <div class="relative w-full" @click.away="isProductDropdownOpen = false">
+                        <!-- Trigger Button -->
+                        <div class="w-full bg-surface-container-high border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-on-surface flex justify-between items-center cursor-pointer hover:border-primary/50 transition-all select-none min-h-[42px]"
+                             @click="isProductDropdownOpen = !isProductDropdownOpen">
+                            <div class="flex items-center gap-2 truncate flex-1 min-w-0">
+                                <template x-if="selectedProductId">
+                                    <button type="button" @click.stop="selectedProductId = ''; productSearchQuery = '';" class="text-on-surface-variant hover:text-error transition-colors p-0.5 rounded-full hover:bg-white/10 shrink-0">
+                                        <span class="material-symbols-outlined text-sm">close</span>
+                                    </button>
+                                </template>
+                                <span class="truncate font-semibold text-xs text-right"
+                                      :class="selectedProductId ? 'text-primary font-bold' : 'text-on-surface-variant'"
+                                      x-text="getSelectedProductLabel()">
+                                </span>
+                            </div>
+                            <span class="material-symbols-outlined text-on-surface-variant text-base shrink-0 mr-1 transition-transform duration-200"
+                                  :class="isProductDropdownOpen ? 'rotate-180' : ''">expand_more</span>
+                        </div>
+
+                        <!-- Dropdown Menu Panel -->
+                        <div x-show="isProductDropdownOpen"
+                             x-transition:enter="transition ease-out duration-150"
+                             x-transition:enter-start="opacity-0 scale-95 -translate-y-2"
+                             x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+                             x-transition:leave="transition ease-in duration-100"
+                             x-transition:leave-start="opacity-100 scale-100 translate-y-0"
+                             x-transition:leave-end="opacity-0 scale-95 -translate-y-2"
+                             class="absolute z-[60] right-0 left-0 mt-2 bg-surface-container-high border border-white/15 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-56 w-full max-w-full backdrop-blur-2xl"
+                             style="display: none;">
+
+                            <!-- Live Search Bar -->
+                            <div class="p-2 border-b border-white/10 bg-white/5 sticky top-0 z-10">
+                                <div class="relative w-full">
+                                    <input type="text"
+                                           x-model="productSearchQuery"
+                                           placeholder="ابحث باسم قطعة الغيار..."
+                                           class="w-full bg-surface-container border border-white/10 rounded-xl pr-8 pl-3 py-1.5 text-xs text-right focus:outline-none focus:border-primary text-on-surface font-medium placeholder:text-on-surface-variant/50"
+                                           @keydown.escape="isProductDropdownOpen = false">
+                                    <span class="material-symbols-outlined absolute right-2.5 top-1/2 -translate-y-1/2 text-on-surface-variant text-sm pointer-events-none">search</span>
+                                </div>
+                            </div>
+
+                            <!-- Options List -->
+                            <div class="overflow-y-auto divide-y divide-white/5 max-h-40">
+                                <template x-for="prod in getFilteredProducts()" :key="prod.id">
+                                    <div class="p-2.5 text-xs hover:bg-primary/20 cursor-pointer flex justify-between items-center transition-colors group"
+                                         :class="selectedProductId == prod.id ? 'bg-primary/20 text-primary font-bold' : 'text-on-surface'"
+                                         @click="selectedProductId = prod.id; isProductDropdownOpen = false; productSearchQuery = '';">
+                                        <div class="flex flex-col text-right">
+                                            <span class="font-bold group-hover:text-primary transition-colors" x-text="prod.name"></span>
+                                        </div>
+                                        <span class="px-2 py-0.5 rounded text-[10px] font-bold"
+                                              :class="prod.stock <= 0 ? 'bg-error/20 text-error' : 'bg-white/10 text-on-surface-variant'"
+                                              x-text="'متاح: ' + prod.stock">
+                                        </span>
+                                    </div>
+                                </template>
+
+                                <template x-if="getFilteredProducts().length === 0">
+                                    <div class="p-3 text-center text-xs text-on-surface-variant/70">
+                                        لا توجد قطع غيار مطابقة
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-bold text-on-surface-variant">الكمية المطلوبة:</label>
+                    <input type="number" name="quantity" value="1" min="1" required class="w-full bg-surface-container-high border border-white/10 rounded-xl py-2.5 px-3.5 focus:outline-none focus:border-primary text-right font-mono text-xs font-bold">
+                </div>
+
+                <div class="flex gap-3 pt-3">
+                    <button type="submit" class="flex-1 bg-primary hover:bg-primary/90 text-on-primary py-2.5 rounded-xl font-bold transition-all shadow-lg shadow-primary/25">تأكيد التركيب</button>
+                    <button type="button" @click="showAddPartsModal = false" class="flex-1 bg-white/5 hover:bg-white/10 border border-white/10 py-2.5 rounded-xl text-on-surface-variant font-bold transition-all">إلغاء</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% load l10n %}
+<script>
+{% localize off %}
+function maintenanceApp() {
+    return {
+        showNewTicketModal: false,
+        showAddPartsModal: false,
+        selectedTicketId: null,
+        selectedTicketNumber: '',
+
+        selectedCustomerId: '',
+        customerSearchQuery: '',
+        isCustomerDropdownOpen: false,
+
+        selectedProductId: '',
+        productSearchQuery: '',
+        isProductDropdownOpen: false,
+
+        customers: [
+            {% for c in customers %}
+            { id: "{{ c.id }}", name: "{{ c.name|escapejs }}" },
+            {% endfor %}
+        ],
+
+        products: [
+            {% for p in products %}
+            { id: "{{ p.id }}", name: "{{ p.name|escapejs }}", stock: {{ p.stock_quantity|default:0 }} },
+            {% endfor %}
+        ],
+
+        getSelectedCustomerLabel() {
+            if (!this.selectedCustomerId) return 'اختر العميل...';
+            const c = this.customers.find(x => x.id == this.selectedCustomerId);
+            return c ? c.name : 'اختر العميل...';
+        },
+
+        getFilteredCustomers() {
+            if (!this.customerSearchQuery || !this.customerSearchQuery.trim()) return this.customers;
+            const q = this.customerSearchQuery.trim().toLowerCase();
+            return this.customers.filter(c => c.name.toLowerCase().includes(q));
+        },
+
+        getSelectedProductLabel() {
+            if (!this.selectedProductId) return 'اختر قطعة الغيار...';
+            const p = this.products.find(x => x.id == this.selectedProductId);
+            return p ? `${p.name} (متاح: ${p.stock})` : 'اختر قطعة الغيار...';
+        },
+
+        getFilteredProducts() {
+            if (!this.productSearchQuery || !this.productSearchQuery.trim()) return this.products;
+            const q = this.productSearchQuery.trim().toLowerCase();
+            return this.products.filter(p => p.name.toLowerCase().includes(q));
+        }
+    };
+}
+
+function changeTicketStatus(ticketId, newStatus) {
+    const formData = new FormData();
+    formData.append('status', newStatus);
+
+    fetch(`/maintenance/update-status/${ticketId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            window.location.reload();
+        } else {
+            alert('فشلت عملية تحديث الحالة: ' + data.error);
+        }
+    });
+}
+{% endlocalize %}
+</script>
+{% endblock %}

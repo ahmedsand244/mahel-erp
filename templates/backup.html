@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block title %}النسخ الاحتياطي والأمان — النماء ERP{% endblock %}
+
+{% block content %}
+<div class="space-y-8" dir="rtl">
+
+    <!-- Page Header -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+            <h1 class="text-2xl sm:text-3xl font-black text-apple-text tracking-tight flex items-center gap-2.5">
+                <span class="material-symbols-outlined text-primary text-3xl">shield</span>
+                النسخ الاحتياطي وأمان البيانات (Backups)
+            </h1>
+            <p class="text-xs sm:text-sm text-apple-secondary mt-1">تصدير واسترجاع بيانات المحل، الفواتير، المخزون، والديون بأمان كامل</p>
+        </div>
+
+        <div class="inline-flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 px-4 py-2 rounded-2xl text-xs font-bold shadow-sm">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            النظام يعمل بكفاءة وأمان
+        </div>
+    </div>
+
+    <!-- Cards Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+        <!-- Card 1: One-Click Instant Local Backup -->
+        <div class="glass-card rounded-3xl p-6 sm:p-8 border border-apple-border shadow-xl space-y-5 flex flex-col justify-between">
+            <div class="space-y-3">
+                <div class="flex items-center justify-between">
+                    <div class="w-12 h-12 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+                        <span class="material-symbols-outlined text-2xl">download</span>
+                    </div>
+                    <span class="text-xs font-mono font-bold text-apple-secondary">حجم القاعدة: {{ db_size_mb }} MB</span>
+                </div>
+
+                <h3 class="text-lg font-bold text-apple-text">تصدير نسخة احتياطية فورية (Database Dump)</h3>
+                <p class="text-xs text-apple-secondary leading-relaxed">
+                    قم بتحميل نسخة احتياطية كاملة وشاملة تحتوي على جميع المنتجات، فواتير المبيعات، حسابات العملاء، الديون والشكك، والمصروفات حتى تاريخ اليوم.
+                </p>
+            </div>
+
+            <div class="pt-4 border-t border-apple-border space-y-3">
+                <a href="{% url 'dashboard:backup_download_db' %}" 
+                   class="w-full bg-gradient-to-r from-primary to-primary-container text-on-primary py-3.5 rounded-2xl font-bold shadow-lg hover:brightness-110 transition-all flex items-center justify-center gap-2 text-sm active:scale-95">
+                    <span class="material-symbols-outlined text-xl">database</span>
+                    <span>تحميل قاعدة البيانات فوراً (.sqlite3)</span>
+                </a>
+
+                <a href="{% url 'dashboard:backup_download_media' %}" 
+                   class="w-full bg-apple-surface-subtle hover:bg-black/5 dark:hover:bg-white/10 text-apple-text border border-apple-border py-3.5 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 text-sm active:scale-95">
+                    <span class="material-symbols-outlined text-xl">folder_zip</span>
+                    <span>تحميل صور المنتجات والعملاء (.zip - {{ media_size_mb }} MB)</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- Card 2: Restore Database from File -->
+        <div class="glass-card rounded-3xl p-6 sm:p-8 border border-apple-border shadow-xl space-y-5">
+            <div class="space-y-3">
+                <div class="w-12 h-12 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-600 dark:text-blue-400">
+                    <span class="material-symbols-outlined text-2xl">upload_file</span>
+                </div>
+
+                <h3 class="text-lg font-bold text-apple-text">استرجاع نسخة احتياطية (Restore Database)</h3>
+                <p class="text-xs text-apple-secondary leading-relaxed">
+                    إذا قمت بتغيير الجهاز أو فرمتة النظام، اختر ملف النسخة الاحتياطية المسبقة (.sqlite3 أو .json) لاسترجاع كافة البيانات السابقة بضغطة واحدة.
+                </p>
+            </div>
+
+            <form method="post" action="{% url 'dashboard:backup_restore' %}" enctype="multipart/form-data" class="space-y-4 pt-2">
+                {% csrf_token %}
+                <div class="bg-apple-surface-subtle border border-apple-border rounded-2xl p-4 space-y-2">
+                    <label class="block text-xs font-bold text-apple-text">اختر ملف النسخة الاحتياطية:</label>
+                    <input type="file" name="backup_file" accept=".sqlite3,.json,.db" required
+                           class="w-full text-xs text-apple-secondary file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-blue-500/20 file:text-blue-600 dark:file:text-blue-300 hover:file:bg-blue-500/30 cursor-pointer">
+                </div>
+
+                <button type="submit" 
+                        onclick="return confirm('تنبيه: استرجاع النسخة الاحتياطية سيقوم باستبدال البيانات الحالية. هل أنت متأكد من المتابعة؟')"
+                        class="w-full bg-blue-600 hover:bg-blue-500 text-white py-3.5 rounded-2xl font-bold shadow-lg transition-all flex items-center justify-center gap-2 text-sm active:scale-95">
+                    <span class="material-symbols-outlined text-xl">restore</span>
+                    <span>استرجاع البيانات الآن</span>
+                </button>
+            </form>
+        </div>
+
+    </div>
+
+    <!-- Google Drive Automated Sync & Backup Banner -->
+    <div class="glass-card rounded-3xl p-6 sm:p-8 border border-apple-border shadow-xl space-y-6">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-apple-border pb-4">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-600 dark:text-amber-400 shrink-0">
+                    <span class="material-symbols-outlined text-2xl">cloud_sync</span>
+                </div>
+                <div>
+                    <h3 class="text-base sm:text-lg font-bold text-apple-text">الربط التلقائي بـ Google Drive (Automated Auto-Backup)</h3>
+                    <p class="text-xs text-apple-secondary mt-0.5">رفع نسخة احتياطية يومية أوتوماتيكياً على حساب الجيميل الخاص بك</p>
+                </div>
+            </div>
+            <span class="px-3 py-1 rounded-full text-xs font-bold bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/30">
+                جاهز للتفعيل ☁️
+            </span>
+        </div>
+
+        <div class="space-y-4 text-xs text-apple-secondary leading-relaxed">
+            <p class="text-apple-text font-semibold">
+                النظام مصمم ليتمكن من رفع نسخة احتياطية يومية تلقائياً على مجلد آمن في حساب <strong class="text-primary font-bold">Google Drive</strong> الخاص بك بضغطة زر واحدة أو أوتوماتيكياً كل منتصف ليل.
+            </p>
+
+            <form method="post" action="{% url 'dashboard:backup_upload_gdrive' %}" class="pt-2">
+                {% csrf_token %}
+                <button type="submit" 
+                        class="w-full sm:w-auto bg-gradient-to-r from-amber-500 to-orange-600 hover:brightness-110 text-white font-extrabold px-6 py-3 rounded-2xl text-xs sm:text-sm shadow-lg transition-all flex items-center justify-center gap-2 active:scale-95">
+                    <span class="material-symbols-outlined text-xl">cloud_upload</span>
+                    <span>رفع نسخة احتياطية فوراً إلى Google Drive ☁️</span>
+                </button>
+            </form>
+
+            <!-- High Contrast Code/Steps Box for Light & Dark Modes -->
+            <div class="bg-slate-900 text-slate-100 p-5 rounded-2xl border border-slate-700/80 space-y-2.5 font-mono text-xs shadow-inner">
+                <div class="text-amber-400 font-bold font-sans text-xs mb-1.5 flex items-center gap-1.5">
+                    <span class="material-symbols-outlined text-sm">lightbulb</span>
+                    <span>طريقتان سهلتان لتفعيل الربط بحساب Google Drive:</span>
+                </div>
+                <div class="space-y-1 text-slate-200">
+                    <p><strong class="text-amber-300">الطريقة الأولى (الأسهل ⚡):</strong> إضافة رابط <code class="text-emerald-400">GDRIVE_WEBHOOK_URL</code> في ملف <code class="text-emerald-400">.env</code> الخاص بك المربوط بـ Google Apps Script.</p>
+                    <p><strong class="text-amber-300">الطريقة الثانية (Google Service Account 🔑):</strong> وضع ملف المفتاح <code class="text-emerald-400">credentials.json</code> داخل مجلد المشروع الرئيسي <code class="text-emerald-400">e:\MAHEL\</code>.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

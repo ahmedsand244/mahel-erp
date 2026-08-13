@@ -1,0 +1,429 @@
+{% extends "base.html" %}
+
+{% block title %}سجل فواتير المبيعات - النماء{% endblock %}
+
+{% block content %}
+<div x-data="salesInvoicesApp()" class="space-y-6 sm:space-y-8 w-full max-w-full overflow-hidden" dir="rtl">
+
+    <!-- Header & Quick Actions -->
+    <header class="glass-card p-5 sm:p-8 rounded-2xl lg:rounded-3xl border border-apple-border relative overflow-hidden">
+        <div class="absolute -left-12 -top-12 w-64 h-64 bg-primary/10 rounded-full blur-3xl pointer-events-none"></div>
+
+        <div class="relative z-10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 sm:gap-6">
+            <div class="space-y-2 text-right max-w-2xl">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold">
+                    <span class="material-symbols-outlined text-[16px]">receipt_long</span>
+                    سجل المبيعات والفواتير
+                </div>
+                <h1 class="text-xl sm:text-2xl lg:text-3xl font-extrabold text-apple-text tracking-tight">سجل فواتير المبيعات الصادرة</h1>
+                <p class="text-xs sm:text-sm text-apple-secondary leading-relaxed">
+                    عرض جميع فواتير البيع الكاش والآجل، تتبع مشتريات العملاء، تفاصيل الأصناف، وطباعة أي فاتورة سابقة.
+                </p>
+            </div>
+
+            <div class="flex items-center gap-3 w-full sm:w-auto shrink-0 flex-wrap">
+                <a href="{% url 'pos:export_invoices_excel' %}" 
+                   class="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 px-4 py-3 rounded-2xl font-bold hover:bg-emerald-500 hover:text-white transition-all flex items-center justify-center gap-1.5 text-xs sm:text-sm shadow-sm"
+                   title="تصدير جميع فواتير المبيعات إلى ملف Excel">
+                    <span class="material-symbols-outlined text-[18px]">download</span>
+                    تصدير الفواتير Excel 📊
+                </a>
+
+                <a href="{% url 'pos:pos_view' %}"
+                   class="bg-primary text-white px-5 sm:px-6 py-3 sm:py-3.5 rounded-2xl font-bold hover:shadow-apple-md active:scale-95 transition-all flex items-center justify-center gap-2 text-xs sm:text-sm shadow-apple-sm apple-button w-full sm:w-auto">
+                    <span class="material-symbols-outlined text-[20px]">add_shopping_cart</span>
+                    فتح شاشة المبيعات (POS)
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Top Financial KPI Summary Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+        <!-- 1. عدد الفواتير -->
+        <div class="glass-card rounded-2xl sm:rounded-3xl p-5 sm:p-6 space-y-2">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-apple-secondary">إجمالي عدد الفواتير</span>
+                <div class="w-10 h-10 rounded-2xl bg-apple-surface-subtle border border-apple-border flex items-center justify-center text-apple-text">
+                    <span class="material-symbols-outlined text-xl">tag</span>
+                </div>
+            </div>
+            <div class="text-2xl sm:text-3xl font-extrabold font-mono text-apple-text tracking-tight">
+                {{ total_invoices_count }} <span class="text-xs font-normal text-apple-secondary">فاتورة</span>
+            </div>
+            <div class="text-[11px] text-apple-secondary border-t border-apple-border pt-2">
+                إجمالي الفواتير المسجلة بالنظام
+            </div>
+        </div>
+
+        <!-- 2. إجمالي دخل المبيعات -->
+        <div class="glass-card rounded-2xl sm:rounded-3xl p-5 sm:p-6 border border-primary/20 bg-primary/5 space-y-2">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-primary">إجمالي إيرادات المبيعات</span>
+                <div class="w-10 h-10 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+                    <span class="material-symbols-outlined text-xl">payments</span>
+                </div>
+            </div>
+            <div class="text-2xl sm:text-3xl font-extrabold font-mono text-primary tracking-tight">
+                {{ total_sales_amount|floatformat:2 }} <span class="text-xs font-normal text-apple-secondary">ج.م</span>
+            </div>
+            <div class="text-[11px] text-apple-secondary border-t border-apple-border pt-2">
+                مجموع قيمة جميع الفواتير الصادرة
+            </div>
+        </div>
+
+        <!-- 3. مبيعات الكاش والفيزا -->
+        <div class="glass-card rounded-2xl sm:rounded-3xl p-5 sm:p-6 space-y-2">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-apple-text">المحصل كاش وفيزا</span>
+                <div class="w-10 h-10 rounded-2xl bg-apple-surface-subtle border border-apple-border flex items-center justify-center text-apple-text">
+                    <span class="material-symbols-outlined text-xl">credit_card</span>
+                </div>
+            </div>
+            <div class="text-2xl sm:text-3xl font-extrabold font-mono text-apple-text tracking-tight">
+                {{ cash_visa_amount|floatformat:2 }} <span class="text-xs font-normal text-apple-secondary">ج.م</span>
+            </div>
+            <div class="text-[11px] text-apple-secondary border-t border-apple-border pt-2">
+                مبالغ مدفوعة ومحصلة فوراً
+            </div>
+        </div>
+
+        <!-- 4. مبيعات الآجل والشكك -->
+        <div class="glass-card rounded-2xl sm:rounded-3xl p-5 sm:p-6 border border-tertiary/20 bg-tertiary/5 space-y-2">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-tertiary">مبيعات آجل / شكك</span>
+                <div class="w-10 h-10 rounded-2xl bg-tertiary/10 border border-tertiary/20 flex items-center justify-center text-tertiary">
+                    <span class="material-symbols-outlined text-xl">history_edu</span>
+                </div>
+            </div>
+            <div class="text-2xl sm:text-3xl font-extrabold font-mono text-tertiary tracking-tight">
+                {{ deferred_sales_amount|floatformat:2 }} <span class="text-xs font-normal text-apple-secondary">ج.م</span>
+            </div>
+            <div class="text-[11px] text-apple-secondary border-t border-apple-border pt-2">
+                مبالغ مضافة لحسابات ديون العملاء
+            </div>
+        </div>
+    </div>
+
+    <!-- Search & Filters Toolbar (Responsive & Fluid for Mobile Viewports) -->
+    <div class="glass-card p-4 sm:p-6 rounded-2xl lg:rounded-3xl border border-apple-border space-y-4">
+        <form method="get" action="{% url 'pos:invoices_list' %}"
+              class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 w-full">
+
+            <!-- Live Search Bar -->
+            <div class="relative w-full lg:flex-1">
+                <input type="text" name="q" value="{{ search_query }}"
+                       placeholder="ابحث برقم الفاتورة (POS-...)، اسم العميل، أو اسم المنتج..."
+                       class="apple-input text-xs sm:text-sm py-2.5 px-4 pr-11 text-right shadow-apple-sm">
+                <span class="material-symbols-outlined absolute right-3.5 top-1/2 -translate-y-1/2 text-apple-secondary text-xl pointer-events-none">search</span>
+            </div>
+
+            <!-- Payment Filter Preset Pills -->
+            <div class="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1 lg:pb-0 no-scrollbar max-w-full">
+                <a href="?payment_method="
+                   class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap active:scale-95"
+                   :class="'{{ selected_payment_method }}' === '' ? 'bg-primary text-white shadow-apple-sm' : 'bg-apple-surface-subtle text-apple-secondary hover:text-apple-text border border-apple-border'">
+                    جميع الطرق
+                </a>
+
+                <a href="?payment_method=cash"
+                   class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap active:scale-95"
+                   :class="'{{ selected_payment_method }}' === 'cash' ? 'bg-primary text-white shadow-apple-sm' : 'bg-apple-surface-subtle text-apple-secondary hover:text-apple-text border border-apple-border'">
+                    نقدي 💵
+                </a>
+
+                <a href="?payment_method=visa"
+                   class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap active:scale-95"
+                   :class="'{{ selected_payment_method }}' === 'visa' ? 'bg-primary text-white shadow-apple-sm' : 'bg-apple-surface-subtle text-apple-secondary hover:text-apple-text border border-apple-border'">
+                    بطاقة / فيزا 💳
+                </a>
+
+                <a href="?payment_method=deferred"
+                   class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap active:scale-95"
+                   :class="'{{ selected_payment_method }}' === 'deferred' ? 'bg-primary text-white shadow-apple-sm' : 'bg-apple-surface-subtle text-apple-secondary hover:text-apple-text border border-apple-border'">
+                    آجل / شكك 📝
+                </a>
+            </div>
+
+            <!-- Custom Date Range Filter (Fully Responsive Grid/Flex for Mobile) -->
+            <div class="flex flex-wrap sm:flex-nowrap items-center gap-2 bg-apple-surface-subtle border border-apple-border p-2 rounded-2xl w-full lg:w-auto">
+                <input type="date" name="start_date" value="{{ start_date_str }}"
+                       class="apple-input flex-1 sm:w-auto text-xs py-1.5 px-2 bg-apple-surface">
+                <span class="text-xs text-apple-secondary px-1 font-bold">إلى</span>
+                <input type="date" name="end_date" value="{{ end_date_str }}"
+                       class="apple-input flex-1 sm:w-auto text-xs py-1.5 px-2 bg-apple-surface">
+                <button type="submit"
+                        class="bg-primary text-white px-4 py-2 rounded-xl text-xs font-bold hover:shadow-apple-sm active:scale-95 transition-all w-full sm:w-auto">تصفية</button>
+            </div>
+
+        </form>
+    </div>
+
+    <!-- Sales Invoices Data Table Container (Encapsulated to Prevent Mobile Overflow) -->
+    <div class="apple-table-container shadow-apple-md border border-apple-border max-w-full">
+        <table class="apple-table min-w-[750px]">
+            <thead>
+                <tr>
+                    <th class="p-4">رقم الفاتورة</th>
+                    <th class="p-4">التاريخ والوقت</th>
+                    <th class="p-4">العميل / المشتري</th>
+                    <th class="p-4">طريقة الدفع</th>
+                    <th class="p-4 text-center">عدد الأصناف</th>
+                    <th class="p-4 text-left">إجمالي الفاتورة</th>
+                    <th class="p-4 text-left">الربح التقديري</th>
+                    <th class="p-4 text-center">الإجراءات والطباعة</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-apple-border text-sm">
+                {% for order in orders %}
+                <tr class="hover:bg-apple-surface-subtle transition-colors group">
+                    <!-- رقم الفاتورة -->
+                    <td class="p-4 font-bold font-mono text-primary text-base whitespace-nowrap">
+                        <div class="flex items-center gap-2">
+                            <span class="material-symbols-outlined text-primary text-base">receipt</span>
+                            {{ order.order_number }}
+                        </div>
+                    </td>
+
+                    <!-- التاريخ والوقت -->
+                    <td class="p-4 font-mono text-xs text-apple-secondary whitespace-nowrap">
+                        {{ order.created_at|date:"Y-m-d — H:i" }}
+                    </td>
+
+                    <!-- العميل -->
+                    <td class="p-4">
+                        {% if order.customer %}
+                        <div class="font-bold text-apple-text text-xs sm:text-sm">{{ order.customer.name }}</div>
+                        {% if order.customer.workplace %}
+                        <div class="text-[11px] text-apple-secondary">{{ order.customer.workplace }}</div>
+                        {% endif %}
+                        {% else %}
+                        <span class="text-xs text-apple-secondary italic bg-apple-surface-subtle px-2.5 py-1 rounded-full border border-apple-border whitespace-nowrap">عميل نقدي سريع</span>
+                        {% endif %}
+                    </td>
+
+                    <!-- طريقة الدفع -->
+                    <td class="p-4 whitespace-nowrap">
+                        {% if order.payment_method == 'cash' %}
+                        <span class="status-pill-green px-3 py-1 text-xs font-bold inline-flex items-center gap-1.5">
+                            <span class="w-1.5 h-1.5 rounded-full bg-current"></span>
+                            نقدي (كاش)
+                        </span>
+                        {% elif order.payment_method == 'visa' %}
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-primary/10 text-primary border border-primary/20">
+                            <span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+                            بطاقة / فيزا
+                        </span>
+                        {% else %}
+                        <span class="status-pill-yellow px-3 py-1 text-xs font-bold inline-flex items-center gap-1.5">
+                            <span class="w-1.5 h-1.5 rounded-full bg-current animate-pulse"></span>
+                            آجل / شكك
+                        </span>
+                        {% endif %}
+                    </td>
+
+                    <!-- عدد الأصناف -->
+                    <td class="p-4 text-center font-mono font-bold text-apple-text whitespace-nowrap">
+                        {{ order.items.count }} صنف
+                    </td>
+
+                    <!-- إجمالي الفاتورة -->
+                    <td class="p-4 text-left font-mono font-extrabold text-primary text-base whitespace-nowrap">
+                        {{ order.total_amount|floatformat:2 }} ج.م
+                    </td>
+
+                    <!-- أرباح الفاتورة -->
+                    <td class="p-4 text-left font-mono font-bold text-xs text-apple-secondary whitespace-nowrap">
+                        + {{ order.total_amount|add:order.cost_of_goods_sold|floatformat:2 }} ج.م
+                    </td>
+
+                    <!-- الإجراءات والطباعة والواتساب -->
+                    <td class="p-4 text-center whitespace-nowrap">
+                        <div class="flex items-center justify-center gap-2">
+                            <button @click="openInvoiceModal({{ order.id }})"
+                                class="bg-apple-surface-subtle hover:bg-primary/10 text-apple-text hover:text-primary border border-apple-border hover:border-primary/30 px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 active:scale-95 shadow-apple-sm">
+                                <span class="material-symbols-outlined text-[18px]">visibility</span>
+                                معاينة الفاتورة
+                            </button>
+                            <a href="{% url 'pos:public_invoice_detail' order.id %}" target="_blank"
+                               class="bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 active:scale-95 shadow-sm"
+                               title="رابط مشاركة الفاتورة عبر والواتساب">
+                                <span class="material-symbols-outlined text-[18px]">share</span>
+                                مشاركة / واتساب
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" class="p-12 text-center text-apple-secondary italic text-sm">
+                        لا توجد فواتير مبيعات مسجلة تطابق خيارات البحث الحالية.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Modal: View & Share Invoice -->
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-4"
+        x-show="showModal" style="display: none;" @click.away="showModal = false"
+        x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95"
+        x-transition:enter-end="opacity-100 scale-100" x-transition:leave="transition ease-in duration-150"
+        x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95">
+
+        <div class="bg-apple-surface border border-apple-border rounded-3xl p-6 sm:p-8 max-w-2xl w-full space-y-6 text-right shadow-apple-lg max-h-[90vh] overflow-y-auto relative"
+            @click.stop>
+
+            <!-- Loading Spinner State -->
+            <div x-show="isLoading" class="py-16 text-center space-y-3">
+                <span class="material-symbols-outlined text-4xl text-primary animate-spin">sync</span>
+                <p class="text-xs text-apple-secondary font-bold">جاري تحميل وتجهيز بيانات الفاتورة...</p>
+            </div>
+
+            <!-- Invoice Content Body -->
+            <div x-show="!isLoading && selectedInvoice" class="space-y-6">
+
+                <!-- Invoice Header -->
+                <div class="flex justify-between items-start border-b border-apple-border pb-5">
+                    <div class="space-y-1">
+                        <h2 class="text-xl sm:text-2xl font-extrabold text-primary tracking-tight">النمـــــاء ERP & POS</h2>
+                        <p class="text-xs text-apple-secondary">معدات زراعية • مواقير • قطع غيار • زيوت</p>
+                    </div>
+                    <div class="text-left space-y-1">
+                        <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-primary/10 text-primary border border-primary/20">
+                            فاتورة مبيعات رقم: <span class="font-mono" x-text="selectedInvoice ? selectedInvoice.order_number : ''"></span>
+                        </div>
+                        <div class="text-[11px] text-apple-secondary font-mono" x-text="selectedInvoice ? selectedInvoice.created_at : ''">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Customer Details Card -->
+                <div class="bg-apple-surface-subtle border border-apple-border rounded-2xl p-4 space-y-2">
+                    <div class="flex justify-between items-center text-xs">
+                        <span class="text-apple-secondary font-bold">بيانات العميل / المشتري:</span>
+                        <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold"
+                            :class="selectedInvoice && selectedInvoice.payment_method === 'cash' ? 'status-pill-green' : (selectedInvoice && selectedInvoice.payment_method === 'visa' ? 'bg-primary/20 text-primary' : 'status-pill-yellow')"
+                            x-text="selectedInvoice ? 'طريقة الدفع: ' + selectedInvoice.payment_method_display : ''">
+                        </span>
+                    </div>
+
+                    <template x-if="selectedInvoice && selectedInvoice.customer">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs sm:text-sm pt-1">
+                            <div><span class="text-xs text-apple-secondary">الاسم:</span> <strong
+                                    class="text-apple-text" x-text="selectedInvoice.customer.name"></strong></div>
+                            <div><span class="text-xs text-apple-secondary">الهاتف:</span> <strong
+                                    class="font-mono text-apple-text"
+                                    x-text="selectedInvoice.customer.phone || '—'"></strong></div>
+                            <div class="sm:col-span-2" x-show="selectedInvoice.customer.workplace">
+                                <span class="text-xs text-apple-secondary">المزرعة / المكان:</span> <span
+                                    class="text-apple-text font-semibold"
+                                    x-text="selectedInvoice.customer.workplace"></span>
+                            </div>
+                        </div>
+                    </template>
+                    <template x-if="selectedInvoice && !selectedInvoice.customer">
+                        <div class="text-sm font-bold text-apple-text italic">عميل نقدي سريع (بدون اسم)</div>
+                    </template>
+                </div>
+
+                <!-- Itemized Breakdown Table -->
+                <div class="space-y-2">
+                    <h3 class="text-xs font-bold text-apple-secondary">أصناف ومحتويات الفاتورة:</h3>
+                    <div class="rounded-2xl border border-apple-border overflow-hidden bg-apple-surface shadow-apple-sm">
+                        <table class="w-full text-right text-xs table-fixed">
+                            <thead class="bg-apple-surface-subtle border-b border-apple-border text-apple-secondary font-bold text-[11px]">
+                                <tr>
+                                    <th class="py-2.5 px-1.5 w-6 text-center">#</th>
+                                    <th class="py-2.5 px-2 text-right">اسم المنتج / الصنف</th>
+                                    <th class="py-2.5 px-1.5 w-10 text-center">الكمية</th>
+                                    <th class="py-2.5 px-1.5 w-20 text-left">سعر القطعة</th>
+                                    <th class="py-2.5 px-1.5 w-20 text-left">الإجمالي</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-apple-border text-xs">
+                                <template x-for="(item, index) in (selectedInvoice ? selectedInvoice.items : [])" :key="item.id">
+                                    <tr class="hover:bg-apple-surface-subtle/60 transition-colors">
+                                        <td class="py-2.5 px-1.5 text-center font-mono text-apple-secondary text-[11px]" x-text="index + 1"></td>
+                                        <td class="py-2.5 px-2 text-right font-bold text-apple-text break-words leading-tight" x-text="item.product_name"></td>
+                                        <td class="py-2.5 px-1.5 text-center font-mono font-bold text-primary" x-text="item.quantity"></td>
+                                        <td class="py-2.5 px-1.5 text-left font-mono text-[11px] text-apple-secondary whitespace-nowrap" x-text="parseFloat(item.unit_price).toFixed(2) + ' ج.م'"></td>
+                                        <td class="py-2.5 px-1.5 text-left font-mono font-bold text-apple-text text-[11px] whitespace-nowrap" x-text="parseFloat(item.total_price).toFixed(2) + ' ج.م'"></td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Financial Totals Summary -->
+                <div class="p-4 rounded-2xl bg-primary/10 border border-primary/20 flex justify-between items-center">
+                    <div class="space-y-1">
+                        <div class="text-xs font-bold text-apple-secondary">المبلغ الإجمالي المطلق للفاتورة</div>
+                        <div class="text-[11px] text-primary font-bold">شامل كافة الأصناف والقطع</div>
+                    </div>
+                    <div class="text-2xl sm:text-3xl font-extrabold font-mono text-primary"
+                        x-text="selectedInvoice ? parseFloat(selectedInvoice.total_amount).toFixed(2) + ' ج.م' : ''"></div>
+                </div>
+
+                <!-- Actions Footer -->
+                <div class="flex flex-wrap gap-3 pt-3 border-t border-apple-border">
+                    <a :href="'/pos/invoices/' + (selectedInvoice ? selectedInvoice.id : '') + '/public/'" target="_blank"
+                       class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white py-3 rounded-2xl font-bold shadow-apple-sm text-xs sm:text-sm flex items-center justify-center gap-2 transition-all">
+                        <span class="material-symbols-outlined text-[18px]">share</span>
+                        فتح صفحة الفاتورة العامة للشير والواتساب 🔗
+                    </a>
+                    <button @click="window.open('/pos/invoices/' + (selectedInvoice ? selectedInvoice.id : '') + '/public/?print=1', '_blank')"
+                        class="flex-1 bg-primary text-white py-3 rounded-2xl font-bold shadow-apple-sm text-xs sm:text-sm flex items-center justify-center gap-2 apple-button active:scale-95">
+                        <span class="material-symbols-outlined text-[18px]">print</span>
+                        طباعة الفاتورة A4 / PDF 🖨️
+                    </button>
+                    <button @click="showModal = false"
+                        class="px-6 bg-apple-surface-subtle border border-apple-border py-3 rounded-2xl text-apple-secondary hover:text-apple-text text-xs sm:text-sm font-bold active:scale-95">
+                        إغلاق
+                    </button>
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function salesInvoicesApp() {
+        return {
+            showModal: false,
+            isLoading: false,
+            selectedInvoice: null,
+            
+            openInvoiceModal(orderId) {
+                this.showModal = true;
+                this.isLoading = true;
+                this.selectedInvoice = null;
+
+                fetch('/pos/invoices/' + orderId + '/json/')
+                    .then(res => res.json())
+                    .then(data => {
+                        this.isLoading = false;
+                        if (data.success) {
+                            this.selectedInvoice = data.order;
+                        } else {
+                            alert('خطأ: ' + data.error);
+                            this.showModal = false;
+                        }
+                    })
+                    .catch(err => {
+                        this.isLoading = false;
+                        alert('حدث خطأ في شبكة الاتصال');
+                        this.showModal = false;
+                    });
+            }
+        };
+    }
+</script>
+{% endblock %}

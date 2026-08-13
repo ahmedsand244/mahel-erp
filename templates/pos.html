@@ -1,0 +1,633 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}شاشة المبيعات (POS) - النماء{% endblock %}
+
+{% block extra_head %}
+<!-- HTML5 QR / Barcode Scanner Engine -->
+<script src="{% static 'vendor/js/html5-qrcode.min.js' %}"></script>
+{% endblock %}
+
+{% block content %}
+<div class="flex flex-col xl:flex-row-reverse gap-6 xl:gap-8 w-full" x-data="posApp()">
+    
+    <!-- Right Panel Wrapper: Search & Products Grid (Display contents on mobile so Cart card can sit between Search and Products!) -->
+    <div class="contents xl:flex xl:flex-col xl:flex-1 xl:space-y-6">
+        
+        <!-- 1. Search Bar & Filters with Phone Camera Barcode Scanner -->
+        <div class="glass-card rounded-2xl xl:rounded-3xl p-4 sm:p-6 order-1 xl:order-none">
+            <div class="relative w-full flex items-center gap-2.5">
+                <div class="relative flex-1">
+                    <input class="apple-input text-sm sm:text-base pr-12 text-right shadow-apple-sm w-full" 
+                           placeholder="ابحث عن منتج بالاسم أو رمز الباركوود..." 
+                           type="text" 
+                           x-model="searchQuery">
+                    <span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-apple-secondary text-2xl pointer-events-none">search</span>
+                </div>
+                
+                <!-- Camera Barcode Scanner Button -->
+                <button type="button" @click="startCameraScanner()" 
+                        class="bg-primary/15 hover:bg-primary text-primary hover:text-white border border-primary/30 px-4 py-3 rounded-2xl font-bold transition-all flex items-center gap-2 shrink-0 text-xs sm:text-sm active:scale-95 cursor-pointer shadow-apple-sm"
+                        title="مسح الباركوود بكاميرا الموبايل أو الحاسوب">
+                    <span class="material-symbols-outlined text-xl animate-pulse">photo_camera</span>
+                    <span>مسح بالباركود 📷</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- 3. Products Grid (Order 3 on mobile - below the Cart Card!) -->
+        <div class="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 order-3 xl:order-none">
+            <template x-for="product in filteredProducts()" :key="product.id">
+                <div class="glass-card rounded-2xl p-4 flex flex-col hover:border-primary/50 transition-all duration-200 cursor-pointer group active:scale-[0.98]"
+                     @click="addToCart(product)">
+                    <div class="aspect-square bg-apple-surface-subtle border border-apple-border rounded-xl mb-4 flex items-center justify-center relative overflow-hidden">
+                        <span class="absolute top-2 right-2 px-2.5 py-1 rounded-full text-[11px] font-extrabold z-10 shadow-sm border"
+                              :class="product.stock <= 3 ? 'bg-rose-600 text-white border-rose-500/50' : 'bg-emerald-600 text-white border-emerald-500/50'"
+                              x-text="product.stock <= 3 ? 'منخفض (' + product.stock + ')' : 'متوفر (' + product.stock + ')'">
+                        </span>
+                        <template x-if="product.image">
+                            <img :src="product.image" :alt="product.name" class="w-full h-full object-cover rounded-xl group-hover:scale-105 transition-transform duration-300">
+                        </template>
+                        <template x-if="!product.image">
+                            <span class="material-symbols-outlined text-4xl text-apple-secondary group-hover:scale-110 transition-transform">inventory_2</span>
+                        </template>
+                    </div>
+                    <h3 class="text-sm sm:text-base font-bold text-apple-text mb-1 truncate text-right" x-text="product.name"></h3>
+                    <p class="text-xs text-apple-secondary mb-3 text-right font-mono" x-text="'SKU: ' + product.sku"></p>
+                    <div class="mt-auto flex justify-between items-center w-full">
+                        <span class="text-base sm:text-lg font-bold text-primary font-mono" x-text="parseFloat(product.price).toFixed(2) + ' ج.م'"></span>
+                        <button class="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-colors">
+                            <span class="material-symbols-outlined text-sm">add</span>
+                        </button>
+                    </div>
+                </div>
+            </template>
+        </div>
+    </div>
+
+    <!-- 2. Left Panel: Shopping Cart & Checkout Card (Order 2 on mobile - SIT RIGHT BELOW SEARCH BAR!) -->
+    <section class="w-full xl:w-[420px] glass-card rounded-2xl xl:rounded-3xl flex flex-col h-[650px] sm:h-[700px] overflow-hidden shrink-0 order-2 xl:order-none">
+        <!-- Customer Selection Header & Quick Add Button -->
+        <div class="p-4 sm:p-6 border-b border-apple-border space-y-2.5 bg-apple-surface-subtle/40">
+            <div class="flex justify-between items-center">
+                <label class="text-xs text-apple-secondary font-bold text-right">العميل المرتبط بالفاتورة</label>
+                <!-- زر إضافة عميل جديد سريع -->
+                <button type="button" @click="showAddCustomerModal = true" 
+                        class="text-xs bg-primary/10 hover:bg-primary text-primary hover:text-white border border-primary/30 px-3 py-1.5 rounded-xl font-bold transition-all flex items-center gap-1 shadow-apple-sm active:scale-95">
+                    <span class="material-symbols-outlined text-[16px]">person_add</span>
+                    + عميل جديد
+                </button>
+            </div>
+            <!-- Sleek Searchable Custom Dropdown for Responsive & Mobile Support -->
+            <div class="relative w-full" @click.away="isCustomerDropdownOpen = false">
+                <!-- Dropdown trigger input box -->
+                <div class="apple-input flex items-center justify-between cursor-pointer pr-10 pl-3 py-2 text-sm font-semibold shadow-apple-sm text-right bg-apple-surface border border-apple-border rounded-xl hover:border-primary/50 transition-all min-h-[44px] select-none"
+                     @click="isCustomerDropdownOpen = !isCustomerDropdownOpen">
+                    <div class="flex items-center gap-2 truncate flex-1 justify-end min-w-0">
+                        <template x-if="customerId">
+                            <button type="button" @click.stop="clearCustomer()" class="text-apple-secondary hover:text-error transition-colors p-0.5 rounded-full hover:bg-apple-surface-subtle shrink-0">
+                                <span class="material-symbols-outlined text-base">close</span>
+                            </button>
+                        </template>
+                        <span class="truncate text-apple-text font-bold text-xs sm:text-sm" x-text="getSelectedCustomerLabel()"></span>
+                    </div>
+                    <span class="material-symbols-outlined text-apple-secondary text-lg pointer-events-none shrink-0 mr-1.5 transition-transform duration-200"
+                          :class="isCustomerDropdownOpen ? 'rotate-180' : ''">expand_more</span>
+                    <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-apple-secondary text-lg pointer-events-none">person</span>
+                </div>
+
+                <!-- Custom Dropdown Popover (Fits perfectly inside parent container width, max-w-full) -->
+                <div x-show="isCustomerDropdownOpen" 
+                     x-transition:enter="transition ease-out duration-150"
+                     x-transition:enter-start="opacity-0 scale-95 -translate-y-2"
+                     x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+                     x-transition:leave="transition ease-in duration-100"
+                     x-transition:leave-start="opacity-100 scale-100 translate-y-0"
+                     x-transition:leave-end="opacity-0 scale-95 -translate-y-2"
+                     class="absolute z-50 right-0 left-0 mt-2 bg-apple-surface border border-apple-border rounded-2xl shadow-apple-lg overflow-hidden flex flex-col max-h-72 w-full max-w-full backdrop-blur-xl"
+                     style="display: none;">
+                    
+                    <!-- Search Bar inside dropdown -->
+                    <div class="p-2 border-b border-apple-border bg-apple-surface-subtle/50 sticky top-0 z-10">
+                        <div class="relative w-full">
+                            <input type="text" 
+                                   x-model="customerSearchQuery"
+                                   placeholder="ابحث باسم العميل أو رقم الهاتف..." 
+                                   class="w-full bg-apple-surface border border-apple-border rounded-xl pr-9 pl-3 py-2 text-xs text-right focus:outline-none focus:border-primary text-apple-text font-medium"
+                                   @click.stop>
+                            <span class="material-symbols-outlined absolute right-2.5 top-1/2 -translate-y-1/2 text-apple-secondary text-sm pointer-events-none">search</span>
+                        </div>
+                    </div>
+
+                    <!-- Customer Options List -->
+                    <div class="overflow-y-auto flex-1 p-1 space-y-0.5 text-right">
+                        <!-- Option 1: Quick Cash Customer -->
+                        <button type="button"
+                                @click="selectCustomer('')"
+                                class="w-full text-right px-3 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-between gap-2"
+                                :class="customerId === '' ? 'bg-primary/10 text-primary font-extrabold' : 'text-apple-text hover:bg-apple-surface-subtle'">
+                            <span class="truncate">عميل نقدي سريع</span>
+                            <span class="material-symbols-outlined text-sm" x-show="customerId === ''">check</span>
+                        </button>
+
+                        <!-- Filtered Customer List -->
+                        <template x-for="c in filteredCustomers()" :key="c.id">
+                            <button type="button"
+                                    @click="selectCustomer(c.id)"
+                                    class="w-full text-right px-3 py-2.5 rounded-xl text-xs transition-all flex items-center justify-between gap-2 group"
+                                    :class="customerId == c.id ? 'bg-primary/10 text-primary font-extrabold' : 'text-apple-text hover:bg-apple-surface-subtle'">
+                                <div class="flex flex-col min-w-0 flex-1">
+                                    <div class="flex items-center gap-1.5 truncate">
+                                        <span class="font-bold truncate" x-text="c.name"></span>
+                                        <template x-if="c.workplace && c.workplace.trim() !== c.name.trim()">
+                                            <span class="text-[11px] text-apple-secondary truncate" x-text="'— ' + c.workplace"></span>
+                                        </template>
+                                    </div>
+                                    <template x-if="c.phone">
+                                        <span class="text-[10px] text-apple-secondary font-mono" x-text="c.phone"></span>
+                                    </template>
+                                </div>
+                                <span class="text-[11px] font-mono font-bold shrink-0 px-2 py-0.5 rounded-md bg-apple-surface-subtle"
+                                      :class="parseFloat(c.balance) > 0 ? 'text-warning' : 'text-apple-secondary'"
+                                      x-text="parseFloat(c.balance).toFixed(2) + ' ج.م'"></span>
+                            </button>
+                        </template>
+
+                        <!-- No results message -->
+                        <div x-show="filteredCustomers().length === 0 && customerSearchQuery" class="p-4 text-center text-xs text-apple-secondary italic">
+                            لا يوجد عملاء يطابقون بحثك
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Hidden select element for form compatibility -->
+                <select class="hidden" x-model="customerId" id="posCustomerSelect">
+                    <option value="">عميل نقدي سريع</option>
+                    <template x-for="c in customers" :key="c.id">
+                        <option :value="c.id" x-text="c.name"></option>
+                    </template>
+                </select>
+            </div>
+        </div>
+
+        <!-- Cart Items -->
+        <div class="flex-1 overflow-y-auto p-4 space-y-2.5">
+            <template x-for="item in cart" :key="item.product_id">
+                <div class="p-3 bg-apple-surface-subtle border border-apple-border rounded-2xl flex items-center justify-between gap-3 text-right">
+                    <div class="flex-1 min-w-0">
+                        <h4 class="text-xs sm:text-sm font-bold text-apple-text truncate" x-text="item.name"></h4>
+                        <span class="text-xs text-primary font-bold font-mono" x-text="parseFloat(item.price).toFixed(2) + ' ج.م'"></span>
+                    </div>
+                    <div class="flex items-center gap-2 bg-apple-surface border border-apple-border rounded-full px-2.5 py-1">
+                        <button class="text-apple-secondary hover:text-apple-text" @click="decreaseQty(item)">
+                            <span class="material-symbols-outlined text-xs">remove</span>
+                        </button>
+                        <span class="text-xs font-bold w-4 text-center font-mono text-apple-text" x-text="item.quantity"></span>
+                        <button class="text-apple-secondary hover:text-apple-text" @click="increaseQty(item)">
+                            <span class="material-symbols-outlined text-xs">add</span>
+                        </button>
+                    </div>
+                    <button class="text-error/70 hover:text-error transition-colors p-1" @click="removeFromCart(item)">
+                        <span class="material-symbols-outlined text-base">delete</span>
+                    </button>
+                </div>
+            </template>
+            <div class="text-center py-16 text-apple-secondary italic text-xs leading-relaxed" x-show="cart.length === 0">
+                سلة المشتريات فارغة. اضغط على أي منتج لإضافته.
+            </div>
+        </div>
+
+        <!-- Totals & Payment -->
+        <div class="p-4 sm:p-6 bg-apple-surface-subtle/80 border-t border-apple-border shrink-0 space-y-4">
+            <div class="flex justify-between items-end pt-2 border-t border-apple-border">
+                <span class="text-sm sm:text-base text-apple-text font-bold">المجموع الإجمالي</span>
+                <span class="text-xl sm:text-2xl text-primary font-extrabold tracking-tight font-mono" x-text="getCartTotal().toFixed(2) + ' ج.م'"></span>
+            </div>
+
+            <!-- Payment Methods -->
+            <div class="grid grid-cols-3 gap-2.5">
+                <button class="py-2.5 rounded-2xl border text-xs font-bold flex flex-col items-center gap-1 transition-all active:scale-95 cursor-pointer"
+                        :class="paymentMethod === 'cash' ? 'bg-primary/15 border-primary text-primary shadow-apple-sm' : 'bg-apple-surface border-apple-border text-apple-secondary hover:text-apple-text'"
+                        @click="paymentMethod = 'cash'">
+                    <span class="material-symbols-outlined text-lg">payments</span>
+                    نقداً
+                </button>
+                <button class="py-2.5 rounded-2xl border text-xs font-bold flex flex-col items-center gap-1 transition-all active:scale-95 cursor-pointer"
+                        :class="paymentMethod === 'visa' ? 'bg-primary/15 border-primary text-primary shadow-apple-sm' : 'bg-apple-surface border-apple-border text-apple-secondary hover:text-apple-text'"
+                        @click="paymentMethod = 'visa'">
+                    <span class="material-symbols-outlined text-lg">credit_card</span>
+                    بطاقة / شبكة
+                </button>
+                <button class="py-2.5 rounded-2xl border text-xs font-bold flex flex-col items-center gap-1 transition-all active:scale-95 cursor-pointer"
+                        :class="paymentMethod === 'deferred' ? 'bg-primary/15 border-primary text-primary shadow-apple-sm' : 'bg-apple-surface border-apple-border text-apple-secondary hover:text-apple-text'"
+                        @click="paymentMethod = 'deferred'">
+                    <span class="material-symbols-outlined text-lg">history_edu</span>
+                    آجل / شكك
+                </button>
+            </div>
+
+            <!-- Checkout Trigger Button -->
+            <button class="w-full bg-primary text-white py-3.5 rounded-2xl text-sm sm:text-base font-bold hover:shadow-apple-md active:scale-[0.98] transition-all flex items-center justify-center gap-2 apple-button"
+                    :disabled="cart.length === 0 || isSubmitting"
+                    @click="submitCheckout()">
+                <span class="material-symbols-outlined" x-show="!isSubmitting">shopping_basket</span>
+                <span x-text="isSubmitting ? 'جاري الحفظ...' : 'إتمام الفاتورة'"></span>
+            </button>
+        </div>
+    </section>
+
+    <!-- Modal 1: Quick Add Customer Modal -->
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md p-4"
+         x-show="showAddCustomerModal" style="display: none;">
+        <div class="bg-slate-900 text-slate-100 rounded-3xl p-6 sm:p-8 max-w-md w-full space-y-4 text-right shadow-2xl border border-slate-700" dir="rtl">
+            <div class="flex items-center justify-between border-b border-slate-700/60 pb-3">
+                <h3 class="text-lg sm:text-xl font-extrabold text-primary flex items-center gap-2">
+                    <span class="material-symbols-outlined text-2xl">person_add</span>
+                    إضافة بيانات مشترٍ / عميل جديد
+                </h3>
+                <button type="button" @click="showAddCustomerModal = false" class="text-slate-400 hover:text-white p-1 rounded-full hover:bg-slate-800 transition-colors">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <p class="text-xs text-slate-300 font-medium">سيتم تسجيل بيانات المشتري واختياره فوراً للفاتورة الحالية.</p>
+
+            <form @submit.prevent="submitQuickCustomer()" class="space-y-3.5 text-sm">
+                <div>
+                    <label class="block text-xs font-bold text-slate-200 mb-1">اسم المشتري / العميل الكامل (مطلوب)</label>
+                    <input type="text" x-model="newCust.name" required placeholder="مثال: المهندس أحمد محمود" 
+                           class="w-full bg-slate-800 border border-slate-700 rounded-xl py-2.5 px-3.5 text-right text-xs text-slate-100 focus:outline-none focus:border-primary font-bold placeholder:text-slate-500">
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-200 mb-1">رقم الهاتف</label>
+                        <input type="text" x-model="newCust.phone" placeholder="01012345678" 
+                               class="w-full bg-slate-800 border border-slate-700 rounded-xl py-2.5 px-3.5 text-right font-mono text-xs text-slate-100 focus:outline-none focus:border-primary placeholder:text-slate-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-200 mb-1">مكان العمل / المزرعة</label>
+                        <input type="text" x-model="newCust.workplace" placeholder="مزرعة النخيل بالوادي" 
+                               class="w-full bg-slate-800 border border-slate-700 rounded-xl py-2.5 px-3.5 text-right text-xs text-slate-100 focus:outline-none focus:border-primary placeholder:text-slate-500">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-200 mb-1">العنوان / المنطقة</label>
+                    <input type="text" x-model="newCust.address" placeholder="مثال: الطريق الصحراوي الكيلو 45" 
+                           class="w-full bg-slate-800 border border-slate-700 rounded-xl py-2.5 px-3.5 text-right text-xs text-slate-100 focus:outline-none focus:border-primary placeholder:text-slate-500">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-200 mb-1">رصيد الشكك المبدئي (إن وجد)</label>
+                    <input type="number" step="0.01" min="0" x-model="newCust.initial_balance" placeholder="0.00" 
+                           class="w-full bg-slate-800 border border-slate-700 rounded-xl py-2.5 px-3.5 text-right font-mono text-primary font-extrabold text-base focus:outline-none focus:border-primary placeholder:text-slate-500">
+                </div>
+
+                <div class="flex gap-3 pt-3">
+                    <button type="submit" class="flex-1 bg-primary text-white py-3 rounded-2xl font-bold shadow-lg shadow-primary/25 active:scale-95 text-xs sm:text-sm"
+                            :disabled="isAddingCustomer">
+                        <span x-text="isAddingCustomer ? 'جاري الحفظ...' : 'حفظ واختيار المشتري'"></span>
+                    </button>
+                    <button type="button" @click="showAddCustomerModal = false" class="flex-1 bg-slate-800 border border-slate-700 py-3 rounded-2xl text-slate-300 hover:text-white text-xs sm:text-sm">إلغاء</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal 2: Success Modal -->
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md p-4"
+         x-show="showSuccess" style="display: none;">
+        <div class="bg-slate-900 text-slate-100 rounded-3xl p-8 max-w-sm w-full text-center space-y-4 shadow-2xl border border-slate-700" dir="rtl">
+            <span class="material-symbols-outlined text-[64px] text-emerald-400">check_circle</span>
+            <h3 class="text-xl font-bold text-white">تمت العملية بنجاح!</h3>
+            <p class="text-xs text-slate-300 font-medium">رقم الفاتورة الصادرة: <span class="font-mono font-bold text-emerald-400 text-base" x-text="successOrderNumber"></span></p>
+            <div class="space-y-2.5 pt-2">
+                <!-- Open public invoice page (user can share via WhatsApp from there) -->
+                <a :href="successOrderId ? '/pos/invoices/' + successOrderId + '/public/' : '#'" 
+                   target="_blank"
+                   class="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-3 rounded-2xl text-sm font-bold shadow-lg flex items-center justify-center gap-2 transition-all"
+                   x-show="successOrderId">
+                    <span class="material-symbols-outlined text-lg">share</span>
+                    <span>مشاركة الفاتورة عبر الواتساب 🔗</span>
+                </a>
+                <button class="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 py-3 rounded-2xl text-xs sm:text-sm font-bold transition-all"
+                        @click="closeSuccessModal()">
+                    إغلاق وفتح عملية جديدة
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 3: Phone / Webcam Live Barcode Camera Scanner -->
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4"
+         x-show="showCameraScanner" style="display: none;">
+        <div class="bg-slate-900 text-slate-100 rounded-3xl p-6 sm:p-8 max-w-md w-full text-center space-y-4 shadow-2xl border border-primary/40" dir="rtl" @click.away="stopCameraScanner()">
+            <div class="flex items-center justify-between border-b border-slate-700/60 pb-3">
+                <h3 class="text-base font-bold text-primary flex items-center gap-2">
+                    <span class="material-symbols-outlined text-xl animate-bounce">photo_camera</span>
+                    ماسح الباركود بالكاميرا (الموبايل / الحاسوب)
+                </h3>
+                <button type="button" @click="stopCameraScanner()" class="text-slate-400 hover:text-white p-1 rounded-full hover:bg-slate-800 transition-colors">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+
+            <p class="text-xs text-slate-300 font-medium">وجّه كاميرا الموبايل نحو ملصق الباركود وسيتم التعرف عليه وإضافته للسلة فوراً 👍</p>
+
+            <!-- Video Camera Frame Container -->
+            <div id="barcode-camera-reader" class="w-full rounded-2xl overflow-hidden border-2 border-primary/50 bg-black min-h-[260px]"></div>
+
+            <div class="pt-2">
+                <button type="button" @click="stopCameraScanner()" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-100 border border-slate-700 py-3 rounded-2xl font-bold text-xs shadow-md transition-all">
+                    إلغاء وإغلاق الكاميرا
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{ products_list_json|json_script:"products-db-json" }}
+{{ customers_list_json|json_script:"customers-db-json" }}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let html5QrScannerInstance = null;
+
+    function posApp() {
+        const dbProducts = JSON.parse(document.getElementById('products-db-json').textContent || '[]');
+        const dbCustomers = JSON.parse(document.getElementById('customers-db-json').textContent || '[]');
+
+        return {
+            products: dbProducts,
+            customers: dbCustomers,
+            searchQuery: '',
+            customerId: '',
+            customerSearchQuery: '',
+            isCustomerDropdownOpen: false,
+            paymentMethod: 'cash',
+            cart: [],
+            isSubmitting: false,
+            showSuccess: false,
+            showCameraScanner: false,
+            successOrderNumber: '',
+            successOrderId: null,
+
+            startCameraScanner() {
+                this.showCameraScanner = true;
+                this.$nextTick(() => {
+                    if (html5QrScannerInstance) {
+                        try { html5QrScannerInstance.clear(); } catch(e) {}
+                    }
+                    const formatsToSupport = [
+                        Html5QrcodeSupportedFormats.CODE_128,
+                        Html5QrcodeSupportedFormats.EAN_13,
+                        Html5QrcodeSupportedFormats.EAN_8,
+                        Html5QrcodeSupportedFormats.CODE_39,
+                        Html5QrcodeSupportedFormats.UPC_A,
+                        Html5QrcodeSupportedFormats.UPC_E,
+                        Html5QrcodeSupportedFormats.QR_CODE
+                    ];
+                    html5QrScannerInstance = new Html5QrcodeScanner("barcode-camera-reader", { 
+                        fps: 20, 
+                        qrbox: { width: 300, height: 160 },
+                        aspectRatio: 1.0,
+                        formatsToSupport: formatsToSupport,
+                        experimentalFeatures: {
+                            useBarCodeDetectorIfSupported: true
+                        }
+                    });
+
+                    html5QrScannerInstance.render((decodedText, decodedResult) => {
+                        this.onBarcodeScanned(decodedText);
+                    }, (errorMessage) => {
+                        // ignore frame parse errors
+                    });
+                });
+            },
+
+            stopCameraScanner() {
+                this.showCameraScanner = false;
+                if (html5QrScannerInstance) {
+                    try {
+                        html5QrScannerInstance.clear();
+                    } catch(e) {}
+                    html5QrScannerInstance = null;
+                }
+            },
+
+            onBarcodeScanned(code) {
+                if (!code) return;
+                const cleanCode = code.trim().toLowerCase();
+                const matchedProd = this.products.find(p => 
+                    (p.barcode && p.barcode.toLowerCase() === cleanCode) ||
+                    (p.sku && p.sku.toLowerCase() === cleanCode) ||
+                    (p.name && p.name.toLowerCase().includes(cleanCode))
+                );
+
+                if (matchedProd) {
+                    if (navigator.vibrate) navigator.vibrate(100);
+                    this.addToCart(matchedProd);
+                    this.stopCameraScanner();
+                    alert(`✅ تم التعرف على الباركود: [${matchedProd.name}] وإضافته لسلة البيع بنجاح!`);
+                } else {
+                    this.searchQuery = code;
+                    this.stopCameraScanner();
+                }
+            },
+            showAddCustomerModal: false,
+            isAddingCustomer: false,
+            newCust: {
+                name: '',
+                phone: '',
+                workplace: '',
+                address: '',
+                notes: '',
+                initial_balance: '0'
+            },
+
+            getSelectedCustomerLabel() {
+                if (!this.customerId) return 'عميل نقدي سريع';
+                const c = this.customers.find(item => item.id == this.customerId);
+                if (!c) return 'عميل نقدي سريع';
+                let label = c.name;
+                if (c.workplace && c.workplace.trim() !== c.name.trim()) {
+                    label += ' — ' + c.workplace;
+                }
+                label += ' (' + parseFloat(c.balance).toFixed(2) + ' ج.م)';
+                return label;
+            },
+
+            filteredCustomers() {
+                if (!this.customerSearchQuery.trim()) return this.customers;
+                const q = this.customerSearchQuery.toLowerCase().trim();
+                return this.customers.filter(c => 
+                    (c.name && c.name.toLowerCase().includes(q)) ||
+                    (c.phone && c.phone.includes(q)) ||
+                    (c.workplace && c.workplace.toLowerCase().includes(q))
+                );
+            },
+
+            selectCustomer(id) {
+                this.customerId = id;
+                this.isCustomerDropdownOpen = false;
+                this.customerSearchQuery = '';
+            },
+
+            clearCustomer() {
+                this.customerId = '';
+                this.isCustomerDropdownOpen = false;
+                this.customerSearchQuery = '';
+            },
+
+            filteredProducts() {
+                if (!this.searchQuery) return this.products;
+                const query = this.searchQuery.toLowerCase();
+                return this.products.filter(p => 
+                    p.name.toLowerCase().includes(query) || 
+                    p.sku.toLowerCase().includes(query)
+                );
+            },
+
+            addToCart(product) {
+                const existing = this.cart.find(item => item.product_id === product.id);
+                if (existing) {
+                    if (existing.quantity >= product.stock) {
+                        alert('لقد تجاوزت الكمية المتاحة في المخزن!');
+                        return;
+                    }
+                    existing.quantity++;
+                } else {
+                    this.cart.push({
+                        product_id: product.id,
+                        name: product.name,
+                        price: product.price,
+                        quantity: 1
+                    });
+                }
+            },
+
+            increaseQty(item) {
+                const prod = this.products.find(p => p.id === item.product_id);
+                if (item.quantity >= prod.stock) {
+                    alert('لقد تجاوزت الكمية المتاحة في المخزن!');
+                    return;
+                }
+                item.quantity++;
+            },
+
+            decreaseQty(item) {
+                if (item.quantity > 1) {
+                    item.quantity--;
+                } else {
+                    this.removeFromCart(item);
+                }
+            },
+
+            removeFromCart(item) {
+                this.cart = this.cart.filter(c => c.product_id !== item.product_id);
+            },
+
+            getCartTotal() {
+                return this.cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            },
+
+            submitQuickCustomer() {
+                if (!this.newCust.name.trim()) {
+                    alert('اسم المشتري مطلوب ولا يمكن تركه فارغاً');
+                    return;
+                }
+
+                this.isAddingCustomer = true;
+                fetch('{% url "pos:add_customer_ajax" %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify(this.newCust)
+                })
+                .then(res => res.json())
+                .then(data => {
+                    this.isAddingCustomer = false;
+                    if (data.success) {
+                        const cust = data.customer;
+                        const formattedCust = {
+                            id: cust.id,
+                            name: cust.name,
+                            phone: cust.phone || '',
+                            workplace: cust.workplace || '',
+                            balance: String(cust.balance || '0')
+                        };
+
+                        const existingIdx = this.customers.findIndex(c => c.id === cust.id);
+                        if (existingIdx !== -1) {
+                            this.customers[existingIdx] = formattedCust;
+                        } else {
+                            this.customers.push(formattedCust);
+                        }
+
+                        // Select newly created customer automatically
+                        this.customerId = cust.id;
+                        this.showAddCustomerModal = false;
+
+                        // Reset form
+                        this.newCust = { name: '', phone: '', workplace: '', address: '', notes: '', initial_balance: '0' };
+                    } else {
+                        alert('خطأ: ' + data.error);
+                    }
+                })
+                .catch(err => {
+                    this.isAddingCustomer = false;
+                    alert('حدث خطأ في شبكة الاتصال أثناء إضافة المشتري');
+                });
+            },
+
+            submitCheckout() {
+                if (this.paymentMethod === 'deferred' && !this.customerId) {
+                    alert('يجب تحديد عميل للمبيعات الآجلة (الشكك)!');
+                    return;
+                }
+
+                this.isSubmitting = true;
+                
+                const payload = {
+                    payment_method: this.paymentMethod,
+                    customer_id: this.customerId,
+                    cart: this.cart
+                };
+
+                fetch('{% url "pos:checkout_ajax" %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify(payload)
+                })
+                .then(res => res.json())
+                .then(data => {
+                    this.isSubmitting = false;
+            if (data.success) {
+                        this.successOrderId = data.order_id;
+                        this.successOrderNumber = data.order_number;
+                        this.showSuccess = true;
+                        this.cart = [];
+                    } else {
+                        alert('فشلت العملية: ' + data.error);
+                    }
+                })
+                .catch(err => {
+                    this.isSubmitting = false;
+                    alert('حدث خطأ في شبكة الاتصال، يرجى المحاولة لاحقاً');
+                });
+            },
+
+            closeSuccessModal() {
+                this.showSuccess = false;
+                window.location.reload();
+            }
+        };
+    }
+</script>
+{% endblock %}

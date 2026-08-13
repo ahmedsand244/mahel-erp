@@ -1,0 +1,67 @@
+<div class="glass-card rounded-xl p-4 flex flex-col gap-3 hover:bg-white/5 transition-all duration-200">
+    <div class="flex justify-between items-start">
+        <span class="bg-white/5 text-secondary px-2 py-0.5 rounded text-xs font-mono font-bold border border-white/5">
+            #{{ ticket.ticket_number }}
+        </span>
+        {% if ticket.status != 'delivered' %}
+            <button class="text-xs text-primary hover:underline"
+                    @click="
+                        selectedTicketId = '{{ ticket.id }}';
+                        selectedTicketNumber = '{{ ticket.ticket_number }}';
+                        showAddPartsModal = true;
+                    ">
+                + تركيب قطع
+            </button>
+        {% endif %}
+    </div>
+
+    <div>
+        <h4 class="text-sm font-bold text-on-surface">{{ ticket.device_name }}</h4>
+        <p class="text-xs text-on-surface-variant mt-1 flex items-center gap-1">
+            <span class="material-symbols-outlined text-xs">person</span>
+            {{ ticket.customer.name }}
+        </p>
+    </div>
+
+    <!-- Pricing Summary -->
+    <div class="p-2 bg-white/5 rounded-lg text-xs space-y-1">
+        <div class="flex justify-between">
+            <span class="text-on-surface-variant">رسوم الصيانة:</span>
+            <span class="font-bold text-primary">{{ ticket.labor_fees }} ج.م</span>
+        </div>
+        <div class="flex justify-between">
+            <span class="text-on-surface-variant">قطع غيار:</span>
+            <span class="font-bold text-tertiary">{{ ticket.parts_sell }} ج.م</span>
+        </div>
+    </div>
+
+    <!-- Consumed Parts List -->
+    {% if ticket.parts_consumed.all %}
+        <div class="text-[10px] text-on-surface-variant border-t border-white/5 pt-2">
+            <p class="font-bold mb-1">القطع المركبة:</p>
+            <ul class="list-disc list-inside">
+                {% for item in ticket.parts_consumed.all %}
+                    <li>{{ item.product.name }} (x{{ item.quantity }})</li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% endif %}
+
+    <!-- Status Switcher Dropdown -->
+    {% if ticket.status != 'delivered' %}
+    <div class="border-t border-white/5 pt-2">
+        <label class="text-[10px] text-on-surface-variant block mb-1">تحديث الحالة:</label>
+        <select class="w-full bg-white/5 border border-white/10 rounded py-1 px-2 text-xs focus:outline-none text-right text-on-surface"
+                onchange="changeTicketStatus('{{ ticket.id }}', this.value)">
+            <option value="pending" {% if ticket.status == 'pending' %}selected{% endif %} class="bg-[#122131]">استلام / قيد الانتظار</option>
+            <option value="in_progress" {% if ticket.status == 'in_progress' %}selected{% endif %} class="bg-[#122131]">صيانة نشطة</option>
+            <option value="completed" {% if ticket.status == 'completed' %}selected{% endif %} class="bg-[#122131]">جاهز للاستلام</option>
+            <option value="delivered" {% if ticket.status == 'delivered' %}selected{% endif %} class="bg-[#122131]">تسليم وتحصيل الكاش</option>
+        </select>
+    </div>
+    {% else %}
+        <div class="text-center text-[10px] text-primary bg-primary/10 border border-primary/20 rounded py-1">
+            تم تسليم الجهاز وتحصيل المبلغ بنجاح!
+        </div>
+    {% endif %}
+</div>

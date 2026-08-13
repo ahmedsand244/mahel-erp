@@ -1,0 +1,715 @@
+{% extends "base.html" %}
+
+{% block title %}إدارة المخزن والمستودع - النماء{% endblock %}
+
+{% block content %}
+<div x-data="{ 
+    showAddModal: false, 
+    showEditModal: false, 
+    showBulkPriceModal: false,
+    showSinglePriceModal: false,
+    showRestockModal: false,
+    showExcelImportModal: false,
+    searchVal: '', 
+    selectedCategory: '',
+    currentEditProduct: {},
+    currentSingleProduct: { id: null, name: '', selling_price: 0 },
+    currentRestockProduct: { id: null, name: '', stock_quantity: 0 },
+    selectedIds: [],
+    toggleAll(event) {
+        if (event.target.checked) {
+            this.selectedIds = [{% for p in products %}'{{ p.id }}',{% endfor %}];
+        } else {
+            this.selectedIds = [];
+        }
+    }
+}">
+    <!-- Header -->
+    <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 bg-surface-container-low/50 backdrop-blur-md p-6 rounded-2xl border border-white/5 gap-4" dir="rtl">
+        <div>
+            <h1 class="text-2xl font-bold text-on-background">إدارة المخزن والمستودع</h1>
+            <p class="text-xs text-on-surface-variant mt-1">متابعة الكميات، التنبيهات الذكية، رفع الأسعار المئوي، وإدارة الصور</p>
+        </div>
+        <div class="flex items-center gap-2.5 flex-wrap">
+            <!-- مولد وطباعة ملصقات الباركود -->
+            <a href="{% url 'inventory:barcode_generator' %}" 
+               class="bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 px-4 py-2.5 rounded-xl font-bold hover:bg-amber-500 hover:text-white transition-all flex items-center gap-1.5 text-xs sm:text-sm shadow-sm"
+               title="تصميم وطباعة ملصقات الباركود للمنتجات">
+                <span class="material-symbols-outlined text-[18px]">label</span>
+                طباعة الباركود 🏷️
+            </a>
+
+            <!-- تصدير إلى Excel -->
+            <a href="{% url 'inventory:export_excel' %}" 
+               class="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 px-4 py-2.5 rounded-xl font-bold hover:bg-emerald-500 hover:text-white transition-all flex items-center gap-1.5 text-xs sm:text-sm shadow-sm"
+               title="تصدير جميع بيانات المخزن إلى ملف Excel">
+                <span class="material-symbols-outlined text-[18px]">download</span>
+                تصدير Excel 📊
+            </a>
+
+            <!-- استيراد من Excel -->
+            <button @click="showExcelImportModal = true" 
+                    class="bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/30 px-4 py-2.5 rounded-xl font-bold hover:bg-blue-500 hover:text-white transition-all flex items-center gap-1.5 text-xs sm:text-sm shadow-sm"
+                    title="رفع ملف Excel لاستيراد المنتجات دفعة واحدة">
+                <span class="material-symbols-outlined text-[18px]">upload_file</span>
+                استيراد من Excel 📥
+            </button>
+
+            <!-- زر طلبات البضاعة والنواقص -->
+            <a href="{% url 'inventory:purchase_order_list' %}" 
+               class="bg-sky-500/20 text-sky-400 border border-sky-500/30 px-4 py-2.5 rounded-xl font-bold hover:bg-sky-500 hover:text-white transition-all flex items-center gap-1.5 text-xs sm:text-sm shadow-sm">
+                <span class="material-symbols-outlined text-[18px]">local_shipping</span>
+                طلب بضاعة 🚚
+            </a>
+
+            <!-- زر تعديل الأسعار الجماعي % -->
+            <button @click="showBulkPriceModal = true" 
+                    class="bg-tertiary/20 text-tertiary border border-tertiary/30 px-4 py-2.5 rounded-xl font-bold hover:bg-tertiary hover:text-on-tertiary transition-all flex items-center gap-1.5 text-xs sm:text-sm shadow-sm">
+                <span class="material-symbols-outlined text-[18px]">trending_up</span>
+                تعديل الأسعار %
+            </button>
+
+            <!-- زر إضافة منتج جديد -->
+            <button @click="showAddModal = true" 
+                    class="bg-primary text-on-primary px-5 py-2.5 rounded-xl font-bold hover:brightness-110 transition-all shadow-[0_4px_14px_0_rgba(16,185,129,0.39)] flex items-center gap-1.5 text-xs sm:text-sm">
+                <span class="material-symbols-outlined text-[18px]">add</span>
+                إضافة منتج
+            </button>
+        </div>
+    </header>
+
+    <!-- SMART DYNAMIC STOCK ALERT HUB (لوحة التنبيهات الذكية والتوريد السريع) -->
+    {% if low_stock_products %}
+    <div class="glass-card rounded-2xl p-6 mb-8 border border-error/20 bg-error/5 relative overflow-hidden" dir="rtl">
+        <!-- Header -->
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center pb-4 mb-4 border-b border-white/10 gap-3">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-error/20 border border-error/30 flex items-center justify-center text-error animate-pulse">
+                    <span class="material-symbols-outlined text-2xl">warning</span>
+                </div>
+                <div>
+                    <h3 class="text-base font-bold text-on-surface flex items-center gap-2">
+                        مركز التنبيهات الحرجة للمخزون
+                        <span class="px-2 py-0.5 rounded-full text-xs bg-error/20 text-error font-mono font-bold">{{ low_stock_products|length }} منتج</span>
+                    </h3>
+                    <p class="text-xs text-on-surface-variant">المنتجات التالية تحتاج إلى إعادة طلب وتزويد الكمية فوراً لتجنب توقف المبيعات والصيانة</p>
+                </div>
+            </div>
+            <!-- Statistics badges -->
+            <div class="flex items-center gap-2 text-xs font-mono">
+                <a href="{% url 'inventory:purchase_order_create' %}?auto_pull=true" class="bg-error text-white px-4 py-2 rounded-xl text-xs font-bold hover:brightness-110 transition-all flex items-center gap-1 shadow-md shadow-error/20">
+                    <span class="material-symbols-outlined text-sm">local_shipping</span>
+                    تحضير طلب بضاعة للموردين فوراً 🚚
+                </a>
+                {% if out_of_stock_count > 0 %}
+                    <span class="px-3 py-1 rounded-lg bg-error text-white font-bold flex items-center gap-1 shadow-md shadow-error/20">
+                        <span class="w-2 h-2 rounded-full bg-white animate-ping"></span>
+                        {{ out_of_stock_count }} نفذت تماماً (0 قطعة)
+                    </span>
+                {% endif %}
+                {% if low_stock_count > 0 %}
+                    <span class="px-3 py-1 rounded-lg bg-tertiary/20 text-tertiary border border-tertiary/30 font-bold">
+                        {{ low_stock_count }} قاربت على النفاد
+                    </span>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Alert Cards Grid (No duplicates! Each product appears exactly once) -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {% for item in low_stock_products %}
+            <div class="p-4 rounded-xl border transition-all flex flex-col justify-between gap-3
+                {% if item.stock_quantity <= 0 %}
+                    bg-error/10 border-error/30 hover:border-error/50
+                {% else %}
+                    bg-white/5 border-white/10 hover:border-white/20
+                {% endif %}">
+                
+                <div class="flex items-start justify-between gap-3">
+                    <div class="flex items-center gap-3">
+                        {% if item.image %}
+                            <img src="{{ item.image.url }}" class="w-10 h-10 rounded-lg object-cover border border-white/10">
+                        {% else %}
+                            <div class="w-10 h-10 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-on-surface-variant/40">
+                                <span class="material-symbols-outlined text-lg">inventory_2</span>
+                            </div>
+                        {% endif %}
+                        <div>
+                            <div class="font-bold text-sm text-on-surface line-clamp-1">{{ item.name }}</div>
+                            <div class="text-[11px] text-on-surface-variant font-mono">{{ item.sku }}</div>
+                        </div>
+                    </div>
+                    <!-- Status tag -->
+                    {% if item.stock_quantity <= 0 %}
+                        <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-error text-white whitespace-nowrap">نفذت (0)</span>
+                    {% else %}
+                        <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-tertiary/20 text-tertiary border border-tertiary/30 whitespace-nowrap">منخفض ({{ item.stock_quantity }})</span>
+                    {% endif %}
+                </div>
+
+                <!-- Quantities & Quick Restock Button -->
+                <div class="flex items-center justify-between pt-2 border-t border-white/5 text-xs">
+                    <div class="text-[11px] text-on-surface-variant">
+                        المتوفر: <span class="font-bold font-mono text-on-surface">{{ item.stock_quantity }}</span> / الحد الأدنى: <span class="font-mono text-on-surface-variant">{{ item.min_stock_threshold }}</span>
+                    </div>
+                    <!-- Quick Restock Button -->
+                    <button @click="currentRestockProduct = { id: '{{ item.id }}', name: '{{ item.name|escapejs }}', stock_quantity: '{{ item.stock_quantity }}' }; showRestockModal = true;"
+                            class="px-3 py-1.5 rounded-lg bg-primary text-on-primary font-bold hover:brightness-110 transition-all flex items-center gap-1 shadow-sm text-xs">
+                        <span class="material-symbols-outlined text-[15px]">add_box</span>
+                        تزويد شحنة
+                    </button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Inventory Filter & Search Bar -->
+    <div class="glass-card rounded-2xl p-6 mb-6 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6" dir="rtl">
+        <!-- Search bar -->
+        <div class="relative w-full lg:w-80">
+            <input class="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 px-4 pr-10 text-on-surface text-sm focus:outline-none focus:border-primary/50 text-right" 
+                   placeholder="ابحث بالاسم أو رمز SKU أو الباركود..." 
+                   type="text" 
+                   x-model="searchVal">
+            <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-base">search</span>
+        </div>
+
+        <!-- Category filter pills -->
+        <div class="flex items-center gap-2 overflow-x-auto pb-2 lg:pb-0 w-full lg:w-auto text-xs">
+            <button class="px-3 py-1.5 rounded-lg transition-all whitespace-nowrap font-bold"
+                    :class="selectedCategory === '' ? 'bg-primary text-on-primary' : 'bg-white/5 text-on-surface-variant hover:bg-white/10'"
+                    @click="selectedCategory = ''">
+                الكل
+            </button>
+            {% for code, label in category_choices %}
+                <button class="px-3 py-1.5 rounded-lg transition-all whitespace-nowrap font-semibold"
+                        :class="selectedCategory === '{{ code }}' ? 'bg-primary text-on-primary' : 'bg-white/5 text-on-surface-variant hover:bg-white/10'"
+                        @click="selectedCategory = '{{ code }}'">
+                    {{ label }}
+                </button>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Inventory Table -->
+    <div class="glass-card rounded-2xl overflow-hidden border border-white/5" dir="rtl">
+        <div class="overflow-x-auto">
+            <table class="w-full text-right border-collapse">
+                <thead>
+                    <tr class="bg-surface-container/50 border-b border-white/10 text-xs font-bold text-on-surface-variant">
+                        <th class="p-4 w-10 text-center">
+                            <input type="checkbox" @change="toggleAll($event)" class="w-5 h-5 rounded accent-emerald-500 text-emerald-500 bg-slate-200 dark:bg-slate-800 border-slate-400 dark:border-slate-600 focus:ring-2 focus:ring-emerald-500 cursor-pointer">
+                        </th>
+                        <th class="p-4 w-16">الصورة</th>
+                        <th class="p-4">اسم المنتج والتصنيف</th>
+                        <th class="p-4">رمز SKU / الباركود</th>
+                        <th class="p-4">سعر الشراء (التكلفة)</th>
+                        <th class="p-4">سعر البيع الحالي</th>
+                        <th class="p-4">المخزون والتوفر</th>
+                        <th class="p-4 text-center">الإجراءات</th>
+                    </tr>
+                </thead>
+                <tbody class="text-sm">
+                    {% for p in products %}
+                    <tr class="border-b border-slate-200 dark:border-white/5 hover:bg-black/5 dark:hover:bg-white/5 transition-colors group"
+                        x-show="(searchVal === '' || '{{ p.name|escapejs }}'.toLowerCase().includes(searchVal.toLowerCase()) || '{{ p.sku|escapejs }}'.toLowerCase().includes(searchVal.toLowerCase()) || '{{ p.barcode|default:''|escapejs }}'.includes(searchVal)) && (selectedCategory === '' || selectedCategory === '{{ p.category }}')">
+                        <td class="p-4 text-center">
+                            <input type="checkbox" value="{{ p.id }}" x-model="selectedIds" class="w-5 h-5 rounded accent-emerald-500 text-emerald-500 bg-slate-200 dark:bg-slate-800 border-slate-400 dark:border-slate-600 focus:ring-2 focus:ring-emerald-500 cursor-pointer">
+                        </td>
+                        <!-- صورة المنتج -->
+                        <td class="p-4">
+                            {% if p.image %}
+                                <a href="{{ p.image.url }}" target="_blank" title="اضغط للتكبير">
+                                    <img src="{{ p.image.url }}" alt="{{ p.name }}" class="w-12 h-12 rounded-xl object-cover border border-white/10 hover:scale-110 transition-transform shadow-md">
+                                </a>
+                            {% else %}
+                                <div class="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-on-surface-variant/40" title="لا توجد صورة">
+                                    <span class="material-symbols-outlined text-2xl">inventory_2</span>
+                                </div>
+                            {% endif %}
+                        </td>
+                        <!-- اسم المنتج والفئة -->
+                        <td class="p-4">
+                            <div class="font-bold text-on-background text-base">{{ p.name }}</div>
+                            <span class="inline-block mt-1 text-[11px] px-2 py-0.5 rounded bg-white/5 text-on-surface-variant border border-white/5">
+                                {{ p.get_category_display }}
+                            </span>
+                        </td>
+                        <!-- SKU والباركود -->
+                        <td class="p-4 font-mono text-xs">
+                            <div class="text-secondary font-bold">{{ p.sku }}</div>
+                            {% if p.barcode %}
+                                <div class="text-on-surface-variant/80 text-[11px] flex items-center gap-1 mt-0.5">
+                                    <span class="material-symbols-outlined text-[13px]">barcode</span>
+                                    {{ p.barcode }}
+                                </div>
+                            {% endif %}
+                        </td>
+                        <!-- سعر الشراء -->
+                        <td class="p-4 text-on-surface-variant font-mono blur-sm hover:blur-none transition-all cursor-pointer" title="مرر الفأرة لرؤية التكلفة">
+                            {{ p.purchase_price|floatformat:2 }} ج.م
+                        </td>
+                        <!-- سعر البيع + زر تعديل النسبة المئوية السريع -->
+                        <td class="p-4">
+                            <div class="flex items-center gap-2">
+                                <span class="text-primary font-bold font-mono text-base">{{ p.selling_price|floatformat:2 }} ج.م</span>
+                                <button @click="currentSingleProduct = { id: '{{ p.id }}', name: '{{ p.name|escapejs }}', selling_price: '{{ p.selling_price }}' }; showSinglePriceModal = true;"
+                                        class="p-1 rounded bg-tertiary/10 hover:bg-tertiary/20 text-tertiary text-xs transition-colors border border-tertiary/20 flex items-center gap-0.5"
+                                        title="تعديل سعر هذا المنتج بنسبة مئوية (%)">
+                                    <span class="material-symbols-outlined text-[14px]">trending_up</span>
+                                    <span class="text-[10px] font-bold">%</span>
+                                </button>
+                            </div>
+                        </td>
+                        <!-- الحالة والمخزون -->
+                        <td class="p-4">
+                            {% if p.stock_quantity <= 0 %}
+                                <div class="inline-flex items-center px-3 py-1 rounded-full bg-error/10 text-error border border-error/20 text-xs font-bold">
+                                    <span class="w-2 h-2 rounded-full bg-error ml-2"></span>
+                                    نفذت الكمية (0)
+                                </div>
+                            {% elif p.stock_quantity <= p.min_stock_threshold %}
+                                <div class="inline-flex items-center px-3 py-1 rounded-full bg-tertiary/10 text-tertiary border border-tertiary/20 text-xs font-bold">
+                                    <span class="w-2 h-2 rounded-full bg-tertiary ml-2 animate-pulse"></span>
+                                    {{ p.stock_quantity }} قطع (منخفض)
+                                </div>
+                            {% else %}
+                                <div class="inline-flex items-center px-3 py-1 rounded-full bg-primary/10 text-primary border border-primary/20 text-xs font-bold">
+                                    <span class="w-2 h-2 rounded-full bg-primary ml-2"></span>
+                                    {{ p.stock_quantity }} قطعة (متوفر)
+                                </div>
+                            {% endif %}
+                        </td>
+                        <!-- الإجراءات -->
+                        <td class="p-4 text-center">
+                            <div class="flex items-center justify-center gap-1">
+                                <!-- تزويد مخزون سريع -->
+                                <button @click="currentRestockProduct = { id: '{{ p.id }}', name: '{{ p.name|escapejs }}', stock_quantity: '{{ p.stock_quantity }}' }; showRestockModal = true;"
+                                        class="p-2 rounded-lg hover:bg-primary/20 text-primary transition-colors"
+                                        title="إضافة كمية شحنة جديدة للمخزون">
+                                    <span class="material-symbols-outlined text-[20px]">add_box</span>
+                                </button>
+                                <!-- تعديل المنتج -->
+                                <button type="button" class="p-2 rounded-lg hover:bg-white/10 text-secondary transition-colors"
+                                        title="تعديل المنتج وصورته"
+                                        @click="currentEditProduct = {
+                                            id: '{{ p.id }}',
+                                            name: '{{ p.name|escapejs }}',
+                                            sku: '{{ p.sku|escapejs }}',
+                                            barcode: '{{ p.barcode|default:''|escapejs }}',
+                                            category: '{{ p.category }}',
+                                            purchase_price: '{{ p.purchase_price }}',
+                                            selling_price: '{{ p.selling_price }}',
+                                            stock_quantity: '{{ p.stock_quantity }}',
+                                            min_stock_threshold: '{{ p.min_stock_threshold }}',
+                                            imageUrl: '{% if p.image %}{{ p.image.url }}{% endif %}'
+                                        }; showEditModal = true;">
+                                    <span class="material-symbols-outlined text-[20px]">edit</span>
+                                </button>
+                                <!-- حذف المنتج -->
+                                <form method="post" action="{% url 'inventory:product_delete' p.id %}" onsubmit="return confirm('تأكيد حذف هذا المنتج نهائياً؟');" class="inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="p-2 rounded-lg hover:bg-error/20 text-error transition-colors" title="حذف المنتج">
+                                        <span class="material-symbols-outlined text-[20px]">delete</span>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="8" class="p-8 text-center text-on-surface-variant italic text-xs">لا توجد منتجات مسجلة في المخزن حتى الآن</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ==================== MODALS ==================== -->
+
+    <!-- Modal 0: تزويد الشحنة وإعادة الشحن السريع (Quick Restock) -->
+    <div x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md p-4"
+         x-show="showRestockModal">
+        <div class="bg-slate-900 text-slate-100 rounded-3xl p-6 sm:p-8 max-w-sm w-full space-y-4 text-right shadow-2xl border border-slate-700" dir="rtl" @click.away="showRestockModal = false">
+            <div class="flex items-center justify-between border-b border-primary/30 pb-3">
+                <h3 class="text-xl font-extrabold text-primary flex items-center gap-2">
+                    <span class="material-symbols-outlined">add_box</span>
+                    تزويد وتعبئة مخزون
+                </h3>
+                <button type="button" @click="showRestockModal = false" class="text-slate-400 hover:text-white p-1 rounded-full hover:bg-slate-800 transition-colors">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <p class="text-xs text-slate-300">المنتج المستهدف: <span class="text-white font-bold" x-text="currentRestockProduct.name"></span></p>
+            <p class="text-xs text-slate-300">المخزون الحالي: <span class="text-primary font-bold font-mono" x-text="currentRestockProduct.stock_quantity + ' قطعة'"></span></p>
+            
+            <form method="post" :action="'/inventory/restock/' + currentRestockProduct.id + '/'" class="space-y-4 text-sm">
+                {% csrf_token %}
+                <div>
+                    <label class="block text-xs font-bold text-slate-200 mb-1">الكمية الواردة الجديدة (عدد القطع)</label>
+                    <input type="number" min="1" name="added_quantity" required placeholder="مثال: 20"
+                           class="w-full bg-slate-800 border border-slate-700 rounded-xl py-2.5 px-3.5 text-right font-mono font-bold text-xl text-primary focus:outline-none focus:border-primary">
+                </div>
+                <div class="flex gap-3 pt-2">
+                    <button type="submit" class="flex-1 bg-primary text-white py-3 rounded-2xl font-bold shadow-lg shadow-primary/25 active:scale-95 text-xs sm:text-sm">تزويد المخزون الحين</button>
+                    <button type="button" @click="showRestockModal = false" class="flex-1 bg-slate-800 border border-slate-700 py-3 rounded-2xl text-slate-300 hover:text-white text-xs sm:text-sm">إلغاء</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal 1: إضافة منتج جديد -->
+    <div x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md p-4"
+         x-show="showAddModal">
+        <div class="bg-slate-900 text-slate-100 rounded-3xl p-6 sm:p-8 max-w-lg w-full space-y-4 text-right shadow-2xl border border-slate-700 max-h-[90vh] overflow-y-auto" dir="rtl" @click.away="showAddModal = false">
+            <div class="flex items-center justify-between border-b border-slate-700/60 pb-3">
+                <h3 class="text-xl font-extrabold text-primary flex items-center gap-2">
+                    <span class="material-symbols-outlined text-2xl">add_circle</span>
+                    إضافة منتج جديد للمخزن
+                </h3>
+                <button type="button" @click="showAddModal = false" class="text-slate-400 hover:text-white p-1 rounded-full hover:bg-slate-800 transition-colors">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+
+            <form method="post" action="{% url 'inventory:product_add' %}" enctype="multipart/form-data" class="space-y-4 text-sm">
+                {% csrf_token %}
+                <div>
+                    <label class="block text-xs font-bold text-slate-200 mb-1">اسم المنتج الكامل</label>
+                    <input type="text" name="name" required placeholder="مثال: موتور رش ياماها 15 حصان" class="w-full bg-slate-800 border border-slate-700 rounded-xl py-2.5 px-3.5 text-xs text-slate-100 focus:outline-none focus:border-primary text-right font-bold placeholder:text-slate-500">
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-200 mb-1">رمز SKU (الرمز المرجعي)</label>
+                        <input type="text" name="sku" required placeholder="مثال: YMH-15HP" class="w-full bg-slate-800 border border-slate-700 rounded-xl py-2.5 px-3.5 text-xs text-slate-100 focus:outline-none focus:border-primary text-right font-mono placeholder:text-slate-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-200 mb-1">الباركود (اختياري)</label>
+                        <input type="text" name="barcode" placeholder="مثال: 6221000998877" class="w-full bg-slate-800 border border-slate-700 rounded-xl py-2.5 px-3.5 text-xs text-slate-100 focus:outline-none focus:border-primary text-right font-mono placeholder:text-slate-500">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-200 mb-1">تصنيف المنتج / الفئة</label>
+                    <select name="category" class="w-full bg-slate-800 border border-slate-700 rounded-xl py-2.5 px-3.5 text-xs text-slate-100 focus:outline-none focus:border-primary text-right font-bold">
+                        {% for code, label in category_choices %}
+                            <option value="{{ code }}" class="bg-slate-900 text-slate-100">{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- رفع صورة المنتج -->
+                <div class="bg-slate-800/80 border border-slate-700 rounded-2xl p-4 space-y-2">
+                    <label class="block text-xs font-bold text-slate-100 flex items-center gap-1">
+                        <span class="material-symbols-outlined text-base text-primary">add_a_photo</span>
+                        صورة المنتج (اختياري)
+                    </label>
+                    <input type="file" name="image" accept="image/*" class="w-full text-xs text-slate-300 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-primary/20 file:text-primary hover:file:bg-primary/30 cursor-pointer">
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-200 mb-1">سعر الشراء / التكلفة (ج.م)</label>
+                        <input type="number" step="0.01" min="0" name="purchase_price" required placeholder="0.00" class="w-full bg-slate-800 border border-slate-700 rounded-xl py-2.5 px-3.5 text-xs text-slate-100 focus:outline-none focus:border-primary text-right font-mono font-bold placeholder:text-slate-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-200 mb-1">سعر البيع للجمهور (ج.م)</label>
+                        <input type="number" step="0.01" min="0" name="selling_price" required placeholder="0.00" class="w-full bg-slate-800 border border-slate-700 rounded-xl py-2.5 px-3.5 text-xs text-primary focus:outline-none focus:border-primary text-right font-mono font-extrabold text-base placeholder:text-slate-500">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-200 mb-1">الكمية الابتدائية بالمخزن</label>
+                        <input type="number" name="stock_quantity" required value="0" class="w-full bg-slate-800 border border-slate-700 rounded-xl py-2.5 px-3.5 text-xs text-slate-100 focus:outline-none focus:border-primary text-right font-mono">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-200 mb-1">الحد الأدنى لتنبيه النفاذ</label>
+                        <input type="number" name="min_stock_threshold" required value="5" class="w-full bg-slate-800 border border-slate-700 rounded-xl py-2.5 px-3.5 text-xs text-slate-100 focus:outline-none focus:border-primary text-right font-mono">
+                    </div>
+                </div>
+
+                <div class="flex gap-3 pt-3">
+                    <button type="submit" class="flex-1 bg-primary text-white py-3 rounded-2xl font-bold shadow-lg shadow-primary/25 active:scale-95 text-xs sm:text-sm">حفظ المنتج</button>
+                    <button type="button" @click="showAddModal = false" class="flex-1 bg-slate-800 border border-slate-700 py-3 rounded-2xl text-slate-300 hover:text-white text-xs sm:text-sm">إلغاء</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal 2: تعديل المنتج وصورته -->
+    <div x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md p-4"
+         x-show="showEditModal">
+        <div class="bg-slate-900 text-slate-100 rounded-3xl p-6 sm:p-8 max-w-lg w-full space-y-4 text-right shadow-2xl border border-slate-700 max-h-[90vh] overflow-y-auto" dir="rtl" @click.away="showEditModal = false">
+            <div class="flex items-center justify-between border-b border-slate-700/60 pb-3">
+                <h3 class="text-xl font-extrabold text-emerald-400 flex items-center gap-2">
+                    <span class="material-symbols-outlined text-2xl">edit</span>
+                    تعديل بيانات المنتج
+                </h3>
+                <button type="button" @click="showEditModal = false" class="text-slate-400 hover:text-white p-1 rounded-full hover:bg-slate-800 transition-colors">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            
+            <form method="post" :action="'/inventory/update/' + currentEditProduct.id + '/'" enctype="multipart/form-data" class="space-y-4 text-sm">
+                {% csrf_token %}
+                <div>
+                    <label class="block text-xs font-bold text-slate-200 mb-1">اسم المنتج</label>
+                    <input type="text" name="name" x-model="currentEditProduct.name" required class="w-full bg-slate-800 border border-slate-700 rounded-xl py-2.5 px-3.5 text-xs text-slate-100 focus:outline-none focus:border-primary text-right font-bold">
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-200 mb-1">رمز SKU</label>
+                        <input type="text" name="sku" x-model="currentEditProduct.sku" required class="w-full bg-slate-800 border border-slate-700 rounded-xl py-2.5 px-3.5 text-xs text-slate-100 focus:outline-none focus:border-primary text-right font-mono">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-200 mb-1">الباركود</label>
+                        <input type="text" name="barcode" x-model="currentEditProduct.barcode" class="w-full bg-slate-800 border border-slate-700 rounded-xl py-2.5 px-3.5 text-xs text-slate-100 focus:outline-none focus:border-primary text-right font-mono">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-200 mb-1">التصنيف / الفئة</label>
+                    <select name="category" x-model="currentEditProduct.category" class="w-full bg-slate-800 border border-slate-700 rounded-xl py-2.5 px-3.5 text-xs text-slate-100 focus:outline-none focus:border-primary text-right font-bold">
+                        {% for code, label in category_choices %}
+                            <option value="{{ code }}" class="bg-slate-900 text-slate-100">{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- المعاينة وتعديل الصورة -->
+                <div class="bg-slate-800/80 border border-slate-700 rounded-2xl p-4 space-y-3">
+                    <label class="block text-xs font-bold text-slate-100 flex items-center gap-1">
+                        <span class="material-symbols-outlined text-base text-emerald-400">image</span>
+                        صورة المنتج الحالية والجديدة
+                    </label>
+                    <template x-if="currentEditProduct.imageUrl">
+                        <div class="flex items-center gap-3 bg-slate-900/60 p-2 rounded-xl border border-slate-700">
+                            <img :src="currentEditProduct.imageUrl" class="w-14 h-14 rounded-lg object-cover border border-slate-700">
+                            <span class="text-xs text-slate-300">الصورة الحالية مسجلة. يمكنك رفع صورة جديدة للاستبدال:</span>
+                        </div>
+                    </template>
+                    <input type="file" name="image" accept="image/*" class="w-full text-xs text-slate-300 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-emerald-500/20 file:text-emerald-400 hover:file:bg-emerald-500/30 cursor-pointer">
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-200 mb-1">سعر الشراء (التكلفة)</label>
+                        <input type="number" step="0.01" min="0" name="purchase_price" x-model="currentEditProduct.purchase_price" required class="w-full bg-slate-800 border border-slate-700 rounded-xl py-2.5 px-3.5 text-xs text-slate-100 focus:outline-none focus:border-primary text-right font-mono font-bold">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-200 mb-1">سعر البيع</label>
+                        <input type="number" step="0.01" min="0" name="selling_price" x-model="currentEditProduct.selling_price" required class="w-full bg-slate-800 border border-slate-700 rounded-xl py-2.5 px-3.5 text-xs text-emerald-400 focus:outline-none focus:border-primary text-right font-mono font-extrabold text-base">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-200 mb-1">الكمية بالمخزن</label>
+                        <input type="number" name="stock_quantity" x-model="currentEditProduct.stock_quantity" required class="w-full bg-slate-800 border border-slate-700 rounded-xl py-2.5 px-3.5 text-xs text-slate-100 focus:outline-none focus:border-primary text-right font-mono">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-200 mb-1">الحد الأدنى للتنبيه</label>
+                        <input type="number" name="min_stock_threshold" x-model="currentEditProduct.min_stock_threshold" required class="w-full bg-slate-800 border border-slate-700 rounded-xl py-2.5 px-3.5 text-xs text-slate-100 focus:outline-none focus:border-primary text-right font-mono">
+                    </div>
+                </div>
+
+                <div class="flex gap-3 pt-3">
+                    <button type="submit" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white py-3 rounded-2xl font-bold shadow-lg shadow-emerald-500/25 active:scale-95 text-xs sm:text-sm">تحديث البيانات</button>
+                    <button type="button" @click="showEditModal = false" class="flex-1 bg-slate-800 border border-slate-700 py-3 rounded-2xl text-slate-300 hover:text-white text-xs sm:text-sm">إلغاء</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal 3: تعديل الأسعار بالزيادة المئوية (%) - Bulk Percentage Hike -->
+    <div x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md p-4"
+         x-show="showBulkPriceModal">
+        <div class="bg-slate-900 text-slate-100 rounded-3xl p-6 sm:p-8 max-w-md w-full space-y-4 text-right shadow-2xl border border-slate-700" dir="rtl" @click.away="showBulkPriceModal = false">
+            <div class="flex items-center justify-between border-b border-amber-500/30 pb-3">
+                <h3 class="text-xl font-extrabold text-amber-400 flex items-center gap-2">
+                    <span class="material-symbols-outlined">trending_up</span>
+                    رفع/تعديل أسعار البضاعة بنسبة مئوية (%)
+                </h3>
+                <button type="button" @click="showBulkPriceModal = false" class="text-slate-400 hover:text-white p-1 rounded-full hover:bg-slate-800 transition-colors">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            
+            <p class="text-xs text-slate-300 leading-relaxed bg-slate-800/80 p-3 rounded-2xl border border-slate-700 font-medium">
+                💡 تتيح لك هذه الأداة رفع أو تعديل أسعار البضاعة بنسبة مئوية (مثال: <span class="text-amber-400 font-bold">+5%</span> أو <span class="text-amber-400 font-bold">+10%</span> أو <span class="text-amber-400 font-bold">+15%</span>) وتطبيقها أوتوماتيكياً.
+            </p>
+
+            <form method="post" action="{% url 'inventory:bulk_price_adjust' %}" class="space-y-4 text-sm" id="bulkPriceForm">
+                {% csrf_token %}
+
+                <!-- النسبة المئوية للزيادة -->
+                <div x-data="{ pctVal: 10 }">
+                    <label class="block text-xs font-bold text-slate-200 mb-1">النسبة المئوية للزيادة (%)</label>
+                    <div class="flex items-center gap-2">
+                        <input type="number" step="0.1" name="percentage" x-model="pctVal" required
+                               class="flex-1 bg-slate-800 border border-slate-700 rounded-xl py-2.5 px-3.5 text-right font-mono font-bold text-xl text-amber-400 focus:outline-none focus:border-amber-400">
+                        <span class="text-lg font-bold text-amber-400">%</span>
+                    </div>
+                    <!-- الاختصارات السريعة -->
+                    <div class="flex gap-2 mt-2">
+                        <button type="button" @click="pctVal = 5" class="px-2.5 py-1 rounded-xl bg-slate-800 hover:bg-amber-500/20 text-xs font-mono font-bold text-amber-400 border border-slate-700">+5%</button>
+                        <button type="button" @click="pctVal = 10" class="px-2.5 py-1 rounded-xl bg-slate-800 hover:bg-amber-500/20 text-xs font-mono font-bold text-amber-400 border border-slate-700">+10%</button>
+                        <button type="button" @click="pctVal = 15" class="px-2.5 py-1 rounded-xl bg-slate-800 hover:bg-amber-500/20 text-xs font-mono font-bold text-amber-400 border border-slate-700">+15%</button>
+                        <button type="button" @click="pctVal = 20" class="px-2.5 py-1 rounded-xl bg-slate-800 hover:bg-amber-500/20 text-xs font-mono font-bold text-amber-400 border border-slate-700">+20%</button>
+                        <button type="button" @click="pctVal = -5" class="px-2.5 py-1 rounded-xl bg-slate-800 hover:bg-rose-500/20 text-xs font-mono font-bold text-rose-400 border border-slate-700">-5% (تخفيض)</button>
+                    </div>
+                </div>
+
+                <!-- تحديد النوع: سعر البيع أو الشراء -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-200 mb-1">السعر المراد زيادته</label>
+                    <select name="price_target" class="w-full bg-slate-800 border border-slate-700 rounded-xl py-2.5 px-3.5 text-slate-100 text-xs font-bold focus:outline-none">
+                        <option value="selling" class="bg-slate-900 text-slate-100">سعر البيع فقط (تطبيق الزيادة للجمهور)</option>
+                        <option value="purchase" class="bg-slate-900 text-slate-100">سعر الشراء والتكلفة فقط</option>
+                        <option value="both" class="bg-slate-900 text-slate-100">كلاً من سعر البيع وسعر الشراء معاً</option>
+                    </select>
+                </div>
+
+                <!-- نطاق التطبيق -->
+                <div x-data="{ scopeType: 'all' }">
+                    <label class="block text-xs font-bold text-slate-200 mb-1">نطاق تطبيق الزيادة</label>
+                    <div class="space-y-2 text-xs font-medium text-slate-300">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="scope" value="all" x-model="scopeType" checked class="text-amber-500 focus:ring-0">
+                            <span>جميع منتجات المخزن كاملةً ({% for p in products %}{% if forloop.last %}{{ forloop.counter }}{% endif %}{% endfor %} منتج)</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="scope" value="selected" x-model="scopeType" class="text-amber-500 focus:ring-0">
+                            <span>المنتجات المحددة فقط بالـ Checkbox (عدد المحددة: <span class="font-bold text-amber-400 font-mono" x-text="selectedIds.length"></span>)</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="scope" value="category" x-model="scopeType" class="text-amber-500 focus:ring-0">
+                            <span>فئة محددة فقط</span>
+                        </label>
+                    </div>
+
+                    <!-- اختيار الفئة عند تحديد scope=category -->
+                    <div x-show="scopeType === 'category'" class="mt-3" style="display:none;">
+                        <label class="block text-[11px] text-slate-300 mb-1">اختر الفئة المستهدفة</label>
+                        <select name="category" class="w-full bg-slate-800 border border-slate-700 rounded-xl py-2 px-3 text-slate-100 text-xs font-bold focus:outline-none">
+                            {% for code, label in category_choices %}
+                                <option value="{{ code }}" class="bg-slate-900 text-slate-100">{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Hidden inputs for selected IDs -->
+                <template x-for="id in selectedIds" :key="id">
+                    <input type="hidden" name="selected_products" :value="id">
+                </template>
+
+                <div class="flex gap-3 pt-3">
+                    <button type="submit" class="flex-1 bg-amber-500 hover:bg-amber-400 text-slate-950 py-3 rounded-2xl font-extrabold shadow-lg shadow-amber-500/25 active:scale-95 text-xs sm:text-sm">تطبيق الزيادة الآن</button>
+                    <button type="button" @click="showBulkPriceModal = false" class="flex-1 bg-slate-800 border border-slate-700 py-3 rounded-2xl text-slate-300 hover:text-white text-xs sm:text-sm">إلغاء</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal 4: تعديل نسبة مئوية لمنتج فردي - Single Product Percentage Adjustment -->
+    <div x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md p-4"
+         x-show="showSinglePriceModal">
+        <div class="bg-slate-900 text-slate-100 rounded-3xl p-6 sm:p-8 max-w-sm w-full space-y-4 text-right shadow-2xl border border-slate-700" dir="rtl" @click.away="showSinglePriceModal = false">
+            <div class="flex items-center justify-between border-b border-amber-500/30 pb-3">
+                <h3 class="text-lg font-extrabold text-amber-400">
+                    📈 تعديل سعر منتج محدد (%)
+                </h3>
+                <button type="button" @click="showSinglePriceModal = false" class="text-slate-400 hover:text-white p-1 rounded-full hover:bg-slate-800 transition-colors">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <p class="text-xs text-slate-300">المنتج: <span class="text-white font-bold" x-text="currentSingleProduct.name"></span></p>
+            <p class="text-xs text-slate-300">سعر البيع الحالي: <span class="text-amber-400 font-extrabold font-mono text-sm" x-text="currentSingleProduct.selling_price + ' ج.م'"></span></p>
+            
+            <form method="post" :action="'/inventory/single-price-adjust/' + currentSingleProduct.id + '/'" class="space-y-4 text-sm">
+                {% csrf_token %}
+                <div>
+                    <label class="block text-xs font-bold text-slate-200 mb-1">نسبة التعديل (%)</label>
+                    <div class="flex items-center gap-2">
+                        <input type="number" step="0.1" name="percentage" required placeholder="10"
+                               class="flex-1 bg-slate-800 border border-slate-700 rounded-xl py-2.5 px-3.5 text-right font-mono font-bold text-lg text-amber-400 focus:outline-none">
+                        <span class="text-base font-bold text-amber-400">%</span>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-200 mb-1">السعر المستهدف</label>
+                    <select name="price_target" class="w-full bg-slate-800 border border-slate-700 rounded-xl py-2.5 px-3.5 text-slate-100 text-xs font-bold focus:outline-none">
+                        <option value="selling" class="bg-slate-900 text-slate-100">سعر البيع فقط</option>
+                        <option value="purchase" class="bg-slate-900 text-slate-100">سعر الشراء (التكلفة) فقط</option>
+                        <option value="both" class="bg-slate-900 text-slate-100">كلاً من سعر البيع والشراء معاً</option>
+                    </select>
+                </div>
+                <div class="flex gap-3 pt-3">
+                    <button type="submit" class="flex-1 bg-amber-500 hover:bg-amber-400 text-slate-950 py-3 rounded-2xl font-extrabold shadow-lg shadow-amber-500/25 active:scale-95 text-xs sm:text-sm">تعديل السعر</button>
+                    <button type="button" @click="showSinglePriceModal = false" class="flex-1 bg-slate-800 border border-slate-700 py-3 rounded-2xl text-slate-300 hover:text-white text-xs sm:text-sm">إلغاء</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal 5: استيراد المنتجات من ملف Excel -->
+    <div x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md p-4"
+         x-show="showExcelImportModal">
+        <div class="bg-slate-900 text-slate-100 rounded-3xl p-6 sm:p-8 max-w-lg w-full space-y-5 text-right shadow-2xl relative border border-blue-500/30" dir="rtl" @click.away="showExcelImportModal = false">
+            <div class="flex items-center justify-between border-b border-blue-500/30 pb-3">
+                <h3 class="text-xl font-extrabold text-blue-400 flex items-center gap-2">
+                    <span class="material-symbols-outlined">upload_file</span>
+                    استيراد منتجات دفعة واحدة (Excel)
+                </h3>
+                <button @click="showExcelImportModal = false" class="text-slate-400 hover:text-white p-1 rounded-full hover:bg-slate-800 transition-colors">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+
+            <div class="bg-blue-500/10 rounded-2xl p-4 border border-blue-500/20 space-y-2 text-xs text-slate-300">
+                <p class="font-bold text-blue-300 flex items-center gap-1.5">
+                    <span class="material-symbols-outlined text-base">info</span>
+                    تعليمات رفع ملف المنتجات:
+                </p>
+                <ul class="list-disc list-inside space-y-1 text-slate-300 font-medium">
+                    <li>يجب أن يحتوي ملف Excel على الأعمدة التالية بنفس الترتيب: (اسم المنتج، الباركوود، التصنيف، سعر الشراء، سعر البيع، الكمية، الحد الأدنى).</li>
+                    <li>إذا كان المنتج موجوداً مسبقاً بنفس الاسم، سيقوم النظام بتحديث بياناته وسعره وكميته تلقائياً.</li>
+                </ul>
+                <div class="pt-2">
+                    <a href="{% url 'inventory:sample_excel' %}" 
+                       class="inline-flex items-center gap-1.5 bg-blue-500/20 hover:bg-blue-500 text-blue-300 hover:text-white px-3.5 py-1.5 rounded-xl font-bold transition-all text-xs border border-blue-500/40">
+                        <span class="material-symbols-outlined text-sm">download</span>
+                        تحميل ملف النموذج التوضيحي (Sample.xlsx)
+                    </a>
+                </div>
+            </div>
+
+            <form method="post" action="{% url 'inventory:import_excel' %}" enctype="multipart/form-data" class="space-y-4 text-sm">
+                {% csrf_token %}
+                <div>
+                    <label class="block text-xs font-bold text-slate-200 mb-1.5">اختر ملف Excel (.xlsx / .xls):</label>
+                    <input type="file" name="excel_file" accept=".xlsx, .xls" required
+                           class="w-full text-xs text-slate-300 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-blue-500/20 file:text-blue-400 hover:file:bg-blue-500/30 cursor-pointer border border-white/10 rounded-xl p-2 bg-white/5">
+                </div>
+
+                <div class="flex gap-3 pt-3">
+                    <button type="submit" class="flex-1 bg-gradient-to-r from-blue-600 to-blue-500 text-white py-3 rounded-xl font-bold hover:brightness-110 shadow-lg shadow-blue-500/25 text-sm">
+                        بدء استيراد المنتجات للمخزن 🚀
+                    </button>
+                    <button type="button" @click="showExcelImportModal = false" class="px-5 bg-white/5 hover:bg-white/10 border border-white/10 py-3 rounded-xl text-slate-300 font-bold text-sm">
+                        إلغاء
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

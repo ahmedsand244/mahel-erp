@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}مولد وطباعة ملصقات الباركود - النماء{% endblock %}
+
+{% block extra_head %}
+<!-- JsBarcode Engine -->
+<script src="{% static 'vendor/js/jsbarcode.all.min.js' %}"></script>
+
+<style>
+    @media print {
+        @page {
+            size: A4 portrait;
+            margin: 5mm;
+        }
+        .no-print, header, aside, nav, button, .action-bar {
+            display: none !important;
+        }
+        html, body {
+            background: #ffffff !important;
+            color: #000000 !important;
+            padding: 0 !important;
+            margin: 0 !important;
+        }
+        .print-grid {
+            display: grid !important;
+            grid-template-columns: repeat(4, 1fr) !important;
+            gap: 6mm !important;
+            width: 100% !important;
+        }
+        .sticker-card {
+            border: 1px dashed #000000 !important;
+            background: #ffffff !important;
+            color: #000000 !important;
+            padding: 6px !important;
+            border-radius: 6px !important;
+            text-align: center !important;
+            box-shadow: none !important;
+            break-inside: avoid !important;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+{{ products_json|json_script:"products-barcode-db-json" }}
+
+<div class="space-y-6" x-data="{
+    products: JSON.parse(document.getElementById('products-barcode-db-json').textContent || '[]'),
+    selectedProductId: '{{ initial_id }}',
+    storeName: 'مؤسسة النماء للمعدات',
+    productTitle: '{{ initial_title|escapejs }}',
+    barcodeValue: '{{ initial_barcode }}',
+    priceVal: '{{ initial_price }}',
+    copiesCount: 12,
+    init() {
+        this.updateBarcode();
+    },
+    onProductChange() {
+        const p = this.products.find(item => item.id == this.selectedProductId);
+        if (p) {
+            this.productTitle = p.name;
+            this.barcodeValue = p.barcode || ('PROD-' + p.id);
+            this.priceVal = p.price;
+            this.updateBarcode();
+        }
+    },
+    updateBarcode() {
+        this.$nextTick(() => {
+            const val = this.barcodeValue || '62910001';
+            const elements = document.querySelectorAll('.barcode-svg');
+            elements.forEach(el => {
+                try {
+                    JsBarcode(el, val, {
+                        format: 'CODE128',
+                        width: 1.6,
+                        height: 48,
+                        displayValue: true,
+                        fontSize: 11,
+                        margin: 10
+                    });
+                } catch(e) {}
+            });
+        });
+    }
+}" x-init="init()" dir="rtl">
+
+    <!-- Top Action Bar (No Print) -->
+    <header class="no-print glass-card p-6 rounded-3xl border border-white/10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div>
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold mb-2">
+                <span class="material-symbols-outlined text-[16px]">label</span>
+                أداة تصميم وطباعة ملصقات الباركود
+            </div>
+            <h1 class="text-2xl font-extrabold text-on-background">مولد ملصقات الباركود (Sticker Generator)</h1>
+            <p class="text-xs text-on-surface-variant mt-1">اختر أي منتج وطبّع ملصقات الباركود للصقها على المنتجات أو الأجهزة المصلحة لسرعة البيع بالكاميرا</p>
+        </div>
+
+        <div class="flex items-center gap-3">
+            <button @click="window.print()" class="bg-primary text-white px-6 py-3 rounded-2xl font-bold hover:brightness-110 active:scale-95 transition-all flex items-center gap-2 shadow-lg shadow-primary/25 text-sm">
+                <span class="material-symbols-outlined">print</span>
+                طباعة الملصقات الآن 🖨️
+            </button>
+        </div>
+    </header>
+
+    <!-- Customization Settings Box (No Print) -->
+    <div class="no-print glass-card p-6 rounded-3xl border border-white/10 space-y-4">
+        <h3 class="text-sm font-bold text-primary flex items-center gap-2 border-b border-white/10 pb-3">
+            <span class="material-symbols-outlined text-lg">tune</span>
+            إعدادات وتخصيص الملصق
+        </h3>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <!-- Product Selector -->
+            <div>
+                <label class="block text-xs font-bold text-on-surface mb-1.5">اختر المنتج من المخزن:</label>
+                <select x-model="selectedProductId" @change="onProductChange()" class="w-full bg-surface-container-high border border-white/15 rounded-xl py-2.5 px-3 text-xs text-on-surface font-semibold focus:outline-none">
+                    <option value="">-- اختر منتجاً لتوليد الباركود --</option>
+                    <template x-for="p in products" :key="p.id">
+                        <option :value="p.id" x-text="p.name + ' (' + p.price + ' ج.م)'"></option>
+                    </template>
+                </select>
+            </div>
+
+            <!-- Custom Title -->
+            <div>
+                <label class="block text-xs font-bold text-on-surface mb-1.5">اسم المحل / العلامة التجاري:</label>
+                <input type="text" x-model="storeName" class="w-full bg-surface-container-high border border-white/15 rounded-xl py-2 px-3 text-xs font-bold text-on-surface">
+            </div>
+
+            <!-- Custom Barcode Value -->
+            <div>
+                <label class="block text-xs font-bold text-on-surface mb-1.5">كود الباركود (Barcode / SKU):</label>
+                <input type="text" x-model="barcodeValue" @input="updateBarcode()" class="w-full bg-surface-container-high border border-white/15 rounded-xl py-2 px-3 text-xs font-mono font-bold text-primary">
+            </div>
+
+            <!-- Copies Count -->
+            <div>
+                <label class="block text-xs font-bold text-on-surface mb-1.5">عدد الملصقات للطباعة:</label>
+                <input type="number" min="1" max="100" x-model="copiesCount" @input="updateBarcode()" class="w-full bg-surface-container-high border border-white/15 rounded-xl py-2 px-3 text-xs font-mono font-bold text-on-surface">
+            </div>
+        </div>
+    </div>
+
+    <!-- Live Preview & Printable Sticker Sheet -->
+    <div class="glass-card p-6 rounded-3xl border border-white/10 space-y-4">
+        <div class="no-print flex items-center justify-between border-b border-white/10 pb-3">
+            <h3 class="text-sm font-bold text-on-surface flex items-center gap-2">
+                <span class="material-symbols-outlined text-emerald-400">preview</span>
+                معاينة ورقة ملصقات الباركود الحية (<span class="font-mono text-primary font-bold" x-text="copiesCount"></span> ملصق)
+            </h3>
+        </div>
+
+        <!-- Printable Grid of Barcode Stickers -->
+        <div class="print-grid grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 p-2 bg-slate-950/40 rounded-2xl border border-white/5">
+            <template x-for="i in parseInt(copiesCount || 1)" :key="i">
+                <div class="sticker-card bg-white text-slate-900 border border-slate-300 rounded-xl p-3 text-center space-y-1 shadow-md hover:scale-[1.02] transition-transform">
+                    <p class="text-[11px] font-black text-slate-900 leading-none" x-text="storeName"></p>
+                    <p class="text-xs font-bold text-slate-800 truncate" x-text="productTitle || 'منتج عام'"></p>
+                    <div class="flex items-center justify-center my-1">
+                        <svg class="barcode-svg max-w-full h-12"></svg>
+                    </div>
+                    <div class="flex items-center justify-between border-t border-slate-200 pt-1 text-[11px] font-bold">
+                        <span class="text-slate-600 font-mono" x-text="barcodeValue"></span>
+                        <span class="text-emerald-700 font-mono font-extrabold" x-text="parseFloat(priceVal || 0).toFixed(2) + ' ج.م'"></span>
+                    </div>
+                </div>
+            </template>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

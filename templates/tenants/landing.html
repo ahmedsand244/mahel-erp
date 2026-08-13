@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" class="overflow-x-hidden w-full max-w-full" x-data="{ faqOpen: null }">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>النماء ERP & POS — أفضل نظام لإدارة المحلات والمؤسسات والمخازن والورش</title>
+    <meta name="description" content="نظام سحابي متكامل لإدارة المبيعات والمخازن والديون والورش والصيانة. تجربة مجانية لمدة 14 يوماً مع خيار شراء السورس كود الكامل.">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#F0F6FF',
+                            100: '#E0EDFF',
+                            500: '#2F81F7',
+                            600: '#1F6FEB',
+                            700: '#0969DA',
+                            900: '#0A2540',
+                        }
+                    },
+                    fontFamily: { cairo: ['Cairo', 'sans-serif'] }
+                }
+            }
+        }
+    </script>
+    <style>
+        html, body { overflow-x: hidden !important; width: 100% !important; max-width: 100% !important; margin: 0; padding: 0; }
+        body { font-family: 'Cairo', sans-serif; transition: background-color 0.3s ease, color 0.3s ease; }
+        .dark body { background-color: #0D1117; color: #F0F6FC; }
+        body:not(.dark) { background-color: #F8FAFC; color: #0F172A; }
+
+        .dark .glass-header { background: rgba(13, 17, 23, 0.85); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(48, 54, 61, 0.7); }
+        body:not(.dark) .glass-header { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(226, 232, 240, 0.8); }
+
+        .dark .glass-card { background: rgba(22, 27, 34, 0.75); backdrop-filter: blur(16px); border: 1px solid rgba(48, 54, 61, 0.8); }
+        body:not(.dark) .glass-card { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(16px); border: 1px solid rgba(226, 232, 240, 0.9); box-shadow: 0 10px 30px rgba(0,0,0,0.04); }
+
+        .glass-card:hover { border-color: rgba(47, 129, 247, 0.5); }
+        
+        .glow-effect { position: absolute; width: 100vw; max-width: 450px; height: 450px; border-radius: 50%; pointer-events: none; }
+        .dark .glow-effect { background: radial-gradient(circle, rgba(47, 129, 247, 0.15) 0%, transparent 70%); }
+        body:not(.dark) .glow-effect { background: radial-gradient(circle, rgba(47, 129, 247, 0.08) 0%, transparent 70%); }
+        
+        .gradient-text { background: linear-gradient(135deg, #2F81F7 0%, #8957E5 50%, #238636 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    </style>
+</head>
+<body class="antialiased overflow-x-hidden w-full max-w-full">
+
+    <!-- Glowing Background Orbs -->
+    <div class="glow-effect -top-20 -left-20"></div>
+
+    <!-- Header Navigation -->
+    <header class="fixed top-0 inset-x-0 z-50 glass-header">
+        <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between gap-2">
+            <div class="flex items-center gap-2 sm:gap-3 shrink-0">
+                <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-brand-600 to-blue-400 flex items-center justify-center text-white font-black text-base sm:text-xl shadow-lg shadow-brand-500/20 shrink-0">
+                    ن
+                </div>
+                <div class="text-right">
+                    <span class="text-sm sm:text-xl font-extrabold tracking-tight dark:text-white text-slate-900 block leading-none">النمـــــاء <span class="text-[9px] sm:text-xs px-1.5 py-0.5 rounded-full bg-brand-500/20 text-brand-500 border border-brand-500/30">SaaS</span></span>
+                    <span class="hidden sm:block text-[10px] dark:text-slate-400 text-slate-500 font-medium">نظام المبيعات والمخازن الذكي السحابي</span>
+                </div>
+            </div>
+
+            <nav class="hidden md:flex items-center gap-8 text-sm font-bold dark:text-slate-300 text-slate-700">
+                <a href="#features" class="hover:text-brand-500 transition-colors">المميزات</a>
+                <a href="#pricing" class="hover:text-brand-500 transition-colors">الأسعار والباقات</a>
+                <a href="#source-code" class="hover:text-brand-500 transition-colors">شراء السورس كود</a>
+                <a href="#faq" class="hover:text-brand-500 transition-colors">الأسئلة الشائعة</a>
+            </nav>
+
+            <div class="flex items-center gap-1.5 sm:gap-3 shrink-0">
+                <a href="/login/" class="px-2 py-1.5 sm:px-4 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold text-slate-800 hover:bg-slate-200/60 transition-all">
+                    تسجيل الدخول
+                </a>
+                <a href="/register/" class="px-2.5 py-1.5 sm:px-5 sm:py-2.5 rounded-xl text-xs sm:text-sm font-extrabold bg-brand-500 hover:bg-brand-600 text-white shadow-lg shadow-brand-500/30 transition-all hover:scale-[1.02] active:scale-95 flex items-center gap-1 sm:gap-2">
+                    <span>تجربة مجانية</span>
+                    <span class="material-symbols-outlined text-sm sm:text-lg">arrow_back</span>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="pt-24 sm:pt-36 pb-16 sm:pb-20 px-3 sm:px-6 lg:px-8 max-w-7xl mx-auto text-center relative z-10 w-full overflow-x-hidden">
+        <div class="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full bg-brand-500/10 border border-brand-500/30 text-brand-500 text-[11px] sm:text-sm font-bold mb-6 max-w-full leading-snug">
+            <span class="material-symbols-outlined text-sm sm:text-base shrink-0">rocket_launch</span>
+            <span class="truncate sm:whitespace-normal">ويب + ديسكتوب + موبايل أو امتلك السورس كود الكامل!</span>
+        </div>
+
+        <h1 class="text-2xl sm:text-5xl lg:text-7xl font-black dark:text-white text-slate-900 leading-tight tracking-tight mb-6 sm:mb-8">
+            النظام الأكثر سهولة وقوة <br>
+            <span class="gradient-text">لإدارة المحلات والمخازن والورش</span>
+        </h1>
+
+        <p class="dark:text-slate-400 text-slate-600 text-sm sm:text-xl max-w-3xl mx-auto leading-relaxed font-semibold mb-8 sm:mb-10 px-2">
+            أدر كافة المبيعات السريعة (POS)، المخزون والنواقص، ديون العملاء والشكك، ومصروفات الورش والصيانة من نظام سحابي فائق السرعة.
+        </p>
+
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 mb-12 sm:mb-16 w-full max-w-lg sm:max-w-none mx-auto">
+            <a href="/register/" class="w-full sm:w-auto px-5 sm:px-8 py-3.5 sm:py-4 rounded-2xl text-sm sm:text-base font-extrabold bg-gradient-to-r from-brand-500 to-blue-600 text-white shadow-xl shadow-brand-500/30 hover:shadow-brand-500/50 hover:scale-105 transition-all flex items-center justify-center gap-2 sm:gap-3">
+                <span class="material-symbols-outlined text-lg sm:text-xl">play_circle</span>
+                <span>ابدأ تجربتك المجانية (14 يوماً)</span>
+            </a>
+            <a href="#source-code" class="w-full sm:w-auto px-5 sm:px-8 py-3.5 sm:py-4 rounded-2xl text-sm sm:text-base font-bold dark:bg-slate-800/80 bg-white dark:hover:bg-slate-700/80 hover:bg-slate-100 dark:text-slate-200 text-slate-800 border dark:border-slate-700 border-slate-300 shadow-md transition-all flex items-center justify-center gap-2">
+                <span class="material-symbols-outlined text-lg sm:text-xl text-amber-500">code</span>
+                <span>شراء السورس كود الكامل</span>
+            </a>
+        </div>
+
+        <!-- Dashboard App Teaser Card -->
+        <div class="glass-card rounded-2xl sm:rounded-3xl p-2.5 sm:p-4 max-w-5xl mx-auto shadow-2xl relative overflow-hidden">
+            <div class="dark:bg-slate-900 bg-slate-100 rounded-xl sm:rounded-2xl p-3 sm:p-8 space-y-4 sm:space-y-6 text-right">
+                <div class="flex items-center justify-between border-b dark:border-slate-800 border-slate-300 pb-3">
+                    <div class="flex items-center gap-1.5">
+                        <div class="w-2.5 h-2.5 rounded-full bg-red-500"></div>
+                        <div class="w-2.5 h-2.5 rounded-full bg-amber-500"></div>
+                        <div class="w-2.5 h-2.5 rounded-full bg-green-500"></div>
+                    </div>
+                    <div class="text-[10px] sm:text-xs font-mono font-bold dark:text-slate-400 text-slate-600 dark:bg-slate-800 bg-white px-3 py-1 rounded-full border dark:border-slate-700 border-slate-300 truncate max-w-[200px] sm:max-w-none" dir="ltr">
+                        https://yourapp.com/t/mahel/dashboard/
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-center">
+                    <div class="dark:bg-slate-800/50 bg-white p-3.5 sm:p-4 rounded-xl sm:rounded-2xl border dark:border-slate-700/50 border-slate-200 shadow-sm">
+                        <span class="text-[11px] sm:text-xs dark:text-slate-400 text-slate-500 block font-bold mb-1">إجمالي المبيعات اليومية</span>
+                        <span class="text-xl sm:text-2xl font-black text-brand-500 font-mono">18,450.00 ج.م</span>
+                    </div>
+                    <div class="dark:bg-slate-800/50 bg-white p-3.5 sm:p-4 rounded-xl sm:rounded-2xl border dark:border-slate-700/50 border-slate-200 shadow-sm">
+                        <span class="text-[11px] sm:text-xs dark:text-slate-400 text-slate-500 block font-bold mb-1">القطع في المخزن</span>
+                        <span class="text-xl sm:text-2xl font-black text-emerald-500 font-mono">1,240 قطعة</span>
+                    </div>
+                    <div class="dark:bg-slate-800/50 bg-white p-3.5 sm:p-4 rounded-xl sm:rounded-2xl border dark:border-slate-700/50 border-slate-200 shadow-sm">
+                        <span class="text-[11px] sm:text-xs dark:text-slate-400 text-slate-500 block font-bold mb-1">ديون العملاء المسجلة</span>
+                        <span class="text-xl sm:text-2xl font-black text-purple-500 font-mono">14,200.00 ج.م</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Key Features Grid -->
+    <section id="features" class="py-16 sm:py-20 px-3 sm:px-6 lg:px-8 max-w-7xl mx-auto relative z-10 w-full overflow-x-hidden">
+        <div class="text-center mb-12 sm:mb-16 space-y-3">
+            <h2 class="text-xs font-black uppercase text-brand-500 tracking-widest">مميزات نظام النماء ERP</h2>
+            <h3 class="text-2xl sm:text-5xl font-black dark:text-white text-slate-900">كل ما يحتاجه نشاطك التجاري في مكان واحد</h3>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
+            <div class="glass-card rounded-2xl sm:rounded-3xl p-6 sm:p-8 space-y-4">
+                <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-brand-500/10 text-brand-500 flex items-center justify-center text-2xl sm:text-3xl border border-brand-500/20">
+                    <span class="material-symbols-outlined">point_of_sale</span>
+                </div>
+                <h4 class="text-lg sm:text-xl font-bold dark:text-white text-slate-900">شاشة بيع سريعة (POS)</h4>
+                <p class="dark:text-slate-400 text-slate-600 text-xs sm:text-sm leading-relaxed font-semibold">
+                    دعم الكاش، الفيزا، والبيع الآجل (الشكك). قراءة الباركود فوراً، طباعة الفواتير، وحساب الأرباح تلقائياً في أقل من ثانية.
+                </p>
+            </div>
+
+            <div class="glass-card rounded-2xl sm:rounded-3xl p-6 sm:p-8 space-y-4">
+                <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center text-2xl sm:text-3xl border border-emerald-500/20">
+                    <span class="material-symbols-outlined">inventory_2</span>
+                </div>
+                <h4 class="text-lg sm:text-xl font-bold dark:text-white text-slate-900">إدارة المخزون والنواقص</h4>
+                <p class="dark:text-slate-400 text-slate-600 text-xs sm:text-sm leading-relaxed font-semibold">
+                    متابعة دقيقة لكل صنف، تنبيهات تلقائية عند اقتراب مخزون أي صنف من الحد الأدنى، وإمكانية إصدار طلبات نواقص للشركات بنقرة.
+                </p>
+            </div>
+
+            <div class="glass-card rounded-2xl sm:rounded-3xl p-6 sm:p-8 space-y-4">
+                <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-purple-500/10 text-purple-500 flex items-center justify-center text-2xl sm:text-3xl border border-purple-500/20">
+                    <span class="material-symbols-outlined">menu_book</span>
+                </div>
+                <h4 class="text-lg sm:text-xl font-bold dark:text-white text-slate-900">دفتر الديون والشكك المتقدم</h4>
+                <p class="dark:text-slate-400 text-slate-600 text-xs sm:text-sm leading-relaxed font-semibold">
+                    تسجيل كافة ديون العملاء والموردين، تحديد مواعيد استحقاق السداد، وإرسال كشوفات حساب تفصيلية عبر روابط مخصصة.
+                </p>
+            </div>
+
+            <div class="glass-card rounded-2xl sm:rounded-3xl p-6 sm:p-8 space-y-4">
+                <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center text-2xl sm:text-3xl border border-amber-500/20">
+                    <span class="material-symbols-outlined">build</span>
+                </div>
+                <h4 class="text-lg sm:text-xl font-bold dark:text-white text-slate-900">إدارة صيانة الورش والمعدات</h4>
+                <p class="dark:text-slate-400 text-slate-600 text-xs sm:text-sm leading-relaxed font-semibold">
+                    نظام تذاكر صيانة كامل، متابعة مراحل الإصلاح، خصم قطع الغيار المركبة من المخزن تلقائياً وتحصيل رسوم المصنعية.
+                </p>
+            </div>
+
+            <div class="glass-card rounded-2xl sm:rounded-3xl p-6 sm:p-8 space-y-4">
+                <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-rose-500/10 text-rose-500 flex items-center justify-center text-2xl sm:text-3xl border border-rose-500/20">
+                    <span class="material-symbols-outlined">analytics</span>
+                </div>
+                <h4 class="text-lg sm:text-xl font-bold dark:text-white text-slate-900">تقارير الأرباح والمصروفات (P&L)</h4>
+                <p class="dark:text-slate-400 text-slate-600 text-xs sm:text-sm leading-relaxed font-semibold">
+                    تقرير الأرباح والخسائر الدقيق، إجمالي الإيرادات وتكلفة المباع والمصروفات التشغيلية لحساب صافي الربح الحقيقي.
+                </p>
+            </div>
+
+            <div class="glass-card rounded-2xl sm:rounded-3xl p-6 sm:p-8 space-y-4">
+                <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-cyan-500/10 text-cyan-500 flex items-center justify-center text-2xl sm:text-3xl border border-cyan-500/20">
+                    <span class="material-symbols-outlined">devices</span>
+                </div>
+                <h4 class="text-lg sm:text-xl font-bold dark:text-white text-slate-900">يعمل ويب + ديسكتوب + موبايل</h4>
+                <p class="dark:text-slate-400 text-slate-600 text-xs sm:text-sm leading-relaxed font-semibold">
+                    تستطيع فتح النظام من أي جهاز في العالم. تطبيق ديسكتوب سريع، متصفح الويب، والموبايل بنسخ آمنة ومزامنة لحظية.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section id="pricing" class="py-16 sm:py-20 px-3 sm:px-6 lg:px-8 max-w-7xl mx-auto relative z-10 w-full overflow-x-hidden">
+        <div class="text-center mb-12 sm:mb-16 space-y-3">
+            <h2 class="text-xs font-black uppercase text-brand-500 tracking-widest">باقات الاشتراكات والأسعار</h2>
+            <h3 class="text-2xl sm:text-5xl font-black dark:text-white text-slate-900">اختر الباقة المناسبة لنشاطك التجاري</h3>
+            <p class="dark:text-slate-400 text-slate-600 text-xs sm:text-sm font-semibold">كل الباقات تشمل 14 يوم تجربة مجانية بالكامل دون الحاجة لإدخال فيزا</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 max-w-4xl mx-auto">
+            <!-- Basic Plan -->
+            <div class="glass-card rounded-2xl sm:rounded-3xl p-6 sm:p-8 space-y-6 flex flex-col justify-between">
+                <div class="space-y-4">
+                    <span class="text-xs font-extrabold px-3 py-1 rounded-full dark:bg-slate-800 bg-slate-200 dark:text-slate-300 text-slate-700 dark:border-slate-700 border-slate-300 border inline-block">الباقة الأساسية</span>
+                    <div class="flex items-baseline gap-2">
+                        <span class="text-3xl sm:text-4xl font-black dark:text-white text-slate-900 font-mono">199</span>
+                        <span class="dark:text-slate-400 text-slate-600 font-bold text-xs sm:text-sm">ج.م / شهرياً</span>
+                    </div>
+                    <ul class="space-y-3 dark:text-slate-300 text-slate-700 text-xs sm:text-sm font-semibold pt-2">
+                        <li class="flex items-center gap-2">
+                            <span class="material-symbols-outlined text-emerald-500 text-base sm:text-lg">check_circle</span>
+                            <span>إدارة محل أو نشاط تجاري واحد</span>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <span class="material-symbols-outlined text-emerald-500 text-base sm:text-lg">check_circle</span>
+                            <span>شاشة البيع POS وإدارة المخزن</span>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <span class="material-symbols-outlined text-emerald-500 text-base sm:text-lg">check_circle</span>
+                            <span>إدارة ديون العملاء والموردين</span>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <span class="material-symbols-outlined text-emerald-500 text-base sm:text-lg">check_circle</span>
+                            <span>دعم تشغيل الويب والديسكتوب والموبايل</span>
+                        </li>
+                    </ul>
+                </div>
+                <a href="/register/" class="w-full py-3 sm:py-3.5 rounded-xl font-bold dark:bg-slate-800 bg-slate-200 dark:hover:bg-slate-700 hover:bg-slate-300 dark:text-white text-slate-900 text-center transition-all block border dark:border-slate-700 border-slate-300 mt-4 text-xs sm:text-sm">
+                    جرب مجاناً 14 يوم
+                </a>
+            </div>
+
+            <!-- Pro Plan (Featured) -->
+            <div class="glass-card rounded-2xl sm:rounded-3xl p-6 sm:p-8 space-y-6 flex flex-col justify-between border-2 border-brand-500 relative">
+                <div class="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full bg-brand-500 text-white font-black text-[10px] sm:text-xs shadow-lg whitespace-nowrap">
+                    🔥 الأكثر طلباً للمحلات والورش
+                </div>
+                <div class="space-y-4 pt-2">
+                    <span class="text-xs font-extrabold px-3 py-1 rounded-full bg-brand-500/20 text-brand-500 border border-brand-500/30 inline-block">الباقة الاحترافية الشاملة</span>
+                    <div class="flex items-baseline gap-2">
+                        <span class="text-3xl sm:text-4xl font-black dark:text-white text-slate-900 font-mono">299</span>
+                        <span class="dark:text-slate-400 text-slate-600 font-bold text-xs sm:text-sm">ج.م / شهرياً</span>
+                    </div>
+                    <ul class="space-y-3 dark:text-slate-300 text-slate-700 text-xs sm:text-sm font-semibold pt-2">
+                        <li class="flex items-center gap-2">
+                            <span class="material-symbols-outlined text-emerald-500 text-base sm:text-lg">check_circle</span>
+                            <span>جميع مميزات الباقة الأساسية</span>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <span class="material-symbols-outlined text-emerald-500 text-base sm:text-lg">check_circle</span>
+                            <span>قسم إدارة صيانة الورش والمعدات</span>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <span class="material-symbols-outlined text-emerald-500 text-base sm:text-lg">check_circle</span>
+                            <span>تقارير الأرباح والمصروفات المتقدمة (P&L)</span>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <span class="material-symbols-outlined text-emerald-500 text-base sm:text-lg">check_circle</span>
+                            <span>نسخ احتياطي تلقائي دائم ومستمر</span>
+                        </li>
+                    </ul>
+                </div>
+                <a href="/register/" class="w-full py-3 sm:py-3.5 rounded-xl font-extrabold bg-brand-500 hover:bg-brand-600 text-white text-center shadow-lg shadow-brand-500/30 transition-all block mt-4 text-xs sm:text-sm">
+                    انطلق مع التجربة المجانية 14 يوم
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- FULL SOURCE CODE LICENSE SECTION -->
+    <section id="source-code" class="py-16 sm:py-20 px-3 sm:px-6 lg:px-8 max-w-7xl mx-auto relative z-10 w-full overflow-x-hidden">
+        <div class="glass-card rounded-2xl sm:rounded-3xl p-6 sm:p-12 border-2 border-amber-500/50 bg-gradient-to-br dark:from-amber-500/10 dark:to-slate-900 from-amber-500/5 to-white relative overflow-hidden">
+            <div class="flex flex-col lg:flex-row items-center justify-between gap-6 sm:gap-8">
+                <div class="space-y-4 text-right max-w-2xl">
+                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/20 text-amber-500 border border-amber-500/30 text-[11px] sm:text-xs font-black">
+                        <span class="material-symbols-outlined text-sm sm:text-base">code</span>
+                        <span>شراء السورس كود الكامل (Full Source Code License)</span>
+                    </div>
+
+                    <h3 class="text-2xl sm:text-4xl font-black dark:text-white text-slate-900 leading-tight">
+                        هل تريد امتلاك كود النظام كاملاً وتثبيته لسيرفراتك الخاضعة لملكيتك؟
+                    </h3>
+
+                    <p class="dark:text-slate-300 text-slate-600 text-xs sm:text-base font-semibold leading-relaxed">
+                        متاح للشركات والمستثمرين والمطورين شراء كود المصدر الكامل لنظام النماء ERP & POS بشفرته البرمجية الأصلية، وتثبيته على سيرفراتكم الخاصة مع إعادة تسمية العلامة التجارية (White-Label License).
+                    </p>
+                </div>
+
+                <div class="w-full lg:w-auto text-center space-y-4">
+                    <div class="dark:bg-slate-800/80 bg-slate-100 p-5 sm:p-6 rounded-2xl border dark:border-slate-700 border-slate-300">
+                        <span class="text-xs dark:text-slate-400 text-slate-500 font-bold block mb-1">ترخيص المالك المستقل</span>
+                        <span class="text-2xl sm:text-3xl font-black text-amber-500 font-mono">شراء كود كامل</span>
+                        <span class="text-[11px] sm:text-xs dark:text-slate-400 text-slate-500 block mt-1">تواصل مباشر للتسليم والعقد</span>
+                    </div>
+
+                    <a href="https://wa.me/201011079572?text=أرغب%20في%20شراء%20السورس%20كود%20الكامل%20لنظام%20النماء%20ERP" target="_blank" class="w-full px-6 py-3.5 rounded-2xl font-extrabold bg-amber-500 hover:bg-amber-600 text-slate-950 text-center shadow-xl shadow-amber-500/20 transition-all flex items-center justify-center gap-2 text-xs sm:text-base">
+                        <span class="material-symbols-outlined text-lg sm:text-xl">chat</span>
+                        <span>اطلب شراء السورس كود الآن</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ Accordion -->
+    <section id="faq" class="py-16 sm:py-20 px-3 sm:px-6 lg:px-8 max-w-4xl mx-auto relative z-10 w-full overflow-x-hidden">
+        <div class="text-center mb-12 sm:mb-16 space-y-3">
+            <h2 class="text-xs font-black uppercase text-brand-500 tracking-widest">الأسئلة الشائعة</h2>
+            <h3 class="text-2xl sm:text-4xl font-black dark:text-white text-slate-900">إجابات على أسئلتك قبل البدء</h3>
+        </div>
+
+        <div class="space-y-3 sm:space-y-4">
+            <div class="glass-card rounded-xl sm:rounded-2xl p-4 sm:p-6 cursor-pointer" @click="faqOpen = faqOpen === 1 ? null : 1">
+                <div class="flex items-center justify-between font-bold text-sm sm:text-lg dark:text-white text-slate-900">
+                    <span>هل يحتاج النظام تثبيت أجهزة معقدة؟</span>
+                    <span class="material-symbols-outlined text-base sm:text-xl" x-text="faqOpen === 1 ? 'remove' : 'add'"></span>
+                </div>
+                <div x-show="faqOpen === 1" class="mt-3 dark:text-slate-400 text-slate-600 text-xs sm:text-sm leading-relaxed font-semibold">
+                    لا إطلاقاً، يمكنك فتح النظام فوراً من أي كمبيوتر أو لاب توب أو شاشة تاتش أو هاتف محمول عبر المتصفح أو تطبيق الديسكتوب بضغط زر واحدة.
+                </div>
+            </div>
+
+            <div class="glass-card rounded-xl sm:rounded-2xl p-4 sm:p-6 cursor-pointer" @click="faqOpen = faqOpen === 2 ? null : 2">
+                <div class="flex items-center justify-between font-bold text-sm sm:text-lg dark:text-white text-slate-900">
+                    <span>ماذا يحدث بعد انتهاء الـ 14 يوم التجريبية؟</span>
+                    <span class="material-symbols-outlined text-base sm:text-xl" x-text="faqOpen === 2 ? 'remove' : 'add'"></span>
+                </div>
+                <div x-show="faqOpen === 2" class="mt-3 dark:text-slate-400 text-slate-600 text-xs sm:text-sm leading-relaxed font-semibold">
+                    خلال فترة التجربة 14 يوماً تكون كل مميزات النظام متاحة مجاناً 100%. عند انتهاء الفترة تستطيع اختيار الباقة المناسبة وتجديد الاشتراك دون أي فقدان لبياناتك.
+                </div>
+            </div>
+
+            <div class="glass-card rounded-xl sm:rounded-2xl p-4 sm:p-6 cursor-pointer" @click="faqOpen = faqOpen === 3 ? null : 3">
+                <div class="flex items-center justify-between font-bold text-sm sm:text-lg dark:text-white text-slate-900">
+                    <span>هل ينفع أشتري الكود البرمجي كاملاً وتثبيته في سيرفراتي؟</span>
+                    <span class="material-symbols-outlined text-base sm:text-xl" x-text="faqOpen === 3 ? 'remove' : 'add'"></span>
+                </div>
+                <div x-show="faqOpen === 3" class="mt-3 dark:text-slate-400 text-slate-600 text-xs sm:text-sm leading-relaxed font-semibold">
+                    نعم، متاح ترخيص شراء الكود المصدري الكامل (Full Source Code License) شاملاً شفرة Django وتطبيق الديسكتوب وقاعدة البيانات لرفعه على سيرفراتك وإعادة بيعه أو استخدامه بحرية.
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="border-t dark:border-slate-800 border-slate-200 dark:bg-slate-950 bg-slate-100 py-8 sm:py-12 px-4 sm:px-6 lg:px-8 text-center dark:text-slate-500 text-slate-600 text-xs font-semibold relative z-10 w-full overflow-x-hidden">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div>
+                © 2026 النماء SaaS — جميع الحقوق محفوظة.
+            </div>
+            <div class="flex items-center gap-4 sm:gap-6 text-[11px] sm:text-xs">
+                <a href="/register/" class="text-brand-500 hover:underline">تسجيل شركة جديدة</a>
+                <a href="/login/" class="hover:text-slate-900 dark:hover:text-slate-300">تسجيل الدخول</a>
+                <a href="#source-code" class="text-amber-500 hover:underline">شراء الكود الكامل</a>
+            </div>
+        </div>
+    </footer>
+
+</body>
+</html>

@@ -1,0 +1,897 @@
+{% extends "base.html" %}
+
+{% block title %}كشف الحسابات والديون - النماء{% endblock %}
+
+{% block content %}
+<div x-data="{ 
+    activeTab: 'customers', 
+    filterStatus: 'all',
+    searchQuery: '',
+    showPayModal: false, 
+    showPaySupplierModal: false,
+    showAddPartyModal: false,
+    showAddDebtModal: false,
+    showAddSupplierDebtModal: false,
+    selectedCustomer: { id: '', name: '', balance: 0 }, 
+    selectedSupplier: { id: '', name: '', balance: 0 },
+    payAmount: '',
+    partyType: 'customer'
+}" class="space-y-8">
+
+    <!-- Top Header Banner -->
+    <header class="relative overflow-hidden bg-gradient-to-l from-surface-container-high/90 via-surface-container/80 to-surface-container-low/90 backdrop-blur-xl p-8 rounded-3xl border border-white/10 shadow-2xl" dir="rtl">
+        <div class="absolute -left-12 -top-12 w-64 h-64 bg-primary/10 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="absolute right-1/3 -bottom-12 w-64 h-64 bg-secondary/10 rounded-full blur-3xl pointer-events-none"></div>
+        
+        <div class="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+            <div class="space-y-2 text-right">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold">
+                    <span class="material-symbols-outlined text-[16px]">menu_book</span>
+                    دفتر الحسابات والديون الشامل
+                </div>
+                <h1 class="text-3xl font-extrabold text-on-background tracking-tight">الحسابات والديون (الشكك والتوريد)</h1>
+                <p class="text-sm text-on-surface-variant max-w-2xl leading-relaxed">
+                    متابعة دقيقة لمستحقات العملاء (الشكك)، حسابات الموردين والتوريدات الآجلة، وتسجيل التحصيلات والدفعات بكفاءة عالية.
+                </p>
+            </div>
+            
+            <div class="flex items-center gap-2.5 flex-wrap w-full md:w-auto">
+                <a href="{% url 'ledger:export_customers_excel' %}" 
+                   class="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 px-4 py-3 rounded-2xl font-bold hover:bg-emerald-500 hover:text-white transition-all flex items-center justify-center gap-1.5 text-xs sm:text-sm shadow-sm"
+                   title="تصدير جميع ديون العملاء لملف Excel">
+                    <span class="material-symbols-outlined text-[18px]">download</span>
+                    ديون العملاء Excel 📊
+                </a>
+
+                <a href="{% url 'ledger:export_suppliers_excel' %}" 
+                   class="bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border border-indigo-500/30 px-4 py-3 rounded-2xl font-bold hover:bg-indigo-500 hover:text-white transition-all flex items-center justify-center gap-1.5 text-xs sm:text-sm shadow-sm"
+                   title="تصدير جميع مستحقات الموردين لملف Excel">
+                    <span class="material-symbols-outlined text-[18px]">download</span>
+                    مستحقات الموردين Excel 📊
+                </a>
+
+                <button @click="partyType = 'customer'; showAddPartyModal = true" 
+                        class="w-full md:w-auto bg-gradient-to-r from-primary to-primary-container text-on-primary px-5 py-3 rounded-2xl font-bold hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-2 text-sm shadow-xl shadow-primary/25">
+                    <span class="material-symbols-outlined text-[20px]">person_add</span>
+                    إضافة حساب جديد
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Financial KPI Summary Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5" dir="rtl">
+        
+        <!-- Card 1: Customer Receivables -->
+        <div class="glass-card p-6 rounded-2xl border border-white/10 relative overflow-hidden group hover:border-primary/30 transition-all shadow-lg">
+            <div class="flex items-center justify-between mb-4">
+                <span class="text-xs font-bold text-on-surface-variant">مستحقات العملاء (الشكك)</span>
+                <div class="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
+                    <span class="material-symbols-outlined text-xl">account_balance_wallet</span>
+                </div>
+            </div>
+            <div class="space-y-1">
+                <div class="text-2xl font-extrabold font-mono text-primary tracking-tight">
+                    {{ total_customer_debt|floatformat:2 }} <span class="text-xs font-normal text-on-surface-variant">ج.م</span>
+                </div>
+                <div class="flex items-center justify-between text-[11px] text-on-surface-variant/80 pt-2 border-t border-white/5">
+                    <span>العملاء المدينون</span>
+                    <span class="font-bold font-mono text-primary bg-primary/10 px-2 py-0.5 rounded-md">{{ customers_with_debt_count }} عميل</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 2: Supplier Payables -->
+        <div class="glass-card p-6 rounded-2xl border border-white/10 relative overflow-hidden group hover:border-error/30 transition-all shadow-lg">
+            <div class="flex items-center justify-between mb-4">
+                <span class="text-xs font-bold text-on-surface-variant">ديون ومستحقات الموردين</span>
+                <div class="w-10 h-10 rounded-xl bg-error/10 border border-error/20 flex items-center justify-center text-error group-hover:scale-110 transition-transform">
+                    <span class="material-symbols-outlined text-xl">local_shipping</span>
+                </div>
+            </div>
+            <div class="space-y-1">
+                <div class="text-2xl font-extrabold font-mono text-error tracking-tight">
+                    {{ total_supplier_debt|floatformat:2 }} <span class="text-xs font-normal text-on-surface-variant">ج.م</span>
+                </div>
+                <div class="flex items-center justify-between text-[11px] text-on-surface-variant/80 pt-2 border-t border-white/5">
+                    <span>موردون لهم مستحقات</span>
+                    <span class="font-bold font-mono text-error bg-error/10 px-2 py-0.5 rounded-md">{{ suppliers_with_debt_count }} مورد</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 3: Net Balance Position -->
+        <div class="glass-card p-6 rounded-2xl border border-white/10 relative overflow-hidden group hover:border-tertiary/30 transition-all shadow-lg">
+            <div class="flex items-center justify-between mb-4">
+                <span class="text-xs font-bold text-on-surface-variant">صافي التوازن المالي</span>
+                <div class="w-10 h-10 rounded-xl bg-tertiary/10 border border-tertiary/20 flex items-center justify-center text-tertiary group-hover:scale-110 transition-transform">
+                    <span class="material-symbols-outlined text-xl">balance</span>
+                </div>
+            </div>
+            <div class="space-y-1">
+                <div class="text-2xl font-extrabold font-mono tracking-tight {% if net_balance >= 0 %}text-primary{% else %}text-error{% endif %}">
+                    {% if net_balance > 0 %}+{% endif %}{{ net_balance|floatformat:2 }} <span class="text-xs font-normal text-on-surface-variant">ج.م</span>
+                </div>
+                <div class="flex items-center justify-between text-[11px] text-on-surface-variant/80 pt-2 border-t border-white/5">
+                    <span>حالة المركز المالي</span>
+                    {% if net_balance >= 0 %}
+                        <span class="font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-md">فائض مستحقات ✓</span>
+                    {% else %}
+                        <span class="font-bold text-error bg-error/10 px-2 py-0.5 rounded-md">عجز / ديون توريد</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 4: Account Statistics -->
+        <div class="glass-card p-6 rounded-2xl border border-white/10 relative overflow-hidden group hover:border-secondary/30 transition-all shadow-lg">
+            <div class="flex items-center justify-between mb-4">
+                <span class="text-xs font-bold text-on-surface-variant">إجمالي الحسابات المسجلة</span>
+                <div class="w-10 h-10 rounded-xl bg-secondary/10 border border-secondary/20 flex items-center justify-center text-secondary group-hover:scale-110 transition-transform">
+                    <span class="material-symbols-outlined text-xl">groups</span>
+                </div>
+            </div>
+            <div class="space-y-1">
+                <div class="text-2xl font-extrabold font-mono text-on-surface tracking-tight">
+                    {{ customers|length|add:suppliers|length }} <span class="text-xs font-normal text-on-surface-variant">حساب</span>
+                </div>
+                <div class="flex items-center justify-between text-[11px] text-on-surface-variant/80 pt-2 border-t border-white/5 font-mono">
+                    <span>{{ customers|length }} عميل</span>
+                    <span>•</span>
+                    <span>{{ suppliers|length }} مورد</span>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Search Toolbar & Filter Controls -->
+    <div class="glass-card p-4 rounded-2xl border border-white/5 flex flex-col md:flex-row items-center justify-between gap-4" dir="rtl">
+        <!-- Live Search Input -->
+        <div class="relative w-full md:w-96">
+            <input type="text" 
+                   x-model="searchQuery" 
+                   placeholder="ابحث باسم الحساب، رقم الهاتف، العنوان، أو المزرعة..." 
+                   class="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 px-4 pr-10 text-sm text-on-surface focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all placeholder:text-on-surface-variant/50">
+            <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-lg pointer-events-none">search</span>
+            <button x-show="searchQuery.length > 0" @click="searchQuery = ''" class="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-on-surface">
+                <span class="material-symbols-outlined text-base">close</span>
+            </button>
+        </div>
+
+        <!-- Filter Status Buttons -->
+        <div class="flex items-center gap-2 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
+            <span class="text-xs text-on-surface-variant font-bold ml-2 whitespace-nowrap">تصفية حسب الحالة:</span>
+            <button @click="filterStatus = 'all'" 
+                    class="px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap"
+                    :class="filterStatus === 'all' ? 'bg-primary text-on-primary shadow-md shadow-primary/20' : 'bg-white/5 text-on-surface-variant hover:bg-white/10'">
+                الكل
+            </button>
+            <button @click="filterStatus = 'debt_only'" 
+                    class="px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5"
+                    :class="filterStatus === 'debt_only' ? 'bg-error text-white shadow-md shadow-error/20' : 'bg-white/5 text-on-surface-variant hover:bg-white/10'">
+                <span class="w-2 h-2 rounded-full bg-error animate-pulse"></span>
+                عليهم ديون فقط
+            </button>
+            <button @click="filterStatus = 'settled_only'" 
+                    class="px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5"
+                    :class="filterStatus === 'settled_only' ? 'bg-primary/20 text-primary border border-primary/30' : 'bg-white/5 text-on-surface-variant hover:bg-white/10'">
+                <span class="w-2 h-2 rounded-full bg-primary"></span>
+                حسابات مسددة بالكامل
+            </button>
+        </div>
+    </div>
+
+    <!-- Tab Switcher -->
+    <div class="flex border-b border-white/10 gap-2 pb-1" dir="rtl">
+        <button class="px-6 py-3 rounded-t-2xl font-bold text-sm transition-all flex items-center gap-2 relative"
+                :class="activeTab === 'customers' ? 'bg-surface-container-high/90 text-primary border-t border-x border-primary/30 shadow-lg' : 'text-on-surface-variant hover:text-on-surface hover:bg-white/5'"
+                @click="activeTab = 'customers'">
+            <span class="material-symbols-outlined text-lg">person</span>
+            حسابات العملاء والمشترين (الشكك)
+            <span class="px-2 py-0.5 rounded-full text-xs font-mono bg-primary/10 text-primary border border-primary/20">
+                {{ customers|length }}
+            </span>
+        </button>
+        <button class="px-6 py-3 rounded-t-2xl font-bold text-sm transition-all flex items-center gap-2 relative"
+                :class="activeTab === 'suppliers' ? 'bg-surface-container-high/90 text-secondary border-t border-x border-secondary/30 shadow-lg' : 'text-on-surface-variant hover:text-on-surface hover:bg-white/5'"
+                @click="activeTab = 'suppliers'">
+            <span class="material-symbols-outlined text-lg">local_shipping</span>
+            حسابات الموردين والتوريدات
+            <span class="px-2 py-0.5 rounded-full text-xs font-mono bg-secondary/10 text-secondary border border-secondary/20">
+                {{ suppliers|length }}
+            </span>
+        </button>
+    </div>
+
+    <!-- Main Content Layout Grid (Table 2 cols + Sidebar 1 col) -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8" dir="rtl">
+        
+        <!-- Main Tables Section (2 cols) -->
+        <div class="lg:col-span-2 space-y-6">
+            
+            <!-- CUSTOMERS TAB CONTENT -->
+            <div x-show="activeTab === 'customers'" 
+                 x-transition:enter="transition ease-out duration-200"
+                 x-transition:enter-start="opacity-0 translate-y-2"
+                 x-transition:enter-end="opacity-100 translate-y-0">
+                <div class="glass-card rounded-2xl overflow-hidden border border-white/5 shadow-xl">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-right border-collapse">
+                            <thead>
+                                <tr class="bg-surface-container-high/80 border-b border-white/10 text-xs font-bold text-on-surface-variant">
+                                    <th class="p-4 w-14">الحساب</th>
+                                    <th class="p-4">اسم العميل والعمل</th>
+                                    <th class="p-4">رقم الهاتف</th>
+                                    <th class="p-4">العنوان</th>
+                                    <th class="p-4">الديون المستحقة (شكك)</th>
+                                    <th class="p-4 text-center">الإجراءات والسداد</th>
+                                </tr>
+                            </thead>
+                            <tbody class="text-sm divide-y divide-white/5">
+                                {% for cust in customers %}
+                                <tr class="hover:bg-white/[0.04] transition-colors"
+                                    x-show="(filterStatus === 'all' || (filterStatus === 'debt_only' && {{ cust.balance }} > 0) || (filterStatus === 'settled_only' && {{ cust.balance }} <= 0)) && ('{{ cust.name|escapejs }} {{ cust.phone|default:'' }} {{ cust.workplace|default:'' }} {{ cust.address|default:'' }}'.toLowerCase().includes(searchQuery.toLowerCase()))">
+                                    
+                                    <!-- Avatar -->
+                                    <td class="p-4">
+                                        {% if cust.avatar %}
+                                            <img src="{{ cust.avatar.url }}" class="w-11 h-11 rounded-2xl object-cover border border-white/10 shadow-md">
+                                        {% else %}
+                                            <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/30 flex items-center justify-center text-primary font-bold text-base shadow-inner">
+                                                {{ cust.name|slice:":1" }}
+                                            </div>
+                                        {% endif %}
+                                    </td>
+
+                                    <!-- Name & Workplace -->
+                                    <td class="p-4">
+                                        <a href="{% url 'ledger:customer_detail' cust.id %}"
+                                           class="font-bold text-on-surface hover:text-primary transition-colors inline-flex items-center gap-1.5 group text-base">
+                                            {{ cust.name }}
+                                            <span class="material-symbols-outlined text-[16px] text-on-surface-variant group-hover:text-primary opacity-0 group-hover:opacity-100 transition-all">open_in_new</span>
+                                        </a>
+                                        {% if cust.workplace %}
+                                            <span class="text-xs text-on-surface-variant/80 block mt-0.5 flex items-center gap-1">
+                                                <span class="material-symbols-outlined text-[13px] text-secondary">domain</span>
+                                                {{ cust.workplace }}
+                                            </span>
+                                        {% endif %}
+                                    </td>
+
+                                    <!-- Phone -->
+                                    <td class="p-4">
+                                        {% if cust.phone %}
+                                            <span class="font-mono text-xs text-secondary bg-white/5 border border-white/10 px-2.5 py-1 rounded-lg inline-flex items-center gap-1">
+                                                <span class="material-symbols-outlined text-[13px] text-primary">phone</span>
+                                                {{ cust.phone }}
+                                            </span>
+                                        {% else %}
+                                            <span class="text-on-surface-variant/50 text-xs italic">—</span>
+                                        {% endif %}
+                                    </td>
+
+                                    <!-- Address -->
+                                    <td class="p-4 text-on-surface-variant text-xs">
+                                        {{ cust.address|default:"—" }}
+                                    </td>
+
+                                    <!-- Balance Badge -->
+                                    <td class="p-4">
+                                        {% if cust.balance > 5000 %}
+                                            <div class="inline-flex flex-col items-start">
+                                                <span class="font-extrabold font-mono text-error text-base">{{ cust.balance|floatformat:2 }} ج.م</span>
+                                                <span class="text-[10px] bg-error/15 text-error px-2 py-0.5 rounded border border-error/30 font-bold mt-0.5">⚠️ دين مرتفع</span>
+                                                {% if cust.due_date %}
+                                                    {% if cust.is_overdue %}
+                                                        <span class="text-[10px] bg-rose-500/20 text-rose-400 px-2 py-0.5 rounded border border-rose-500/40 font-bold mt-1 animate-pulse">🚨 متأخر منذ {{ cust.days_overdue }} يوم ({{ cust.due_date|date:"Y-m-d" }})</span>
+                                                    {% elif cust.is_due_today %}
+                                                        <span class="text-[10px] bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded border border-amber-500/40 font-bold mt-1">🔔 مستحق اليوم ({{ cust.due_date|date:"Y-m-d" }})</span>
+                                                    {% else %}
+                                                        <span class="text-[10px] bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded border border-blue-500/40 font-bold mt-1">📅 الاستحقاق: {{ cust.due_date|date:"Y-m-d" }}</span>
+                                                    {% endif %}
+                                                {% endif %}
+                                            </div>
+                                        {% elif cust.balance > 0 %}
+                                            <div class="inline-flex flex-col items-start">
+                                                <span class="font-bold font-mono text-tertiary text-base">{{ cust.balance|floatformat:2 }} ج.م</span>
+                                                <span class="text-[10px] bg-tertiary/15 text-tertiary px-2 py-0.5 rounded border border-tertiary/30 font-bold mt-0.5">عليه دين</span>
+                                                {% if cust.due_date %}
+                                                    {% if cust.is_overdue %}
+                                                        <span class="text-[10px] bg-rose-500/20 text-rose-400 px-2 py-0.5 rounded border border-rose-500/40 font-bold mt-1 animate-pulse">🚨 متأخر منذ {{ cust.days_overdue }} يوم ({{ cust.due_date|date:"Y-m-d" }})</span>
+                                                    {% elif cust.is_due_today %}
+                                                        <span class="text-[10px] bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded border border-amber-500/40 font-bold mt-1">🔔 مستحق اليوم ({{ cust.due_date|date:"Y-m-d" }})</span>
+                                                    {% else %}
+                                                        <span class="text-[10px] bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded border border-blue-500/40 font-bold mt-1">📅 الاستحقاق: {{ cust.due_date|date:"Y-m-d" }}</span>
+                                                    {% endif %}
+                                                {% endif %}
+                                            </div>
+                                        {% else %}
+                                            <span class="inline-flex items-center gap-1 text-xs font-bold text-primary bg-primary/10 border border-primary/20 px-3 py-1 rounded-full">
+                                                <span class="material-symbols-outlined text-[14px]">check_circle</span>
+                                                مسدد بالكامل
+                                            </span>
+                                        {% endif %}
+                                    </td>
+
+                                    <!-- Actions -->
+                                    <td class="p-4">
+                                        <div class="flex items-center justify-center gap-2 flex-wrap">
+                                            <!-- تحصيل دفعة -->
+                                            <button class="bg-primary/15 text-primary border border-primary/30 hover:bg-primary hover:text-on-primary px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1 shadow-sm active:scale-95"
+                                                    @click="selectedCustomer = { id: '{{ cust.id }}', name: '{{ cust.name|escapejs }}', balance: '{{ cust.balance|floatformat:2 }}' }; payAmount = ''; showPayModal = true;">
+                                                <span class="material-symbols-outlined text-[16px]">payments</span>
+                                                تحصيل
+                                            </button>
+                                            
+                                            <!-- إضافة دين -->
+                                            <button class="bg-error/10 text-error border border-error/25 hover:bg-error hover:text-white px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1 active:scale-95"
+                                                    @click="selectedCustomer = { id: '{{ cust.id }}', name: '{{ cust.name|escapejs }}', balance: '{{ cust.balance|floatformat:2 }}' }; showAddDebtModal = true;">
+                                                <span class="material-symbols-outlined text-[16px]">add_circle</span>
+                                                إضافة دين
+                                            </button>
+
+                                            <!-- كشف حساب -->
+                                            <a href="{% url 'ledger:customer_detail' cust.id %}" 
+                                               class="p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 text-on-surface-variant hover:text-on-surface transition-colors" 
+                                               title="عرض كشف الحساب التفصيلي">
+                                                <span class="material-symbols-outlined text-[18px]">account_box</span>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                    <tr>
+                                        <td colspan="6" class="p-12 text-center text-on-surface-variant">
+                                            <span class="material-symbols-outlined text-4xl text-on-surface-variant/40 block mb-2">person_off</span>
+                                            <p class="text-sm font-bold">لا يوجد عملاء مسجلين حالياً</p>
+                                            <p class="text-xs text-on-surface-variant/70 mt-1">قم بضغط زر "إضافة حساب عميل جديد" للبدء في التسجيل</p>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SUPPLIERS TAB CONTENT -->
+            <div x-show="activeTab === 'suppliers'" 
+                 style="display: none;"
+                 x-transition:enter="transition ease-out duration-200"
+                 x-transition:enter-start="opacity-0 translate-y-2"
+                 x-transition:enter-end="opacity-100 translate-y-0">
+                <div class="glass-card rounded-2xl overflow-hidden border border-white/5 shadow-xl">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-right border-collapse">
+                            <thead>
+                                <tr class="bg-surface-container-high/80 border-b border-white/10 text-xs font-bold text-on-surface-variant">
+                                    <th class="p-4 w-14">الشعار</th>
+                                    <th class="p-4">اسم المورد والشركة</th>
+                                    <th class="p-4">رقم الهاتف</th>
+                                    <th class="p-4">المستحقات له علينا</th>
+                                    <th class="p-4 text-center">الإجراءات والسداد</th>
+                                </tr>
+                            </thead>
+                            <tbody class="text-sm divide-y divide-white/5">
+                                {% for sup in suppliers %}
+                                <tr class="hover:bg-white/[0.04] transition-colors"
+                                    x-show="(filterStatus === 'all' || (filterStatus === 'debt_only' && {{ sup.balance }} > 0) || (filterStatus === 'settled_only' && {{ sup.balance }} <= 0)) && ('{{ sup.name|escapejs }} {{ sup.phone|default:'' }} {{ sup.company|default:'' }} {{ sup.address|default:'' }}'.toLowerCase().includes(searchQuery.toLowerCase()))">
+                                    
+                                    <!-- Avatar -->
+                                    <td class="p-4">
+                                        {% if sup.avatar %}
+                                            <img src="{{ sup.avatar.url }}" class="w-11 h-11 rounded-2xl object-cover border border-white/10 shadow-md">
+                                        {% else %}
+                                            <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-secondary/20 to-secondary/5 border border-secondary/30 flex items-center justify-center text-secondary font-bold text-base shadow-inner">
+                                                {{ sup.name|slice:":1" }}
+                                            </div>
+                                        {% endif %}
+                                    </td>
+
+                                    <!-- Name & Company -->
+                                    <td class="p-4">
+                                        <a href="{% url 'ledger:supplier_detail' sup.id %}"
+                                           class="font-bold text-on-surface hover:text-primary transition-colors inline-flex items-center gap-1.5 group text-base">
+                                            {{ sup.name }}
+                                            <span class="material-symbols-outlined text-[16px] text-on-surface-variant group-hover:text-primary opacity-0 group-hover:opacity-100 transition-all">open_in_new</span>
+                                        </a>
+                                        {% if sup.company %}
+                                            <span class="text-xs text-on-surface-variant/80 block mt-0.5 flex items-center gap-1">
+                                                <span class="material-symbols-outlined text-[13px] text-secondary">factory</span>
+                                                {{ sup.company }}
+                                            </span>
+                                        {% endif %}
+                                    </td>
+
+                                    <!-- Phone -->
+                                    <td class="p-4">
+                                        {% if sup.phone %}
+                                            <span class="font-mono text-xs text-secondary bg-white/5 border border-white/10 px-2.5 py-1 rounded-lg inline-flex items-center gap-1">
+                                                <span class="material-symbols-outlined text-[13px] text-secondary">phone</span>
+                                                {{ sup.phone }}
+                                            </span>
+                                        {% else %}
+                                            <span class="text-on-surface-variant/50 text-xs italic">—</span>
+                                        {% endif %}
+                                    </td>
+
+                                    <!-- Balance Badge -->
+                                    <td class="p-4">
+                                        {% if sup.balance > 0 %}
+                                            <div class="inline-flex flex-col items-start">
+                                                <span class="font-extrabold font-mono text-error text-base">{{ sup.balance|floatformat:2 }} ج.م</span>
+                                                <span class="text-[10px] bg-error/15 text-error px-2 py-0.5 rounded border border-error/30 font-bold mt-0.5">مستحق له علينا</span>
+                                                {% if sup.due_date %}
+                                                    {% if sup.is_overdue %}
+                                                        <span class="text-[10px] bg-rose-500/20 text-rose-400 px-2 py-0.5 rounded border border-rose-500/40 font-bold mt-1 animate-pulse">🚨 متأخر منذ {{ sup.days_overdue }} يوم ({{ sup.due_date|date:"Y-m-d" }})</span>
+                                                    {% elif sup.is_due_today %}
+                                                        <span class="text-[10px] bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded border border-amber-500/40 font-bold mt-1">🔔 مستحق اليوم ({{ sup.due_date|date:"Y-m-d" }})</span>
+                                                    {% else %}
+                                                        <span class="text-[10px] bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded border border-blue-500/40 font-bold mt-1">📅 الاستحقاق: {{ sup.due_date|date:"Y-m-d" }}</span>
+                                                    {% endif %}
+                                                {% endif %}
+                                            </div>
+                                        {% else %}
+                                            <span class="inline-flex items-center gap-1 text-xs font-bold text-primary bg-primary/10 border border-primary/20 px-3 py-1 rounded-full">
+                                                <span class="material-symbols-outlined text-[14px]">check_circle</span>
+                                                لا توجد ديون
+                                            </span>
+                                        {% endif %}
+                                    </td>
+
+                                    <!-- Actions -->
+                                    <td class="p-4">
+                                        <div class="flex items-center justify-center gap-2 flex-wrap">
+                                            <!-- سداد دفعة -->
+                                            <button class="bg-primary/15 text-primary border border-primary/30 hover:bg-primary hover:text-on-primary px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1 shadow-sm active:scale-95"
+                                                    @click="selectedSupplier = { id: '{{ sup.id }}', name: '{{ sup.name|escapejs }}', balance: '{{ sup.balance|floatformat:2 }}' }; payAmount = ''; showPaySupplierModal = true;">
+                                                <span class="material-symbols-outlined text-[16px]">payments</span>
+                                                سداد للمورد
+                                            </button>
+                                            
+                                            <!-- إضافة مستحقات بضاعة -->
+                                            <button class="bg-error/10 text-error border border-error/25 hover:bg-error hover:text-white px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1 active:scale-95"
+                                                    @click="selectedSupplier = { id: '{{ sup.id }}', name: '{{ sup.name|escapejs }}', balance: '{{ sup.balance|floatformat:2 }}' }; showAddSupplierDebtModal = true;">
+                                                <span class="material-symbols-outlined text-[16px]">add_circle</span>
+                                                إضافة دين
+                                            </button>
+
+                                            <!-- كشف حساب -->
+                                            <a href="{% url 'ledger:supplier_detail' sup.id %}" 
+                                               class="p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 text-on-surface-variant hover:text-on-surface transition-colors" 
+                                               title="عرض كشف حساب المورد">
+                                                <span class="material-symbols-outlined text-[18px]">account_box</span>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                    <tr>
+                                        <td colspan="5" class="p-12 text-center text-on-surface-variant">
+                                            <span class="material-symbols-outlined text-4xl text-on-surface-variant/40 block mb-2">local_shipping</span>
+                                            <p class="text-sm font-bold">لا يوجد موردين مسجلين حالياً</p>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Sidebar Timeline: Recent Financial Activity Log (1 col) -->
+        <div class="space-y-6">
+            <div class="glass-card rounded-2xl p-6 border border-white/5 shadow-xl sticky top-24">
+                <div class="flex items-center justify-between mb-4 border-b border-white/10 pb-3">
+                    <h3 class="text-base font-extrabold text-on-surface flex items-center gap-2">
+                        <span class="material-symbols-outlined text-primary">history</span>
+                        سجل الحركات الأخير
+                    </h3>
+                    <span class="text-[11px] bg-white/5 border border-white/10 text-on-surface-variant px-2.5 py-0.5 rounded-full font-mono">
+                        أحدث {{ transactions|length }} حركة
+                    </span>
+                </div>
+
+                <div class="space-y-3 max-h-[620px] overflow-y-auto pr-1">
+                    {% for tx in transactions %}
+                        <div class="p-3.5 bg-white/[0.03] hover:bg-white/[0.06] border border-white/5 rounded-2xl text-xs flex items-center justify-between gap-3 transition-all">
+                            
+                            <div class="flex items-center gap-3">
+                                <!-- Direction Icon -->
+                                <div class="w-8 h-8 rounded-xl flex items-center justify-center shrink-0
+                                    {% if tx.transaction_type == 'pay_received' or tx.transaction_type == 'pay_sent' %}bg-primary/10 text-primary border border-primary/20{% else %}bg-error/10 text-error border border-error/20{% endif %}">
+                                    <span class="material-symbols-outlined text-sm">
+                                        {% if tx.transaction_type == 'pay_received' %}south_west
+                                        {% elif tx.transaction_type == 'pay_sent' %}north_west
+                                        {% else %}north_east{% endif %}
+                                    </span>
+                                </div>
+
+                                <div class="space-y-0.5">
+                                    <div class="font-bold text-on-surface truncate max-w-[130px]">
+                                        {% if tx.customer %}
+                                            <a href="{% url 'ledger:customer_detail' tx.customer.id %}" class="hover:text-primary transition-colors">
+                                                <span class="text-primary font-mono text-[10px] px-1 bg-primary/10 rounded">[عميل]</span> {{ tx.customer.name }}
+                                            </a>
+                                        {% elif tx.supplier %}
+                                            <a href="{% url 'ledger:supplier_detail' tx.supplier.id %}" class="hover:text-secondary transition-colors">
+                                                <span class="text-secondary font-mono text-[10px] px-1 bg-secondary/10 rounded">[مورد]</span> {{ tx.supplier.name }}
+                                            </a>
+                                        {% endif %}
+                                    </div>
+                                    <div class="text-[10px] text-on-surface-variant/70 flex items-center gap-1 font-mono">
+                                        <span class="material-symbols-outlined text-[12px]">schedule</span>
+                                        {{ tx.created_at|date:"Y-m-d H:i" }}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="text-left font-mono">
+                                <span class="font-extrabold text-sm block tracking-tight
+                                    {% if tx.transaction_type == 'pay_received' or tx.transaction_type == 'pay_sent' %}text-primary{% else %}text-error{% endif %}">
+                                    {% if tx.transaction_type == 'pay_received' or tx.transaction_type == 'pay_sent' %}-{% else %}+{% endif %}{{ tx.amount|floatformat:2 }} ج.م
+                                </span>
+                                {% if tx.notes %}
+                                    <span class="text-[10px] text-on-surface-variant/80 italic block truncate max-w-[110px]" title="{{ tx.notes }}">{{ tx.notes }}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% empty %}
+                        <div class="text-center py-8">
+                            <span class="material-symbols-outlined text-3xl text-on-surface-variant/30 block mb-1">receipt_long</span>
+                            <p class="text-xs text-on-surface-variant italic">لا توجد حركات مالية مسجلة بعد</p>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- ======== MODALS SYSTEM (HIGH CONTRAST & RESPONSIVE) ======== -->
+    <!-- ========================================================================= -->
+
+    <!-- Modal 1: تحصيل نقدية / سداد دين من عميل -->
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md p-4"
+         x-show="showPayModal" 
+         style="display: none;">
+        
+        <div class="bg-slate-900 text-slate-100 rounded-3xl p-6 sm:p-8 max-w-md w-full space-y-5 text-right shadow-2xl relative border border-slate-700" dir="rtl" @click.away="showPayModal = false">
+            <div class="flex items-center justify-between border-b border-slate-700/60 pb-3">
+                <h3 class="text-lg font-extrabold text-primary flex items-center gap-2">
+                    <span class="material-symbols-outlined text-2xl">payments</span>
+                    تحصيل دفعة نقدية من حساب عميل
+                </h3>
+                <button @click="showPayModal = false" class="text-slate-400 hover:text-white p-1 rounded-full hover:bg-slate-800 transition-colors">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+
+            <div class="bg-slate-800/80 rounded-2xl p-4 border border-slate-700 space-y-1">
+                <div class="text-xs text-slate-300 font-medium">العميل: <span class="text-white font-bold text-sm" x-text="selectedCustomer.name"></span></div>
+                <div class="text-xs text-slate-300 font-medium">الرصيد المترتب عليه: <span class="text-rose-400 font-extrabold font-mono text-base" x-text="selectedCustomer.balance + ' ج.م'"></span></div>
+            </div>
+
+            <form method="post" action="{% url 'ledger:collect_payment' %}" class="space-y-4 text-sm">
+                {% csrf_token %}
+                <input type="hidden" name="customer_id" :value="selectedCustomer.id">
+                
+                <div>
+                    <label class="block text-xs font-bold text-slate-200 mb-1.5">المبلغ المحصل (ج.م)</label>
+                    <input type="number" step="0.01" name="amount" x-model="payAmount" required min="0.01" placeholder="0.00"
+                           class="w-full bg-slate-800 border-2 border-primary/40 rounded-2xl py-3 px-4 focus:outline-none focus:border-primary text-right font-mono font-black text-2xl text-primary shadow-inner">
+                    
+                    <div class="flex flex-wrap gap-2 mt-2.5">
+                        <button type="button" @click="payAmount = '100'" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-mono font-bold text-slate-200 transition-all">100 ج.م</button>
+                        <button type="button" @click="payAmount = '500'" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-mono font-bold text-slate-200 transition-all">500 ج.م</button>
+                        <button type="button" @click="payAmount = '1000'" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-mono font-bold text-slate-200 transition-all">1,000 ج.م</button>
+                        <button type="button" @click="payAmount = selectedCustomer.balance" class="px-3 py-1.5 rounded-xl bg-primary/20 text-primary border border-primary/40 text-xs font-bold transition-all">المبلغ بالكامل</button>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-200 mb-1.5">ملاحظات / بيان السداد (اختياري)</label>
+                    <input type="text" name="notes" placeholder="مثال: دفعة كاش باليد" 
+                           class="w-full bg-slate-800 border border-slate-700 rounded-xl py-2.5 px-3.5 focus:outline-none focus:border-primary text-right text-xs text-slate-100 font-semibold placeholder:text-slate-500">
+                </div>
+
+                <div class="flex gap-3 pt-3">
+                    <button type="submit" class="flex-1 bg-primary text-white py-3 rounded-2xl font-bold shadow-lg shadow-primary/25 active:scale-95 text-xs sm:text-sm">
+                        تأكيد التحصيل والحفظ
+                    </button>
+                    <button type="button" @click="showPayModal = false" class="px-5 bg-slate-800 hover:bg-slate-700 border border-slate-700 py-3 rounded-2xl text-slate-300 font-bold text-xs sm:text-sm">
+                        إلغاء
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal 2: إضافة دين (شكك) جديد على عميل -->
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md p-4"
+         x-show="showAddDebtModal" 
+         style="display: none;">
+        
+        <div class="bg-slate-900 text-slate-100 rounded-3xl p-6 sm:p-8 max-w-md w-full space-y-5 text-right shadow-2xl relative border border-slate-700" dir="rtl" @click.away="showAddDebtModal = false">
+            <div class="flex items-center justify-between border-b border-rose-500/30 pb-3">
+                <h3 class="text-lg font-extrabold text-rose-400 flex items-center gap-2">
+                    <span class="material-symbols-outlined">add_circle</span>
+                    إضافة دين (شكك) جديد على عميل
+                </h3>
+                <button @click="showAddDebtModal = false" class="text-slate-400 hover:text-white p-1 rounded-full hover:bg-slate-800 transition-colors">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+
+            <div class="bg-slate-800/80 rounded-2xl p-4 border border-slate-700 space-y-1">
+                <div class="text-xs text-slate-300 font-medium">العميل: <span class="text-white font-bold text-sm" x-text="selectedCustomer.name"></span></div>
+                <div class="text-xs text-slate-300 font-medium">الرصيد الحالي: <span class="text-rose-400 font-extrabold font-mono text-base" x-text="selectedCustomer.balance + ' ج.م'"></span></div>
+            </div>
+
+            <form method="post" :action="'/ledger/add-customer-debt/' + selectedCustomer.id + '/'" class="space-y-4 text-sm">
+                {% csrf_token %}
+                <div>
+                    <label class="block text-xs font-bold text-slate-200 mb-1.5">مبلغ الدين الجديد (ج.م)</label>
+                    <input type="number" step="0.01" name="amount" required min="0.01" placeholder="0.00"
+                           class="w-full bg-slate-800 border-2 border-rose-500/40 rounded-2xl py-3 px-4 focus:outline-none focus:border-rose-400 text-right font-mono font-black text-2xl text-rose-400 shadow-inner">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-200 mb-1.5">بيان الدين (مهم للسجل والعميل)</label>
+                    <input type="text" name="notes" placeholder="مثال: فاتورة آجل — 5 أكياس سماد سوبر فوسفات" required
+                           class="w-full bg-slate-800 border border-slate-700 rounded-xl py-2.5 px-3.5 focus:outline-none focus:border-rose-400 text-right text-xs text-slate-100 font-semibold placeholder:text-slate-500">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-200 mb-1.5">موعد استحقاق السداد (اختر تاريخ التعهد بالسداد)</label>
+                    <input type="date" name="due_date"
+                           class="w-full bg-slate-800 border border-slate-700 rounded-xl py-2.5 px-3.5 focus:outline-none focus:border-rose-400 text-right text-xs text-slate-100 font-semibold">
+                </div>
+
+                <div class="flex gap-3 pt-3">
+                    <button type="submit" class="flex-1 bg-rose-600 hover:bg-rose-500 text-white py-3 rounded-2xl font-bold shadow-lg shadow-rose-500/25 active:scale-95 text-xs sm:text-sm">
+                        إضافة الدين للحساب
+                    </button>
+                    <button type="button" @click="showAddDebtModal = false" class="px-5 bg-slate-800 hover:bg-slate-700 border border-slate-700 py-3 rounded-2xl text-slate-300 font-bold text-xs sm:text-sm">
+                        إلغاء
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal 3: سداد للمورد -->
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md p-4"
+         x-show="showPaySupplierModal" 
+         style="display: none;">
+        
+        <div class="bg-slate-900 text-slate-100 rounded-3xl p-6 sm:p-8 max-w-md w-full space-y-5 text-right shadow-2xl relative border border-slate-700" dir="rtl" @click.away="showPaySupplierModal = false">
+            <div class="flex items-center justify-between border-b border-slate-700/60 pb-3">
+                <h3 class="text-lg font-extrabold text-primary flex items-center gap-2">
+                    <span class="material-symbols-outlined text-2xl">payments</span>
+                    سداد دفعة حساب للمورد
+                </h3>
+                <button @click="showPaySupplierModal = false" class="text-slate-400 hover:text-white p-1 rounded-full hover:bg-slate-800 transition-colors">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+
+            <div class="bg-slate-800/80 rounded-2xl p-4 border border-slate-700 space-y-1">
+                <div class="text-xs text-slate-300 font-medium">المورد: <span class="text-white font-bold text-sm" x-text="selectedSupplier.name"></span></div>
+                <div class="text-xs text-slate-300 font-medium">المستحقات له علينا: <span class="text-rose-400 font-extrabold font-mono text-base" x-text="selectedSupplier.balance + ' ج.م'"></span></div>
+            </div>
+
+            <form method="post" action="{% url 'ledger:pay_supplier' %}" class="space-y-4 text-sm">
+                {% csrf_token %}
+                <input type="hidden" name="supplier_id" :value="selectedSupplier.id">
+                
+                <div>
+                    <label class="block text-xs font-bold text-slate-200 mb-1.5">المبلغ المدفوع (ج.م)</label>
+                    <input type="number" step="0.01" name="amount" x-model="payAmount" required min="0.01" placeholder="0.00"
+                           class="w-full bg-slate-800 border-2 border-primary/40 rounded-2xl py-3 px-4 focus:outline-none focus:border-primary text-right font-mono font-black text-2xl text-primary shadow-inner">
+                    
+                    <div class="flex flex-wrap gap-2 mt-2.5">
+                        <button type="button" @click="payAmount = '500'" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-mono font-bold text-slate-200 transition-all">500 ج.م</button>
+                        <button type="button" @click="payAmount = '1000'" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-mono font-bold text-slate-200 transition-all">1,000 ج.م</button>
+                        <button type="button" @click="payAmount = '5000'" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-mono font-bold text-slate-200 transition-all">5,000 ج.م</button>
+                        <button type="button" @click="payAmount = selectedSupplier.balance" class="px-3 py-1.5 rounded-xl bg-primary/20 text-primary border border-primary/40 text-xs font-bold transition-all">سداد كامل المستحقات</button>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-200 mb-1.5">بيان السداد / ملاحظة (اختياري)</label>
+                    <input type="text" name="notes" placeholder="مثال: تسوية دفعة التوريد الأخير" 
+                           class="w-full bg-slate-800 border border-slate-700 rounded-xl py-2.5 px-3.5 focus:outline-none focus:border-primary text-right text-xs text-slate-100 font-semibold placeholder:text-slate-500">
+                </div>
+
+                <div class="flex gap-3 pt-3">
+                    <button type="submit" class="flex-1 bg-primary text-white py-3 rounded-2xl font-bold shadow-lg shadow-primary/25 active:scale-95 text-xs sm:text-sm">
+                        تأكيد السداد والحفظ
+                    </button>
+                    <button type="button" @click="showPaySupplierModal = false" class="px-5 bg-slate-800 hover:bg-slate-700 border border-slate-700 py-3 rounded-2xl text-slate-300 font-bold text-xs sm:text-sm">
+                        إلغاء
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal 4: إضافة دين على مورد -->
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md p-4"
+         x-show="showAddSupplierDebtModal" 
+         style="display: none;">
+        
+        <div class="bg-slate-900 text-slate-100 rounded-3xl p-6 sm:p-8 max-w-md w-full space-y-5 text-right shadow-2xl relative border border-slate-700" dir="rtl" @click.away="showAddSupplierDebtModal = false">
+            <div class="flex items-center justify-between border-b border-rose-500/30 pb-3">
+                <h3 class="text-lg font-extrabold text-rose-400 flex items-center gap-2">
+                    <span class="material-symbols-outlined">add_circle</span>
+                    تسجيل مستحقات بضاعة آجلة للمورد
+                </h3>
+                <button @click="showAddSupplierDebtModal = false" class="text-slate-400 hover:text-white p-1 rounded-full hover:bg-slate-800 transition-colors">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+
+            <div class="bg-slate-800/80 rounded-2xl p-4 border border-slate-700 space-y-1">
+                <div class="text-xs text-slate-300 font-medium">المورد: <span class="text-white font-bold text-sm" x-text="selectedSupplier.name"></span></div>
+                <div class="text-xs text-slate-300 font-medium">الرصيد الحالي: <span class="text-rose-400 font-extrabold font-mono text-base" x-text="selectedSupplier.balance + ' ج.م'"></span></div>
+            </div>
+
+            <form method="post" :action="'/ledger/add-supplier-debt/' + selectedSupplier.id + '/'" class="space-y-4 text-sm">
+                {% csrf_token %}
+                <div>
+                    <label class="block text-xs font-bold text-slate-200 mb-1.5">مبلغ البضاعة الآجلة (ج.م)</label>
+                    <input type="number" step="0.01" name="amount" required min="0.01" placeholder="0.00"
+                           class="w-full bg-slate-800 border-2 border-rose-500/40 rounded-2xl py-3 px-4 focus:outline-none focus:border-rose-400 text-right font-mono font-black text-2xl text-rose-400 shadow-inner">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-200 mb-1.5">بيان البضاعة / التوريد (مهم للسجل)</label>
+                    <input type="text" name="notes" placeholder="مثال: فاتورة توريد رقم 512 — 100 كيس سماد" required
+                           class="w-full bg-slate-800 border border-slate-700 rounded-xl py-2.5 px-3.5 focus:outline-none focus:border-rose-400 text-right text-xs text-slate-100 font-semibold placeholder:text-slate-500">
+                </div>
+
+                <div class="flex gap-3 pt-3">
+                    <button type="submit" class="flex-1 bg-rose-600 hover:bg-rose-500 text-white py-3 rounded-2xl font-bold shadow-lg shadow-rose-500/25 active:scale-95 text-xs sm:text-sm">
+                        تسجيل المستحقات
+                    </button>
+                    <button type="button" @click="showAddSupplierDebtModal = false" class="px-5 bg-slate-800 hover:bg-slate-700 border border-slate-700 py-3 rounded-2xl text-slate-300 font-bold text-xs sm:text-sm">
+                        إلغاء
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal 5: إضافة حساب عميل / مورد جديد -->
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md p-4"
+         x-show="showAddPartyModal" 
+         style="display: none;">
+        
+        <div class="bg-slate-900 text-slate-100 border border-slate-700 rounded-3xl p-6 sm:p-8 max-w-lg w-full space-y-5 text-right shadow-2xl relative max-h-[90vh] overflow-y-auto" dir="rtl" @click.away="showAddPartyModal = false">
+            
+            <div class="flex items-center justify-between border-b border-slate-700/60 pb-3">
+                <h3 class="text-xl font-extrabold text-primary flex items-center gap-2">
+                    <span class="material-symbols-outlined text-2xl">person_add</span>
+                    إضافة حساب عميل أو مورد جديد
+                </h3>
+                <button @click="showAddPartyModal = false" class="text-slate-400 hover:text-white p-1 rounded-full hover:bg-slate-800 transition-colors">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+
+            <div class="text-xs text-slate-300 bg-slate-800/80 rounded-2xl p-3.5 border border-slate-700 flex items-start gap-2.5 font-medium">
+                <span class="material-symbols-outlined text-primary text-lg shrink-0 mt-0.5">info</span>
+                <span>إذا كان الاسم مسجلاً بالفعل، سيقوم النظام تلقائياً بتحديث حسابه بدلاً من التكرار.</span>
+            </div>
+
+            <form method="post" action="{% url 'ledger:add_party' %}" enctype="multipart/form-data" class="space-y-4 text-sm" x-data="{ partyType: 'customer' }">
+                {% csrf_token %}
+                <input type="hidden" name="party_type" :value="partyType">
+                
+                <!-- Account Type Segmented Button Control -->
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-bold text-slate-200">نوع الحساب المراد إنشاؤه:</label>
+                    <div class="grid grid-cols-2 gap-2 bg-slate-800 p-1.5 rounded-2xl border border-slate-700">
+                        <button type="button" 
+                                @click="partyType = 'customer'" 
+                                class="py-2.5 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all"
+                                :class="partyType === 'customer' ? 'bg-primary text-white shadow-md' : 'text-slate-400 hover:text-slate-200'">
+                            <span class="material-symbols-outlined text-base">person</span>
+                            <span>عميل / مشترٍ (شكك)</span>
+                        </button>
+                        <button type="button" 
+                                @click="partyType = 'supplier'" 
+                                class="py-2.5 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all"
+                                :class="partyType === 'supplier' ? 'bg-amber-500 text-slate-950 shadow-md' : 'text-slate-400 hover:text-slate-200'">
+                            <span class="material-symbols-outlined text-base">local_shipping</span>
+                            <span>مورد (توريد للمخزن)</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-200 mb-1.5">الاسم الكامل (مطلوب)</label>
+                    <input type="text" name="name" required placeholder="مثال: الحاج محمد عبد الله"
+                           class="w-full bg-slate-800 border border-slate-700 rounded-xl py-2.5 px-4 focus:outline-none focus:border-primary text-right font-bold text-base text-slate-100 placeholder:text-slate-500 shadow-inner">
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-200 mb-1.5">رقم الهاتف</label>
+                        <input type="text" name="phone" placeholder="مثال: 01012345678"
+                               class="w-full bg-slate-800 border border-slate-700 rounded-xl py-2.5 px-3.5 focus:outline-none focus:border-primary text-right font-mono text-xs text-slate-100 placeholder:text-slate-500 shadow-inner">
+                    </div>
+                    
+                    <div x-show="partyType === 'customer'">
+                        <label class="block text-xs font-bold text-slate-200 mb-1.5">مكان العمل / المزرعة</label>
+                        <input type="text" name="workplace" placeholder="مثال: مزرعة النخيل بالوادي"
+                               class="w-full bg-slate-800 border border-slate-700 rounded-xl py-2.5 px-3.5 focus:outline-none focus:border-primary text-right text-xs text-slate-100 placeholder:text-slate-500 shadow-inner">
+                    </div>
+                    
+                    <div x-show="partyType === 'supplier'" style="display:none">
+                        <label class="block text-xs font-bold text-slate-200 mb-1.5">اسم الشركة / المصنع</label>
+                        <input type="text" name="company" placeholder="مثال: شركة الخليج للتوريدات"
+                               class="w-full bg-slate-800 border border-slate-700 rounded-xl py-2.5 px-3.5 focus:outline-none focus:border-primary text-right text-xs text-slate-100 placeholder:text-slate-500 shadow-inner">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-200 mb-1.5">العنوان / المنطقة</label>
+                    <input type="text" name="address" placeholder="مثال: الطريق الصحراوي الكيلو 45"
+                           class="w-full bg-slate-800 border border-slate-700 rounded-xl py-2.5 px-3.5 focus:outline-none focus:border-primary text-right text-xs text-slate-100 placeholder:text-slate-500 shadow-inner">
+                </div>
+
+                <!-- Avatar Upload -->
+                <div class="bg-slate-800/80 border border-slate-700 rounded-2xl p-4 space-y-2">
+                    <label class="block text-xs font-bold text-slate-100 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-primary text-lg">add_a_photo</span>
+                        <span x-show="partyType === 'customer'">صورة العميل (اختياري)</span>
+                        <span x-show="partyType === 'supplier'" style="display:none">شعار / صورة المورد (اختياري)</span>
+                    </label>
+                    <input type="file" name="avatar" accept="image/*" class="w-full text-xs text-slate-300 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-primary/20 file:text-primary hover:file:bg-primary/30 cursor-pointer">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-200 mb-1.5">ملاحظات خاصة</label>
+                    <textarea name="notes" rows="2" placeholder="أي ملاحظات تفصيلية..." class="w-full bg-slate-800 border border-slate-700 rounded-xl py-2.5 px-3.5 focus:outline-none focus:border-primary text-right text-xs text-slate-100 placeholder:text-slate-500 shadow-inner"></textarea>
+                </div>
+
+                <!-- Initial Balance -->
+                <div class="bg-slate-800/80 border border-slate-700 rounded-2xl p-4 space-y-2">
+                    <label class="block text-xs font-bold text-slate-100">
+                        <span x-show="partyType === 'customer'">💰 الديون المستحقة الحالية (رصيد شكك مبدئي)</span>
+                        <span x-show="partyType === 'supplier'" style="display:none">💰 المستحقات له علينا (دين مبدئي)</span>
+                    </label>
+                    <p class="text-[10px] text-slate-400">اتركه 0.00 إذا كان الحساب نظيفاً وبدون ديون سابقة</p>
+                    <div class="flex items-center gap-2">
+                        <input type="number" step="0.01" min="0" name="initial_balance" value="0.00"
+                               class="flex-1 bg-surface-container border border-white/20 rounded-xl py-2.5 px-4 focus:outline-none focus:border-primary text-right font-mono text-on-surface font-black text-lg shadow-inner">
+                        <span class="text-sm font-bold text-primary">ج.م</span>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-on-surface-variant mb-1.5">📅 موعد استحقاق السداد (اختياري)</label>
+                    <input type="date" name="due_date"
+                           class="w-full bg-surface-container-high border border-white/10 rounded-xl py-2.5 px-3.5 focus:outline-none focus:border-primary text-right text-xs text-on-surface font-semibold shadow-inner">
+                </div>
+
+                <div class="flex gap-3 pt-3">
+                    <button type="submit" class="flex-1 bg-gradient-to-r from-primary to-primary-container text-on-primary py-3 rounded-xl font-bold hover:brightness-110 shadow-lg shadow-primary/25 text-sm">
+                        حفظ وإنشاء الحساب
+                    </button>
+                    <button type="button" @click="showAddPartyModal = false" class="px-5 bg-white/5 hover:bg-white/10 border border-white/10 py-3 rounded-xl text-on-surface-variant font-bold text-sm">
+                        إلغاء
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

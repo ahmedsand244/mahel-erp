@@ -1,0 +1,132 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" class="dark">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تسجيل الدخول — النمـــــاء ERP & POS</title>
+    <link href="{% static 'vendor/css/cairo-inter.css' %}" rel="stylesheet">
+    <link href="{% static 'vendor/css/material-symbols.css' %}" rel="stylesheet">
+    <script defer src="{% static 'vendor/js/alpine.min.js' %}"></script>
+    <script src="{% static 'vendor/js/tailwind.js' %}"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#34d399',
+                        'primary-container': '#059669',
+                        'on-primary': '#022c22',
+                        background: '#0b1724',
+                        surface: '#122131',
+                        'surface-card': '#1c2b3c',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+
+<body
+    class="bg-[#0b1724] text-slate-100 font-['Cairo'] min-h-screen flex items-center justify-center p-4 antialiased relative overflow-hidden"
+    x-data="{ showPassword: false }">
+
+    <!-- Decorative Background Glass Orbs -->
+    <div class="absolute -top-32 -right-32 w-96 h-96 rounded-full bg-emerald-500/10 blur-3xl pointer-events-none"></div>
+    <div class="absolute -bottom-32 -left-32 w-96 h-96 rounded-full bg-blue-500/10 blur-3xl pointer-events-none"></div>
+
+    <div class="max-w-md w-full relative z-10 space-y-6">
+
+        <!-- Store Logo & Header -->
+        <div class="text-center space-y-2">
+            <div
+                class="w-16 h-16 rounded-3xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 mx-auto shadow-2xl">
+                <span class="material-symbols-outlined text-3xl">lock</span>
+            </div>
+            <h1 class="text-3xl font-black text-emerald-400 tracking-tight">النمـــــاء ERP</h1>
+            <p class="text-xs text-slate-400 font-semibold">نظام إدارة المحلات والمخازن والورش المتكامل</p>
+        </div>
+
+        <!-- Login Card -->
+        <div
+            class="bg-[#122131] border border-white/10 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6 relative backdrop-blur-2xl">
+
+            <div class="flex items-center justify-between border-b border-white/10 pb-4">
+                <h2 class="text-base font-extrabold text-slate-100 flex items-center gap-2">
+                    <span class="material-symbols-outlined text-emerald-400">admin_panel_settings</span>
+                    تسجيل دخول المدير
+                </h2>
+                <span
+                    class="text-[11px] bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 px-3 py-1 rounded-full font-mono font-bold">
+                    نظام محمي 🔒
+                </span>
+            </div>
+
+            <!-- Messages Alert -->
+            {% if messages %}
+            <div class="space-y-2">
+                {% for message in messages %}
+                <div class="p-3.5 rounded-2xl text-xs font-bold flex items-center gap-2 border shadow-sm
+                            {% if message.tags == 'error' %}bg-red-500/15 text-red-300 border-red-500/30
+                            {% elif message.tags == 'success' %}bg-emerald-500/15 text-emerald-300 border-emerald-500/30
+                            {% else %}bg-slate-800 text-slate-200 border-slate-700{% endif %}">
+                    <span class="material-symbols-outlined text-lg">
+                        {% if message.tags == 'error' %}warning{% else %}info{% endif %}
+                    </span>
+                    <span>{{ message }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <!-- Login Form -->
+            <form method="post" action="{% url 'login' %}" class="space-y-5 text-right">
+                {% csrf_token %}
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 mb-1.5">اسم المستخدم (Username):</label>
+                    <div class="relative">
+                        <input type="text" name="username" required placeholder="ادخل اسم المستخدم..."
+                            autocomplete="username"
+                            class="w-full bg-[#1c2b3c] border border-white/15 rounded-xl py-3 px-4 pr-10 text-white font-bold text-sm focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20 text-right placeholder:text-slate-500 shadow-inner">
+                        <span
+                            class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">person</span>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 mb-1.5">كلمة السر (Password):</label>
+                    <div class="relative">
+                        <input :type="showPassword ? 'text' : 'password'" name="password" required
+                            placeholder="ادخل كلمة السر..." autocomplete="current-password"
+                            class="w-full bg-[#1c2b3c] border border-white/15 rounded-xl py-3 px-4 pr-10 text-white font-mono font-bold text-sm focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20 text-right placeholder:text-slate-500 shadow-inner">
+                        <span
+                            class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">key</span>
+
+                        <button type="button" @click="showPassword = !showPassword"
+                            class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors">
+                            <span class="material-symbols-outlined text-lg"
+                                x-text="showPassword ? 'visibility_off' : 'visibility'"></span>
+                        </button>
+                    </div>
+                </div>
+
+
+
+                <button type="submit"
+                    class="w-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:brightness-110 text-white font-extrabold py-3.5 rounded-xl text-sm shadow-lg shadow-emerald-950/40 transition-all flex items-center justify-center gap-2 active:scale-95">
+                    <span class="material-symbols-outlined text-lg">login</span>
+                    <span>تسجيل الدخول للنظام</span>
+                </button>
+            </form>
+        </div>
+
+        <!-- Footer -->
+        <p class="text-center text-xs text-slate-500 font-semibold">مؤسسة النماء ERP © جميع الحقوق محفوظة</p>
+    </div>
+
+</body>
+
+</html>

@@ -1,0 +1,248 @@
+{% extends "base.html" %}
+
+{% block title %}حساب {{ supplier.name }} - النماء{% endblock %}
+
+{% block content %}
+<div dir="rtl">
+
+    <!-- Back Button -->
+    <a href="{% url 'ledger:ledger_list' %}"
+       class="inline-flex items-center gap-2 text-sm text-on-surface-variant hover:text-primary transition-colors mb-6 group">
+        <span class="material-symbols-outlined text-[18px] group-hover:-translate-x-1 transition-transform">arrow_forward</span>
+        العودة إلى الحسابات
+    </a>
+
+    <!-- Header Card -->
+    <div class="glass-card rounded-2xl p-8 mb-8 border border-white/5">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+            <div class="flex items-center gap-5">
+                <div class="w-16 h-16 rounded-full bg-secondary/10 border-2 border-secondary/30 flex items-center justify-center">
+                    <span class="material-symbols-outlined text-3xl text-secondary">local_shipping</span>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold text-on-background">{{ supplier.name }}</h1>
+                    {% if supplier.company %}
+                    <p class="text-sm text-on-surface-variant mt-1 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-[16px]">business</span>
+                        {{ supplier.company }}
+                    </p>
+                    {% endif %}
+                    {% if supplier.due_date %}
+                    <div class="mt-2">
+                        <span class="inline-flex items-center gap-1 font-bold text-xs px-3 py-1 rounded-full border shadow-sm
+                              {% if supplier.is_overdue %}bg-rose-500/20 text-rose-400 border-rose-500/40 animate-pulse{% elif supplier.is_due_today %}bg-amber-500/20 text-amber-400 border-amber-500/40{% else %}bg-blue-500/20 text-blue-400 border-blue-500/40{% endif %}">
+                            <span class="material-symbols-outlined text-[16px]">event_available</span>
+                            موعد استحقاق السداد للمورد: {{ supplier.due_date|date:"Y-m-d" }}
+                        </span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            <!-- Balance Badge -->
+            <div class="text-center md:text-left">
+                {% if supplier.balance > 0 %}
+                    <div class="bg-error/10 border border-error/30 rounded-2xl px-8 py-4">
+                        <p class="text-xs text-error font-bold mb-1">مستحقات له علينا</p>
+                        <p class="text-3xl font-bold font-mono text-error">{{ supplier.balance|floatformat:2 }}</p>
+                        <p class="text-sm text-error/70">ج.م</p>
+                    </div>
+                {% else %}
+                    <div class="bg-primary/10 border border-primary/30 rounded-2xl px-8 py-4">
+                        <p class="text-xs text-primary font-bold mb-1">الحساب مسدد ✓</p>
+                        <p class="text-3xl font-bold font-mono text-primary">{{ supplier.balance|floatformat:2 }}</p>
+                        <p class="text-sm text-primary/70">ج.م</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Prominent Due Date Alert Banner -->
+        {% if supplier.balance > 0 and supplier.due_date %}
+            {% if supplier.is_overdue %}
+                <div class="bg-rose-500/15 border-2 border-rose-500/40 rounded-2xl p-4 mt-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-pulse">
+                    <div class="flex items-center gap-3">
+                        <span class="material-symbols-outlined text-rose-500 text-3xl shrink-0">warning</span>
+                        <div>
+                            <h4 class="text-sm font-extrabold text-rose-400">🚨 تنبيه استحقاق سداد للمورد متأخر!</h4>
+                            <p class="text-xs text-rose-200 mt-0.5 font-medium">
+                                موعد سداد مستحقات المورد كان: <span class="font-mono font-bold text-white">{{ supplier.due_date|date:"Y-m-d" }}</span> — متأخر عن السداد منذ <span class="font-extrabold underline text-white">{{ supplier.days_overdue }} يوم</span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            {% elif supplier.is_due_today %}
+                <div class="bg-amber-500/15 border-2 border-amber-500/40 rounded-2xl p-4 mt-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div class="flex items-center gap-3">
+                        <span class="material-symbols-outlined text-amber-500 text-3xl shrink-0 animate-bounce">notifications_active</span>
+                        <div>
+                            <h4 class="text-sm font-extrabold text-amber-400">🔔 موعد سداد مستحقات المورد اليوم!</h4>
+                            <p class="text-xs text-amber-200 mt-0.5 font-medium">
+                                تاريخ الاستحقاق المحدد للمورد هو اليوم: <span class="font-mono font-bold text-white">{{ supplier.due_date|date:"Y-m-d" }}</span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            {% else %}
+                <div class="bg-blue-500/10 border border-blue-500/30 rounded-2xl p-3.5 mt-6 flex items-center gap-3">
+                    <span class="material-symbols-outlined text-blue-400 text-2xl shrink-0">event_available</span>
+                    <div>
+                        <p class="text-xs font-bold text-blue-300">
+                            موعد سداد مستحقات المورد المتفق عليه: <span class="font-mono text-white font-bold">{{ supplier.due_date|date:"Y-m-d" }}</span>
+                            <span class="text-slate-300 font-normal mr-2">(متبقي على الموعد {{ supplier.days_until_due }} يوم)</span>
+                        </p>
+                    </div>
+                </div>
+            {% endif %}
+        {% endif %}
+
+        <!-- Quick Actions -->
+        <div x-data="{ showPayModal: false, showDebtModal: false }" class="mt-6 flex flex-wrap gap-3 pt-6 border-t border-white/10">
+            <button @click="showPayModal = true"
+                    class="inline-flex items-center gap-2 bg-primary text-on-primary px-6 py-3 rounded-xl font-bold hover:brightness-110 transition-all shadow-lg shadow-primary/20">
+                <span class="material-symbols-outlined">payments</span>
+                سداد دفعة للمورد
+            </button>
+            <button @click="showDebtModal = true"
+                    class="inline-flex items-center gap-2 bg-error/10 text-error border border-error/30 px-6 py-3 rounded-xl font-bold hover:bg-error hover:text-white transition-all">
+                <span class="material-symbols-outlined">add_circle</span>
+                إضافة بضاعة آجل (دين)
+            </button>
+
+            <!-- Modal: سداد -->
+            <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+                 x-show="showPayModal" style="display:none">
+                <div class="glass-card rounded-2xl p-8 max-w-sm w-full space-y-4 text-right">
+                    <h3 class="text-xl font-bold text-on-surface border-b border-white/10 pb-2">💳 سداد لـ {{ supplier.name }}</h3>
+                    <p class="text-xs text-on-surface-variant">المستحق: <span class="text-error font-bold font-mono">{{ supplier.balance|floatformat:2 }} ج.م</span></p>
+                    <form method="post" action="{% url 'ledger:pay_supplier' %}" class="space-y-3 text-sm">
+                        {% csrf_token %}
+                        <input type="hidden" name="supplier_id" value="{{ supplier.id }}">
+                        <div>
+                            <label class="block text-xs text-on-surface-variant mb-1">المبلغ المدفوع (ج.م)</label>
+                            <input type="number" step="0.01" name="amount" required min="0.01"
+                                   class="w-full bg-white/5 border border-white/10 rounded-lg py-2.5 px-3 focus:outline-none focus:border-primary/50 text-right font-mono font-bold text-xl">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-on-surface-variant mb-1">بيان / ملاحظة</label>
+                            <input type="text" name="notes" placeholder="مثال: تسوية فاتورة أغسطس"
+                                   class="w-full bg-white/5 border border-white/10 rounded-lg py-2 px-3 focus:outline-none text-right text-xs">
+                        </div>
+                        <div class="flex gap-3 pt-2">
+                            <button type="submit" class="flex-1 bg-primary text-on-primary py-2.5 rounded-lg font-bold">سداد وحفظ</button>
+                            <button type="button" @click="showPayModal = false" class="flex-1 bg-white/5 border border-white/10 py-2.5 rounded-lg text-on-surface-variant">إلغاء</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Modal: إضافة دين مورد -->
+            <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+                 x-show="showDebtModal" style="display:none">
+                <div class="glass-card rounded-2xl p-8 max-w-sm w-full space-y-4 text-right">
+                    <h3 class="text-xl font-bold text-error border-b border-error/30 pb-2">📦 إضافة بضاعة آجل من {{ supplier.name }}</h3>
+                    <form method="post" action="{% url 'ledger:add_supplier_debt' supplier.id %}" class="space-y-3 text-sm">
+                        {% csrf_token %}
+                        <div>
+                            <label class="block text-xs text-on-surface-variant mb-1">قيمة البضاعة (ج.م)</label>
+                            <input type="number" step="0.01" name="amount" required min="0.01"
+                                   class="w-full bg-white/5 border border-error/20 rounded-lg py-2.5 px-3 focus:outline-none text-right font-mono font-bold text-xl text-error">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-on-surface-variant mb-1">بيان البضاعة (مطلوب للسجل)</label>
+                            <input type="text" name="notes" required placeholder="مثال: 50 كيس سماد NPK فاتورة رقم 142"
+                                   class="w-full bg-white/5 border border-white/10 rounded-lg py-2 px-3 focus:outline-none text-right text-xs">
+                        </div>
+                        <div class="flex gap-3 pt-2">
+                            <button type="submit" class="flex-1 bg-error text-white py-2.5 rounded-lg font-bold">تسجيل المستحقات</button>
+                            <button type="button" @click="showDebtModal = false" class="flex-1 bg-white/5 border border-white/10 py-2.5 rounded-lg text-on-surface-variant">إلغاء</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Transaction History -->
+    <div class="glass-card rounded-2xl overflow-hidden border border-white/5">
+        <div class="p-6 border-b border-white/10 flex items-center justify-between">
+            <h2 class="text-base font-bold text-on-surface flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary">history</span>
+                سجل كل المعاملات
+            </h2>
+            <span class="text-xs text-on-surface-variant bg-white/5 px-3 py-1 rounded-full">
+                {{ transactions|length }} عملية
+            </span>
+        </div>
+
+        {% if transactions %}
+        <div class="overflow-x-auto">
+            <table class="w-full text-right">
+                <thead>
+                    <tr class="bg-surface-container/50 border-b border-white/10 text-xs font-bold text-on-surface-variant">
+                        <th class="p-4">#</th>
+                        <th class="p-4">التاريخ والوقت</th>
+                        <th class="p-4">نوع العملية</th>
+                        <th class="p-4">البيان / التفاصيل</th>
+                        <th class="p-4 text-left">المبلغ</th>
+                        <th class="p-4 text-left">الرصيد بعد العملية</th>
+                    </tr>
+                </thead>
+                <tbody class="text-sm divide-y divide-white/5">
+                    {% for tx in transactions %}
+                    <tr class="hover:bg-white/[0.03] transition-colors">
+                        <td class="p-4 text-on-surface-variant text-xs font-mono">{{ forloop.counter }}</td>
+                        <td class="p-4">
+                            <div class="font-mono text-xs">
+                                <span class="text-on-surface font-bold">{{ tx.created_at|date:"Y-m-d" }}</span>
+                                <span class="text-primary block">{{ tx.created_at|date:"H:i:s" }}</span>
+                            </div>
+                        </td>
+                        <td class="p-4">
+                            {% if tx.transaction_type == 'pay_sent' %}
+                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary/10 text-primary border border-primary/20 text-xs font-bold">
+                                    <span class="material-symbols-outlined text-[13px]">south_west</span>
+                                    {{ tx.get_transaction_type_display }}
+                                </span>
+                            {% else %}
+                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-error/10 text-error border border-error/20 text-xs font-bold">
+                                    <span class="material-symbols-outlined text-[13px]">north_east</span>
+                                    {{ tx.get_transaction_type_display }}
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td class="p-4 text-on-surface-variant text-xs max-w-[200px]">
+                            {{ tx.notes|default:"—" }}
+                        </td>
+                        <td class="p-4 text-left font-mono font-bold text-base
+                            {% if tx.transaction_type == 'pay_sent' %}text-primary{% else %}text-error{% endif %}">
+                            {% if tx.transaction_type == 'pay_sent' %}-{% else %}+{% endif %}{{ tx.amount|floatformat:2 }} ج.م
+                        </td>
+                        <td class="p-4 text-left font-mono font-bold text-sm
+                            {% if tx.running_balance > 0 %}text-error{% else %}text-primary{% endif %}">
+                            {{ tx.running_balance|floatformat:2 }} ج.م
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr class="bg-surface-container/30 border-t-2 border-white/10">
+                        <td colspan="4" class="p-4 text-xs font-bold text-on-surface-variant text-right">الرصيد الحالي الإجمالي</td>
+                        <td colspan="2" class="p-4 text-left">
+                            <span class="text-xl font-bold font-mono {% if supplier.balance > 0 %}text-error{% else %}text-primary{% endif %}">
+                                {{ supplier.balance|floatformat:2 }} ج.م
+                            </span>
+                        </td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+        {% else %}
+            <div class="p-12 text-center">
+                <span class="material-symbols-outlined text-5xl text-on-surface-variant/30 block mb-3">receipt_long</span>
+                <p class="text-on-surface-variant text-sm">لا توجد معاملات مسجلة لهذا المورد بعد</p>
+                <p class="text-on-surface-variant/60 text-xs mt-1">ستظهر هنا فواتير البضاعة الآجلة ودفعات السداد</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

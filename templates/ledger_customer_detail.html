@@ -1,0 +1,398 @@
+{% extends "base.html" %}
+
+{% block title %}الملف الشخصي والحساب — {{ customer.name }} - النماء{% endblock %}
+
+{% block content %}
+<div dir="rtl" x-data="{ showPayModal: false, showDebtModal: false, showEditProfileModal: false }">
+
+    <!-- Back Button -->
+    <a href="{% url 'ledger:ledger_list' %}"
+       class="inline-flex items-center gap-2 text-sm text-on-surface-variant hover:text-primary transition-colors mb-6 group">
+        <span class="material-symbols-outlined text-[18px] group-hover:-translate-x-1 transition-transform">arrow_forward</span>
+        العودة إلى سجل الحسابات
+    </a>
+
+    <!-- Prominent Due Date Alert Banner — ABOVE profile card -->
+    {% if customer.balance > 0 and customer.due_date %}
+        {% if customer.is_overdue %}
+            <div class="bg-red-600 border-2 border-red-800 text-white rounded-2xl p-4 mb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-lg">
+                <div class="flex items-center gap-3">
+                    <span class="material-symbols-outlined text-3xl shrink-0">warning</span>
+                    <div>
+                        <h4 class="text-sm font-extrabold">🚨 تنبيه استحقاق سداد متأخر!</h4>
+                        <p class="text-xs mt-0.5 font-medium opacity-90">
+                            موعد التعهد بالسداد كان: <span class="font-mono font-bold">{{ customer.due_date|date:"Y-m-d" }}</span> — متأخر عن السداد منذ <span class="font-extrabold underline">{{ customer.days_overdue }} يوم</span>
+                        </p>
+                    </div>
+                </div>
+                <button @click="showPayModal = true" class="w-full sm:w-auto bg-white text-red-700 text-xs font-black px-5 py-2.5 rounded-xl shadow-lg shrink-0 hover:bg-red-100 transition-colors">
+                    تحصيل الدين الآن
+                </button>
+            </div>
+        {% elif customer.is_due_today %}
+            <div class="bg-amber-500 border-2 border-amber-700 text-white rounded-2xl p-4 mb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-lg">
+                <div class="flex items-center gap-3">
+                    <span class="material-symbols-outlined text-3xl shrink-0 animate-bounce">notifications_active</span>
+                    <div>
+                        <h4 class="text-sm font-extrabold">🔔 موعد استحقاق السداد اليوم!</h4>
+                        <p class="text-xs mt-0.5 font-medium opacity-90">
+                            تاريخ التعهد المحدد للسداد هو اليوم: <span class="font-mono font-bold">{{ customer.due_date|date:"Y-m-d" }}</span>
+                        </p>
+                    </div>
+                </div>
+                <button @click="showPayModal = true" class="w-full sm:w-auto bg-white text-amber-700 text-xs font-black px-5 py-2.5 rounded-xl shadow-lg shrink-0 hover:bg-amber-100 transition-colors">
+                    تحصيل الدين الآن
+                </button>
+            </div>
+        {% else %}
+            <div class="bg-blue-500 border border-blue-700 text-white rounded-2xl p-3.5 mb-4 flex items-center gap-3 shadow">
+                <span class="material-symbols-outlined text-2xl shrink-0">event_available</span>
+                <p class="text-xs font-bold">
+                    موعد التعهد بالسداد: <span class="font-mono font-bold">{{ customer.due_date|date:"Y-m-d" }}</span>
+                    <span class="font-normal opacity-80 mr-2">(متبقي {{ customer.days_until_due }} يوم)</span>
+                </p>
+            </div>
+        {% endif %}
+    {% endif %}
+
+    <!-- Header & Profile Card -->
+    <div class="glass-card rounded-2xl p-8 mb-8 border border-white/5 space-y-6">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+            <div class="flex items-center gap-5">
+                <!-- Avatar / Photo -->
+                {% if customer.avatar %}
+                    <a href="{{ customer.avatar.url }}" target="_blank" title="اضغط لتكبير الصورة">
+                        <img src="{{ customer.avatar.url }}" alt="{{ customer.name }}" 
+                             class="w-20 h-20 rounded-2xl object-cover border-2 border-primary/40 shadow-lg hover:scale-105 transition-transform">
+                    </a>
+                {% else %}
+                    <div class="w-20 h-20 rounded-2xl bg-primary/10 border-2 border-primary/30 flex items-center justify-center text-primary shadow-inner">
+                        <span class="material-symbols-outlined text-4xl">person</span>
+                    </div>
+                {% endif %}
+
+                <div class="space-y-1">
+                    <h1 class="text-2xl font-extrabold text-on-background flex items-center gap-2">
+                        {{ customer.name }}
+                        {% if customer.workplace %}
+                            <span class="text-xs bg-white/5 text-secondary border border-white/10 px-3 py-1 rounded-full font-normal">
+                                {{ customer.workplace }}
+                            </span>
+                        {% endif %}
+                    </h1>
+                    <div class="flex items-center gap-4 text-xs text-on-surface-variant flex-wrap pt-1">
+                        <span class="flex items-center gap-1">
+                            <span class="material-symbols-outlined text-[16px] text-primary">phone</span>
+                            <span class="font-mono">{{ customer.phone|default:"لا يوجد هاتف مسجل" }}</span>
+                        </span>
+                        {% if customer.address %}
+                            <span class="flex items-center gap-1">
+                                <span class="material-symbols-outlined text-[16px] text-secondary">location_on</span>
+                                {{ customer.address }}
+                            </span>
+                        {% endif %}
+                        <span class="flex items-center gap-1 text-on-surface-variant/70">
+                            <span class="material-symbols-outlined text-[16px]">calendar_today</span>
+                            تاريخ التسجيل: {{ customer.created_at|date:"Y-m-d" }}
+                        </span>
+                        {% if customer.due_date %}
+                            <span class="flex items-center gap-1 font-bold text-xs px-3 py-1 rounded-full border shadow-sm
+                                  {% if customer.is_overdue %}bg-rose-500/20 text-rose-400 border-rose-500/40 animate-pulse{% elif customer.is_due_today %}bg-amber-500/20 text-amber-400 border-amber-500/40{% else %}bg-blue-500/20 text-blue-400 border-blue-500/40{% endif %}">
+                                <span class="material-symbols-outlined text-[16px]">event_available</span>
+                                موعد الاستحقاق: {{ customer.due_date|date:"Y-m-d" }}
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Balance Badge -->
+            <div class="text-center md:text-left">
+                {% if customer.balance > 0 %}
+                    <div class="bg-error/10 border border-error/30 rounded-2xl px-8 py-4 shadow-sm">
+                        <p class="text-xs text-error font-bold mb-1">الديون المستحقة (شكك)</p>
+                        <p class="text-3xl font-extrabold font-mono text-error">{{ customer.balance|floatformat:2 }}</p>
+                        <p class="text-xs text-error/70 font-mono">جنية مصري (EGP)</p>
+                    </div>
+                {% else %}
+                    <div class="bg-primary/10 border border-primary/30 rounded-2xl px-8 py-4 shadow-sm">
+                        <p class="text-xs text-primary font-bold mb-1">الحساب مسدد ✓</p>
+                        <p class="text-3xl font-extrabold font-mono text-primary">{{ customer.balance|floatformat:2 }}</p>
+                        <p class="text-xs text-primary/70 font-mono">جنية مصري (EGP)</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- (Due Date Alert moved to above profile card) -->
+
+        <!-- Notes / Extra Details Box if present -->
+        {% if customer.notes %}
+        <div class="bg-white/5 border border-white/5 rounded-xl p-4 text-xs space-y-1">
+            <span class="font-bold text-on-surface flex items-center gap-1">
+                <span class="material-symbols-outlined text-sm text-secondary">notes</span>
+                ملاحظات وتفاصيل خاصة بالعميل:
+            </span>
+            <p class="text-on-surface-variant leading-relaxed">{{ customer.notes }}</p>
+        </div>
+        {% endif %}
+
+        <!-- Action Buttons Bar -->
+        <div class="flex flex-wrap gap-3 pt-6 border-t border-white/10">
+            <!-- تحصيل -->
+            <button @click="showPayModal = true"
+                    class="inline-flex items-center gap-2 bg-primary text-on-primary px-6 py-3 rounded-xl font-bold hover:brightness-110 transition-all shadow-lg shadow-primary/20 text-sm">
+                <span class="material-symbols-outlined">payments</span>
+                تحصيل دفعة كاش
+            </button>
+            <!-- إضافة دين -->
+            <button @click="showDebtModal = true"
+                    class="inline-flex items-center gap-2 bg-error/10 text-error border border-error/30 px-6 py-3 rounded-xl font-bold hover:bg-error hover:text-white transition-all text-sm">
+                <span class="material-symbols-outlined">add_circle</span>
+                إضافة دين جديد (شكك)
+            </button>
+            <!-- مشاركة كشف حساب للعميل -->
+            <a href="{% url 'ledger:public_customer_ledger' customer.id %}" target="_blank"
+               class="inline-flex items-center gap-2 bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-6 py-3 rounded-xl font-bold hover:bg-emerald-600 hover:text-white transition-all text-sm shadow-md">
+                <span class="material-symbols-outlined">share</span>
+                مشاركة كشف الحساب والواتساب 🔗
+            </a>
+            <!-- تعديل البيانات الشخصية والصورة -->
+            <button @click="showEditProfileModal = true"
+                    class="inline-flex items-center gap-2 bg-white/5 text-on-surface border border-white/10 px-6 py-3 rounded-xl font-bold hover:bg-white/10 transition-all text-sm mr-auto">
+                <span class="material-symbols-outlined">edit_note</span>
+                تعديل البيانات الشخصية والصورة
+            </button>
+        </div>
+    </div>
+
+    <!-- Transaction History Table -->
+    <div class="glass-card rounded-2xl overflow-hidden border border-white/5">
+        <div class="p-6 border-b border-white/10 flex items-center justify-between">
+            <h2 class="text-base font-bold text-on-surface flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary">history</span>
+                سجل المعاملات والديون كشف حساب كامل
+            </h2>
+            <span class="text-xs text-on-surface-variant bg-white/5 px-3 py-1 rounded-full font-mono">
+                {{ transactions|length }} عملية مسجلة
+            </span>
+        </div>
+
+        {% if transactions %}
+        <div class="overflow-x-auto">
+            <table class="w-full text-right">
+                <thead>
+                    <tr class="bg-surface-container/50 border-b border-white/10 text-xs font-bold text-on-surface-variant">
+                        <th class="p-4">#</th>
+                        <th class="p-4">التاريخ والوقت</th>
+                        <th class="p-4">نوع العملية</th>
+                        <th class="p-4">البيان / التفاصيل</th>
+                        <th class="p-4 text-left">المبلغ</th>
+                        <th class="p-4 text-left">الرصيد بعد العملية</th>
+                    </tr>
+                </thead>
+                <tbody class="text-sm divide-y divide-white/5">
+                    {% for tx in transactions %}
+                    <tr class="hover:bg-white/[0.03] transition-colors">
+                        <td class="p-4 text-on-surface-variant text-xs font-mono">{{ forloop.counter }}</td>
+                        <td class="p-4">
+                            <div class="font-mono text-xs">
+                                <span class="text-on-surface font-bold">{{ tx.created_at|date:"Y-m-d" }}</span>
+                                <span class="text-primary block">{{ tx.created_at|date:"H:i:s" }}</span>
+                            </div>
+                        </td>
+                        <td class="p-4">
+                            {% if tx.transaction_type == 'pay_received' %}
+                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary/10 text-primary border border-primary/20 text-xs font-bold">
+                                    <span class="material-symbols-outlined text-[13px]">south_west</span>
+                                    {{ tx.get_transaction_type_display }}
+                                </span>
+                            {% else %}
+                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-error/10 text-error border border-error/20 text-xs font-bold">
+                                    <span class="material-symbols-outlined text-[13px]">north_east</span>
+                                    {{ tx.get_transaction_type_display }}
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td class="p-4 text-on-surface-variant text-xs max-w-[220px]">
+                            {{ tx.notes|default:"—" }}
+                        </td>
+                        <td class="p-4 text-left font-mono font-bold text-base
+                            {% if tx.transaction_type == 'pay_received' %}text-primary{% else %}text-error{% endif %}">
+                            {% if tx.transaction_type == 'pay_received' %}-{% else %}+{% endif %}{{ tx.amount|floatformat:2 }} ج.م
+                        </td>
+                        <td class="p-4 text-left font-mono font-bold text-sm
+                            {% if tx.running_balance > 0 %}text-error{% else %}text-primary{% endif %}">
+                            {{ tx.running_balance|floatformat:2 }} ج.م
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr class="bg-surface-container/30 border-t-2 border-white/10">
+                        <td colspan="4" class="p-4 text-xs font-bold text-on-surface-variant text-right">الرصيد الحالي الإجمالي</td>
+                        <td colspan="2" class="p-4 text-left">
+                            <span class="text-xl font-bold font-mono {% if customer.balance > 0 %}text-error{% else %}text-primary{% endif %}">
+                                {{ customer.balance|floatformat:2 }} ج.م
+                            </span>
+                        </td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+        {% else %}
+            <div class="p-12 text-center">
+                <span class="material-symbols-outlined text-5xl text-on-surface-variant/30 block mb-3">receipt_long</span>
+                <p class="text-on-surface-variant text-sm">لا توجد معاملات مسجلة لهذا العميل بعد</p>
+                <p class="text-on-surface-variant/60 text-xs mt-1">ستظهر هنا الفواتير الآجلة ودفعات التحصيل</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- ==================== MODALS ==================== -->
+
+    <!-- Modal 1: تحصيل دفعة -->
+    <div x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md p-4"
+         x-show="showPayModal">
+        <div class="bg-slate-900 text-slate-100 rounded-3xl p-6 sm:p-8 max-w-sm w-full space-y-4 text-right shadow-2xl border border-slate-700" dir="rtl" @click.away="showPayModal = false">
+            <div class="flex items-center justify-between border-b border-slate-700/60 pb-3">
+                <h3 class="text-lg font-extrabold text-emerald-400 flex items-center gap-2">
+                    <span class="material-symbols-outlined text-xl">payments</span>
+                    تحصيل من {{ customer.name }}
+                </h3>
+                <button type="button" @click="showPayModal = false" class="text-slate-400 hover:text-white p-1 rounded-full hover:bg-slate-800 transition-colors">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            
+            <div class="bg-slate-800/80 rounded-2xl p-3.5 border border-slate-700 space-y-1">
+                <p class="text-xs text-slate-300">الدين الحالي المستحق:</p>
+                <p class="text-lg font-black font-mono text-rose-400">{{ customer.balance|floatformat:2 }} ج.م</p>
+            </div>
+
+            <form method="post" action="{% url 'ledger:collect_payment' %}" class="space-y-4 text-sm">
+                {% csrf_token %}
+                <input type="hidden" name="customer_id" value="{{ customer.id }}">
+                <div>
+                    <label class="block text-xs font-bold text-slate-200 mb-1.5">المبلغ المحصل (ج.م)</label>
+                    <input type="number" step="0.01" name="amount" required min="0.01" placeholder="0.00"
+                           class="w-full bg-slate-800 border-2 border-emerald-500/40 rounded-2xl py-3 px-4 focus:outline-none focus:border-emerald-400 text-right font-mono font-black text-2xl text-emerald-400 shadow-inner">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-200 mb-1.5">بيان / ملاحظة</label>
+                    <input type="text" name="notes" placeholder="مثال: دفعة كاش في المحل"
+                           class="w-full bg-slate-800 border border-slate-700 rounded-xl py-2.5 px-3.5 focus:outline-none focus:border-emerald-400 text-right text-xs text-slate-100 font-semibold placeholder:text-slate-500">
+                </div>
+                <div class="flex gap-3 pt-2">
+                    <button type="submit" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white py-3 rounded-2xl font-bold shadow-lg shadow-emerald-500/25 active:scale-95 text-xs sm:text-sm">تحصيل وحفظ</button>
+                    <button type="button" @click="showPayModal = false" class="px-5 bg-slate-800 hover:bg-slate-700 border border-slate-700 py-3 rounded-2xl text-slate-300 font-bold text-xs sm:text-sm">إلغاء</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal 2: إضافة دين -->
+    <div x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md p-4"
+         x-show="showDebtModal">
+        <div class="bg-slate-900 text-slate-100 rounded-3xl p-6 sm:p-8 max-w-sm w-full space-y-4 text-right shadow-2xl border border-slate-700" dir="rtl" @click.away="showDebtModal = false">
+            <div class="flex items-center justify-between border-b border-rose-500/30 pb-3">
+                <h3 class="text-lg font-extrabold text-rose-400 flex items-center gap-2">
+                    <span class="material-symbols-outlined text-xl">add_circle</span>
+                    إضافة دين على {{ customer.name }}
+                </h3>
+                <button type="button" @click="showDebtModal = false" class="text-slate-400 hover:text-white p-1 rounded-full hover:bg-slate-800 transition-colors">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            
+            <form method="post" action="{% url 'ledger:add_customer_debt' customer.id %}" class="space-y-4 text-sm">
+                {% csrf_token %}
+                <div>
+                    <label class="block text-xs font-bold text-slate-200 mb-1.5">مبلغ الدين الجديد (ج.م)</label>
+                    <input type="number" step="0.01" name="amount" required min="0.01" placeholder="0.00"
+                           class="w-full bg-slate-800 border-2 border-rose-500/40 rounded-2xl py-3 px-4 focus:outline-none focus:border-rose-400 text-right font-mono font-black text-2xl text-rose-400 shadow-inner">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-200 mb-1.5">بيان الدين (مطلوب)</label>
+                    <input type="text" name="notes" required placeholder="مثال: أسمدة يوريا 3 أكياس — آجل"
+                           class="w-full bg-slate-800 border border-slate-700 rounded-xl py-2.5 px-3.5 focus:outline-none focus:border-rose-400 text-right text-xs text-slate-100 font-semibold placeholder:text-slate-500">
+                </div>
+                <div class="flex gap-3 pt-2">
+                    <button type="submit" class="flex-1 bg-rose-600 hover:bg-rose-500 text-white py-3 rounded-2xl font-bold shadow-lg shadow-rose-500/25 active:scale-95 text-xs sm:text-sm">إضافة الدين</button>
+                    <button type="button" @click="showDebtModal = false" class="px-5 bg-slate-800 hover:bg-slate-700 border border-slate-700 py-3 rounded-2xl text-slate-300 font-bold text-xs sm:text-sm">إلغاء</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal 3: تعديل البيانات الشخصية والصورة -->
+    <div x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md p-4"
+         x-show="showEditProfileModal">
+        <div class="bg-slate-900 text-slate-100 rounded-3xl p-6 sm:p-8 max-w-md w-full space-y-4 text-right shadow-2xl border border-slate-700 max-h-[90vh] overflow-y-auto" dir="rtl" @click.away="showEditProfileModal = false">
+            <div class="flex items-center justify-between border-b border-slate-700/60 pb-3">
+                <h3 class="text-xl font-extrabold text-primary flex items-center gap-2">
+                    <span class="material-symbols-outlined text-2xl">person_edit</span>
+                    تعديل ملف العميل {{ customer.name }}
+                </h3>
+                <button type="button" @click="showEditProfileModal = false" class="text-slate-400 hover:text-white p-1 rounded-full hover:bg-slate-800 transition-colors">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+
+            <form method="post" action="{% url 'ledger:update_customer_profile' customer.id %}" enctype="multipart/form-data" class="space-y-4 text-sm">
+                {% csrf_token %}
+                <div>
+                    <label class="block text-xs font-bold text-slate-200 mb-1.5">الاسم الكامل</label>
+                    <input type="text" name="name" value="{{ customer.name }}" required
+                           class="w-full bg-slate-800 border border-slate-700 rounded-xl py-2.5 px-3.5 text-xs text-slate-100 font-bold focus:outline-none focus:border-primary text-right shadow-inner">
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-200 mb-1.5">رقم الهاتف</label>
+                        <input type="text" name="phone" value="{{ customer.phone|default:'' }}"
+                               class="w-full bg-slate-800 border border-slate-700 rounded-xl py-2.5 px-3.5 text-xs text-slate-100 font-mono focus:outline-none focus:border-primary text-right shadow-inner">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-200 mb-1.5">مكان العمل / المزرعة</label>
+                        <input type="text" name="workplace" value="{{ customer.workplace|default:'' }}"
+                               class="w-full bg-slate-800 border border-slate-700 rounded-xl py-2.5 px-3.5 text-xs text-slate-100 font-bold focus:outline-none focus:border-primary text-right shadow-inner">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-200 mb-1.5">العنوان / المنطقة</label>
+                    <input type="text" name="address" value="{{ customer.address|default:'' }}"
+                           class="w-full bg-slate-800 border border-slate-700 rounded-xl py-2.5 px-3.5 text-xs text-slate-100 font-bold focus:outline-none focus:border-primary text-right shadow-inner">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-200 mb-1.5">موعد استحقاق السداد (اختر تاريخ التعهد بالسداد)</label>
+                    <input type="date" name="due_date" value="{{ customer.due_date|date:'Y-m-d' }}"
+                           class="w-full bg-slate-800 border border-slate-700 rounded-xl py-2.5 px-3.5 focus:outline-none focus:border-primary text-right text-xs text-slate-100 font-semibold shadow-inner">
+                </div>
+
+                <!-- صورة العميل -->
+                <div class="bg-slate-800/80 border border-slate-700 rounded-2xl p-4 space-y-2">
+                    <label class="block text-xs font-bold text-slate-100 flex items-center gap-1">
+                        <span class="material-symbols-outlined text-base text-primary">add_a_photo</span>
+                        صورة العميل (اختياري)
+                    </label>
+                    <input type="file" name="avatar" accept="image/*" class="w-full text-xs text-slate-300 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-primary/20 file:text-primary hover:file:bg-primary/30 cursor-pointer">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-200 mb-1.5">ملاحظات خاصة وتفاصيل</label>
+                    <textarea name="notes" rows="3" class="w-full bg-slate-800 border border-slate-700 rounded-xl py-2.5 px-3.5 text-xs text-slate-100 focus:outline-none focus:border-primary text-right shadow-inner">{{ customer.notes|default:'' }}</textarea>
+                </div>
+
+                <div class="flex gap-3 pt-3">
+                    <button type="submit" class="flex-1 bg-primary text-white py-3 rounded-2xl font-bold shadow-lg shadow-primary/25 active:scale-95 text-xs sm:text-sm">حفظ التغييرات</button>
+                    <button type="button" @click="showEditProfileModal = false" class="px-5 bg-slate-800 hover:bg-slate-700 border border-slate-700 py-3 rounded-2xl text-slate-300 font-bold text-xs sm:text-sm">إلغاء</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

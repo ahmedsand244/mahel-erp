@@ -1,0 +1,823 @@
+{% load static %}
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+    <meta charset="utf-8">
+    <meta content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover" name="viewport">
+    <title>{% block title %}النماء ERP & POS{% endblock %}</title>
+    
+    <!-- Theme Initializer Script (Prevents FOUC / Flashing) -->
+    <!-- Light Mode is DEFAULT on initial render per Apple HIG specifications -->
+    <script>
+        (function() {
+            try {
+                const storedTheme = localStorage.getItem('theme');
+                if (storedTheme === 'dark') {
+                    document.documentElement.classList.add('dark');
+                } else {
+                    document.documentElement.classList.remove('dark');
+                }
+            } catch (e) {
+                document.documentElement.classList.remove('dark');
+            }
+        })();
+    </script>
+
+    <!-- Font Scale Initializer Script (Prevents FOUC) -->
+    <script>
+        (function() {
+            try {
+                const scales = { 'xs': '87.5%', 'sm': '100%', 'md': '112.5%', 'lg': '125%' };
+                const stored = localStorage.getItem('fontScale') || 'sm';
+                const level = scales[stored] ? stored : 'sm';
+                document.documentElement.setAttribute('data-font-scale', level);
+                document.documentElement.style.fontSize = scales[level];
+            } catch(e) {
+                document.documentElement.style.fontSize = '100%';
+            }
+        })();
+    </script>
+
+    <!-- Fonts & Icons (Local Offline Copy) -->
+    <link href="{% static 'vendor/css/material-symbols.css' %}" rel="stylesheet">
+    <link href="{% static 'vendor/css/cairo-inter.css' %}" rel="stylesheet">
+    
+    <!-- Alpine.js Engine (Local Offline Copy) -->
+    <script defer src="{% static 'vendor/js/alpine.min.js' %}"></script>
+    
+    <!-- Chart.js Engine for Interactive Charts & Analytics (Local Offline Copy) -->
+    <script src="{% static 'vendor/js/chart.umd.min.js' %}"></script>
+    
+    <!-- Tailwind CSS Engine (Local Offline Copy) -->
+    <script src="{% static 'vendor/js/tailwind.js' %}"></script>
+    <script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            screens: {
+              'xs': '475px',
+              'sm': '640px',
+              'md': '768px',
+              'lg': '1024px',
+              'xl': '1280px',
+              '2xl': '1536px',
+            },
+            extend: {
+              colors: {
+                // Apple HIG CSS Variable Color Mapping
+                "apple-bg": "var(--bg-app)",
+                "apple-surface": "var(--bg-surface)",
+                "apple-surface-subtle": "var(--bg-surface-subtle)",
+                "apple-surface-elevated": "var(--bg-surface-elevated)",
+                "apple-border": "var(--border-hairline)",
+                "apple-text": "var(--text-primary)",
+                "apple-secondary": "var(--text-secondary)",
+                "apple-tertiary": "var(--text-tertiary)",
+                "apple-blue": "var(--accent-primary)",
+
+                // Legacy & Semantic Compatibility mappings
+                "surface-bright": "var(--bg-surface-subtle)",
+                "surface-container-high": "var(--bg-surface-subtle)",
+                "surface-container-low": "var(--bg-surface)",
+                "surface-container": "var(--bg-surface)",
+                "surface-container-highest": "var(--bg-surface-elevated)",
+                "surface-dim": "var(--bg-app)",
+                "on-surface": "var(--text-primary)",
+                "on-surface-variant": "var(--text-secondary)",
+                "on-background": "var(--text-primary)",
+                "primary": "var(--accent-primary)",
+                "primary-container": "var(--accent-primary)",
+                "on-primary": "#ffffff",
+                "secondary": "var(--text-secondary)",
+                "secondary-container": "var(--bg-surface-subtle)",
+                "background": "var(--bg-app)",
+                "error": "var(--accent-danger)",
+                "tertiary": "var(--accent-warning)",
+              },
+              boxShadow: {
+                'apple-sm': 'var(--shadow-apple-sm)',
+                'apple-md': 'var(--shadow-apple-md)',
+                'apple-lg': 'var(--shadow-apple-lg)',
+              },
+              borderRadius: {
+                '2xl': '1.25rem',
+                '3xl': '1.5rem',
+                '4xl': '2rem',
+              }
+            }
+          }
+        }
+    </script>
+    
+    <!-- Production-Ready Apple HIG Dual Theme Custom Stylesheet -->
+    <link rel="stylesheet" href="{% static 'css/main.css' %}">
+    
+    <!-- Global Print Optimization Engine -->
+    <style>
+        @media print {
+            @page {
+                size: A4 portrait;
+                margin: 10mm 10mm 10mm 10mm;
+            }
+            aside, header, nav, .no-print, button, .modal-backdrop, [class*="no-print"] {
+                display: none !important;
+            }
+            html, body, div, section, article, p, span, h1, h2, h3, h4, h5, h6, td, th, tr, table, form, label, strong, b {
+                background: #ffffff !important;
+                background-color: #ffffff !important;
+                color: #000000 !important;
+                box-shadow: none !important;
+                text-shadow: none !important;
+                opacity: 1 !important;
+                visibility: visible !important;
+                filter: none !important;
+                backdrop-filter: none !important;
+            }
+            .fixed.inset-0 {
+                position: static !important;
+                background: transparent !important;
+                backdrop-filter: none !important;
+                padding: 0 !important;
+            }
+            .glass-card, .print-card, div[x-show="showModal"] > div, div[class*="rounded"], div[class*="border"] {
+                background: #ffffff !important;
+                color: #000000 !important;
+                border: 1px solid #94a3b8 !important;
+                box-shadow: none !important;
+                max-width: 100% !important;
+                width: 100% !important;
+                padding: 12px !important;
+                margin: 0 0 12px 0 !important;
+                border-radius: 8px !important;
+            }
+            table {
+                width: 100% !important;
+                border-collapse: collapse !important;
+                margin-top: 10px !important;
+                margin-bottom: 10px !important;
+            }
+            table th {
+                background-color: #f1f5f9 !important;
+                color: #000000 !important;
+                border: 1px solid #475569 !important;
+                padding: 6px 8px !important;
+                font-weight: 800 !important;
+            }
+            table td {
+                border: 1px solid #94a3b8 !important;
+                padding: 6px 8px !important;
+                color: #000000 !important;
+            }
+            span[class*="rounded-full"], span[class*="pill"], span[class*="badge"] {
+                border: 1px solid #000000 !important;
+                padding: 2px 8px !important;
+                border-radius: 9999px !important;
+                background: #ffffff !important;
+                color: #000000 !important;
+                font-weight: bold !important;
+            }
+        }
+    </style>
+
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="antialiased overflow-x-hidden min-h-screen flex flex-col lg:flex-row-reverse text-apple-text bg-apple-bg transition-colors duration-300">
+
+    <!-- Desktop & Laptop Sidebar Navigation (Fixed Right Dock in RTL on lg / 1024px+ screens) -->
+    <aside class="hidden lg:flex fixed top-0 right-0 h-full w-72 xl:w-80 z-50 flex-col py-6 xl:py-8 bg-apple-surface/80 dark:bg-apple-surface/80 backdrop-blur-2xl border-l border-apple-border shadow-apple-lg transition-all duration-300">
+        <!-- Brand Logo -->
+        <div class="px-6 xl:px-8 mb-8 xl:mb-10 flex flex-col items-start text-right">
+            <h1 class="font-headline-lg text-2xl xl:text-3xl font-extrabold text-primary mb-1 tracking-tight">النمـــــاء</h1>
+            <p class="text-xs text-apple-secondary font-medium">نظام إدارة المعدات والمخازن</p>
+        </div>
+
+        <!-- Quick Action CTA Button -->
+        <div class="px-5 xl:px-6 mb-6 xl:mb-8">
+            <a href="{% if request.tenant %}/t/{{ request.tenant.slug }}{% endif %}/pos/" class="w-full bg-primary text-white py-3 rounded-2xl text-xs xl:text-sm font-bold flex items-center justify-center gap-2 shadow-apple-sm hover:shadow-apple-md active:scale-[0.98] transition-all apple-button">
+                <span class="material-symbols-outlined text-lg xl:text-xl">add_shopping_cart</span>
+                فتح شاشة المبيعات
+            </a>
+        </div>
+
+        <!-- Font Scale Control - Desktop Sidebar -->
+        <div class="px-5 xl:px-6 mb-4">
+            <p class="text-[10px] font-bold text-apple-secondary mb-2 flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-sm">format_size</span>
+                حجم الخط في النظام
+            </p>
+            <div class="flex items-center gap-1.5 bg-apple-surface-subtle border border-apple-border rounded-2xl p-1.5">
+                <template x-for="lvl in $store.fontScale.levels" :key="lvl.key">
+                    <button type="button"
+                            @click="$store.fontScale.setScale(lvl.key)"
+                            :title="lvl.label"
+                            :class="$store.fontScale.current === lvl.key
+                                ? 'bg-primary text-white shadow-sm scale-105'
+                                : 'text-apple-secondary hover:text-apple-text hover:bg-apple-surface'"
+                            class="flex-1 py-1.5 rounded-xl transition-all duration-200 flex items-center justify-center font-bold"
+                            :style="'font-size: ' + lvl.demo + 'px'">
+                        أ
+                    </button>
+                </template>
+            </div>
+        </div>
+
+        <!-- Navigation Links List -->
+        <nav class="flex-1 overflow-y-auto w-full px-3">
+            <ul class="flex flex-col gap-1.5 w-full">
+                <li class="w-full">
+                    <a class="flex items-center gap-3.5 xl:gap-4 px-4 xl:px-5 py-3 xl:py-3.5 rounded-2xl w-full transition-all app-nav-item {% if '/dashboard/' in request.path or request.path == '/' %}active{% endif %}" href="{% if request.tenant %}/t/{{ request.tenant.slug }}{% endif %}/dashboard/">
+                        <span class="material-symbols-outlined text-xl">dashboard</span>
+                        <span class="text-sm xl:text-base font-semibold">لوحة القيادة</span>
+                    </a>
+                </li>
+                <li class="w-full">
+                    <a class="flex items-center gap-3.5 xl:gap-4 px-4 xl:px-5 py-3 xl:py-3.5 rounded-2xl w-full transition-all app-nav-item {% if '/pos/' in request.path and '/invoices/' not in request.path %}active{% endif %}" href="{% if request.tenant %}/t/{{ request.tenant.slug }}{% endif %}/pos/">
+                        <span class="material-symbols-outlined text-xl">point_of_sale</span>
+                        <span class="text-sm xl:text-base font-semibold">شاشة البيع POS</span>
+                    </a>
+                </li>
+                <li class="w-full">
+                    <a class="flex items-center gap-3.5 xl:gap-4 px-4 xl:px-5 py-3 xl:py-3.5 rounded-2xl w-full transition-all app-nav-item {% if '/pos/invoices/' in request.path %}active{% endif %}" href="{% if request.tenant %}/t/{{ request.tenant.slug }}{% endif %}/pos/invoices/">
+                        <span class="material-symbols-outlined text-xl">receipt_long</span>
+                        <span class="text-sm xl:text-base font-semibold">فواتير المبيعات</span>
+                    </a>
+                </li>
+                <li class="w-full">
+                    <a class="flex items-center gap-3.5 xl:gap-4 px-4 xl:px-5 py-3 xl:py-3.5 rounded-2xl w-full transition-all app-nav-item {% if '/inventory/' in request.path and '/orders/' not in request.path %}active{% endif %}" href="{% if request.tenant %}/t/{{ request.tenant.slug }}{% endif %}/inventory/">
+                        <span class="material-symbols-outlined text-xl">inventory_2</span>
+                        <span class="text-sm xl:text-base font-semibold">إدارة المخزن</span>
+                    </a>
+                </li>
+                <li class="w-full">
+                    <a class="flex items-center gap-3.5 xl:gap-4 px-4 xl:px-5 py-3 xl:py-3.5 rounded-2xl w-full transition-all app-nav-item {% if '/inventory/orders/' in request.path %}active{% endif %}" href="{% if request.tenant %}/t/{{ request.tenant.slug }}{% endif %}/inventory/orders/">
+                        <span class="material-symbols-outlined text-xl">local_shipping</span>
+                        <span class="text-sm xl:text-base font-semibold">طلبات البضاعة والنواقص</span>
+                    </a>
+                </li>
+                <li class="w-full">
+                    <a class="flex items-center gap-3.5 xl:gap-4 px-4 xl:px-5 py-3 xl:py-3.5 rounded-2xl w-full transition-all app-nav-item {% if '/maintenance/' in request.path %}active{% endif %}" href="{% if request.tenant %}/t/{{ request.tenant.slug }}{% endif %}/maintenance/">
+                        <span class="material-symbols-outlined text-xl">build</span>
+                        <span class="text-sm xl:text-base font-semibold">الورشة والصيانة</span>
+                    </a>
+                </li>
+                <li class="w-full">
+                    <a class="flex items-center gap-3.5 xl:gap-4 px-4 xl:px-5 py-3 xl:py-3.5 rounded-2xl w-full transition-all app-nav-item {% if '/ledger/' in request.path %}active{% endif %}" href="{% if request.tenant %}/t/{{ request.tenant.slug }}{% endif %}/ledger/">
+                        <span class="material-symbols-outlined text-xl">menu_book</span>
+                        <span class="text-sm xl:text-base font-semibold">الديون والشكك</span>
+                    </a>
+                </li>
+                <li class="w-full">
+                    <a class="flex items-center gap-3.5 xl:gap-4 px-4 xl:px-5 py-3 xl:py-3.5 rounded-2xl w-full transition-all app-nav-item {% if '/expenses/' in request.path %}active{% endif %}" href="{% if request.tenant %}/t/{{ request.tenant.slug }}{% endif %}/expenses/">
+                        <span class="material-symbols-outlined text-xl">payments</span>
+                        <span class="text-sm xl:text-base font-semibold">المصروفات</span>
+                    </a>
+                </li>
+                <li class="w-full">
+                    <a class="flex items-center gap-3.5 xl:gap-4 px-4 xl:px-5 py-3 xl:py-3.5 rounded-2xl w-full transition-all app-nav-item {% if '/reports/' in request.path %}active{% endif %}" href="{% if request.tenant %}/t/{{ request.tenant.slug }}{% endif %}/reports/">
+                        <span class="material-symbols-outlined text-xl">analytics</span>
+                        <span class="text-sm xl:text-base font-semibold">التقارير المالية (P&L)</span>
+                    </a>
+                </li>
+                <li class="w-full">
+                    <a class="flex items-center gap-3.5 xl:gap-4 px-4 xl:px-5 py-3 xl:py-3.5 rounded-2xl w-full transition-all app-nav-item {% if '/backup/' in request.path %}active{% endif %}" href="{% if request.tenant %}/t/{{ request.tenant.slug }}{% endif %}/dashboard/backup/">
+                        <span class="material-symbols-outlined text-xl">shield</span>
+                        <span class="text-sm xl:text-base font-semibold">النسخ الاحتياطي والأمان</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Sidebar Footer Admin & Logout Links -->
+        <div class="mt-auto pt-4 px-3 border-t border-apple-border w-full space-y-1">
+            <ul class="flex flex-col gap-1 w-full">
+                <li class="w-full">
+                    <a class="flex items-center gap-3.5 xl:gap-4 px-4 xl:px-5 py-2.5 text-apple-secondary hover:text-apple-text hover:bg-black/5 dark:hover:bg-white/5 rounded-2xl w-full transition-all text-xs xl:text-sm font-semibold" href="/admin/">
+                        <span class="material-symbols-outlined text-lg">settings</span>
+                        <span>لوحة الإدارة</span>
+                    </a>
+                </li>
+                <li class="w-full">
+                    <a class="flex items-center gap-3.5 xl:gap-4 px-4 xl:px-5 py-2.5 text-red-400 hover:bg-red-500/10 rounded-2xl w-full transition-all text-xs xl:text-sm font-bold" href="{% url 'logout' %}">
+                        <span class="material-symbols-outlined text-lg">logout</span>
+                        <span>تسجيل الخروج</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </aside>
+
+    <!-- Mobile & Tablet Responsive Header (< 1024px / lg) -->
+    <nav class="lg:hidden sticky top-0 z-50 bg-apple-surface/90 backdrop-blur-2xl border-b border-apple-border shadow-apple-sm transition-colors duration-300"
+         x-data="{
+             mobileMenuOpen: false,
+             isDark: document.documentElement.classList.contains('dark'),
+             toggleTheme() {
+                 this.isDark = !this.isDark;
+                 if (this.isDark) {
+                     document.documentElement.classList.add('dark');
+                     localStorage.setItem('theme', 'dark');
+                 } else {
+                     document.documentElement.classList.remove('dark');
+                     localStorage.setItem('theme', 'light');
+                 }
+             }
+         }">
+        <!-- Mobile Main Header Bar -->
+        <div class="flex justify-between items-center px-4 sm:px-6 h-16 w-full">
+            <!-- Brand Logo & Hamburger Drawer Toggle -->
+            <div class="flex items-center gap-2 sm:gap-3">
+                <button @click="mobileMenuOpen = !mobileMenuOpen" 
+                        type="button"
+                        class="touch-target p-2 rounded-xl text-apple-text hover:bg-black/5 dark:hover:bg-white/10 transition-all cursor-pointer"
+                        aria-label="القائمة الشاملة">
+                    <span class="material-symbols-outlined text-2xl" x-text="mobileMenuOpen ? 'close' : 'menu'"></span>
+                </button>
+                <a href="/" class="text-xl sm:text-2xl font-extrabold text-primary tracking-tight">النمـــــاء</a>
+            </div>
+
+            <!-- Right Controls: Notifications + Theme Toggle + Quick POS Button -->
+            <div class="flex items-center gap-1.5 sm:gap-2">
+                <!-- Mobile Smart Notifications Bell -->
+                <div class="relative" x-data="{ showAlertsMobile: false }">
+                    <button @click="showAlertsMobile = !showAlertsMobile" 
+                            type="button"
+                            class="touch-target p-2 rounded-xl text-apple-secondary hover:text-apple-text hover:bg-black/5 dark:hover:bg-white/10 transition-all cursor-pointer relative flex items-center justify-center"
+                            title="الإشعارات الذكية">
+                        <span class="material-symbols-outlined text-xl">notifications</span>
+                        {% if smart_alerts_count > 0 %}
+                            <span class="absolute top-1 right-1 w-4 h-4 rounded-full bg-red-500 text-white font-mono text-[9px] font-extrabold flex items-center justify-center shadow-lg animate-pulse">
+                                {{ smart_alerts_count }}
+                            </span>
+                        {% endif %}
+                    </button>
+
+                    <!-- Mobile Notifications Popover -->
+                    <div x-show="showAlertsMobile"
+                         @click.away="showAlertsMobile = false"
+                         x-transition:enter="transition ease-out duration-150"
+                         x-transition:enter-start="opacity-0 translate-y-2"
+                         x-transition:enter-end="opacity-100 translate-y-0"
+                         class="fixed inset-x-3 top-16 bg-white dark:bg-[#161B22] border border-slate-200 dark:border-slate-700 rounded-3xl shadow-2xl overflow-hidden z-[200] max-w-sm mx-auto"
+                         dir="rtl"
+                         style="display: none;">
+                        
+                        <div class="p-3.5 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#1C2128] flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <span class="material-symbols-outlined text-amber-500 text-lg">notifications_active</span>
+                                <h3 class="text-xs font-bold text-slate-800 dark:text-slate-100">الإشعارات والتنبيهات الذكية</h3>
+                            </div>
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                                {{ smart_alerts_count }} تنبيه
+                            </span>
+                        </div>
+
+                        <div class="max-h-[350px] overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
+                            {% for alert in smart_alerts %}
+                                <a href="{{ alert.url }}" class="p-3 block hover:bg-slate-50 dark:hover:bg-white/5 transition-colors group">
+                                    <div class="flex items-start gap-2.5">
+                                        <div class="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 shadow-sm
+                                            {% if alert.type == 'error' %}bg-red-500/10 text-red-500 border border-red-500/20
+                                            {% else %}bg-amber-500/10 text-amber-500 border border-amber-500/20{% endif %}">
+                                            <span class="material-symbols-outlined text-base">{{ alert.icon }}</span>
+                                        </div>
+                                        <div class="flex-1 min-w-0">
+                                            <div class="flex items-center justify-between gap-1 mb-0.5">
+                                                <span class="text-xs font-bold text-slate-900 dark:text-slate-100 truncate">{{ alert.title }}</span>
+                                                <span class="text-[9px] font-bold px-1.5 py-0.5 rounded shrink-0
+                                                    {% if alert.type == 'error' %}bg-red-500/15 text-red-600 dark:text-red-400
+                                                    {% else %}bg-amber-500/15 text-amber-600 dark:text-amber-400{% endif %}">
+                                                    {{ alert.badge }}
+                                                </span>
+                                            </div>
+                                            <p class="text-[10px] text-slate-500 dark:text-slate-400 leading-tight line-clamp-2">{{ alert.subtitle }}</p>
+                                        </div>
+                                    </div>
+                                </a>
+                            {% empty %}
+                                <div class="p-6 text-center text-xs text-slate-400 dark:text-slate-500 italic space-y-1">
+                                    <span class="material-symbols-outlined text-2xl text-emerald-500 block">verified</span>
+                                    <span>لا توجد تنبيهات عاجلة حالياً 👍</span>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Theme Toggle Button -->
+                <button @click="toggleTheme()" 
+                        type="button"
+                        class="touch-target p-2 rounded-xl text-apple-secondary hover:text-apple-text hover:bg-black/5 dark:hover:bg-white/10 transition-all cursor-pointer"
+                        title="تغيير المظهر">
+                    <span class="material-symbols-outlined text-xl" x-text="isDark ? 'light_mode' : 'dark_mode'"></span>
+                </button>
+                
+                <a href="{% if request.tenant %}/t/{{ request.tenant.slug }}{% endif %}/pos/" class="bg-primary text-white px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-1.5 shadow-apple-sm active:scale-95 apple-button touch-target">
+                    <span class="material-symbols-outlined text-lg">add_shopping_cart</span>
+                    <span>بيع POS</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- Apple Glass Mobile Menu Drawer Slide-over -->
+        <div x-show="mobileMenuOpen" 
+             x-transition:enter="transition ease-out duration-300"
+             x-transition:enter-start="opacity-0 -translate-y-4"
+             x-transition:enter-end="opacity-100 translate-y-0"
+             x-transition:leave="transition ease-in duration-200"
+             x-transition:leave-start="opacity-100 translate-y-0"
+             x-transition:leave-end="opacity-0 -translate-y-4"
+             class="border-t border-apple-border bg-apple-surface/98 backdrop-blur-3xl px-4 sm:px-6 py-5 shadow-apple-lg max-h-[85vh] overflow-y-auto space-y-4"
+             style="display: none;"
+             @click.away="mobileMenuOpen = false">
+            
+            <div class="text-xs font-bold text-apple-secondary px-2 mb-2">جميع أقسام النظام</div>
+
+            <!-- Mobile Navigation Menu Links (Full Titles & Icons) -->
+            <div class="space-y-1 sm:space-y-1.5">
+                <a class="flex items-center gap-3.5 px-4 py-3.5 rounded-2xl w-full transition-all app-nav-item {% if '/dashboard/' in request.path or request.path == '/' %}active{% endif %}" href="{% if request.tenant %}/t/{{ request.tenant.slug }}{% endif %}/dashboard/">
+                    <span class="material-symbols-outlined text-xl">dashboard</span>
+                    <span class="text-sm sm:text-base font-semibold">لوحة القيادة</span>
+                </a>
+                
+                <a class="flex items-center gap-3.5 px-4 py-3.5 rounded-2xl w-full transition-all app-nav-item {% if '/pos/' in request.path and '/invoices/' not in request.path %}active{% endif %}" href="{% if request.tenant %}/t/{{ request.tenant.slug }}{% endif %}/pos/">
+                    <span class="material-symbols-outlined text-xl">point_of_sale</span>
+                    <span class="text-sm sm:text-base font-semibold">شاشة البيع POS</span>
+                </a>
+
+                <a class="flex items-center gap-3.5 px-4 py-3.5 rounded-2xl w-full transition-all app-nav-item {% if '/pos/invoices/' in request.path %}active{% endif %}" href="{% if request.tenant %}/t/{{ request.tenant.slug }}{% endif %}/pos/invoices/">
+                    <span class="material-symbols-outlined text-xl">receipt_long</span>
+                    <span class="text-sm sm:text-base font-semibold">فواتير المبيعات</span>
+                </a>
+
+                <a class="flex items-center gap-3.5 px-4 py-3.5 rounded-2xl w-full transition-all app-nav-item {% if '/inventory/' in request.path and '/orders/' not in request.path %}active{% endif %}" href="{% if request.tenant %}/t/{{ request.tenant.slug }}{% endif %}/inventory/">
+                    <span class="material-symbols-outlined text-xl">inventory_2</span>
+                    <span class="text-sm sm:text-base font-semibold">إدارة المخزن</span>
+                </a>
+
+                <a class="flex items-center gap-3.5 px-4 py-3.5 rounded-2xl w-full transition-all app-nav-item {% if '/inventory/orders/' in request.path %}active{% endif %}" href="{% if request.tenant %}/t/{{ request.tenant.slug }}{% endif %}/inventory/orders/">
+                    <span class="material-symbols-outlined text-xl">local_shipping</span>
+                    <span class="text-sm sm:text-base font-semibold">طلبات البضاعة والنواقص</span>
+                </a>
+
+                <a class="flex items-center gap-3.5 px-4 py-3.5 rounded-2xl w-full transition-all app-nav-item {% if '/maintenance/' in request.path %}active{% endif %}" href="{% if request.tenant %}/t/{{ request.tenant.slug }}{% endif %}/maintenance/">
+                    <span class="material-symbols-outlined text-xl">build</span>
+                    <span class="text-sm sm:text-base font-semibold">الورشة والصيانة</span>
+                </a>
+
+                <a class="flex items-center gap-3.5 px-4 py-3.5 rounded-2xl w-full transition-all app-nav-item {% if '/ledger/' in request.path %}active{% endif %}" href="{% if request.tenant %}/t/{{ request.tenant.slug }}{% endif %}/ledger/">
+                    <span class="material-symbols-outlined text-xl">menu_book</span>
+                    <span class="text-sm sm:text-base font-semibold">الديون والشكك</span>
+                </a>
+
+                <a class="flex items-center gap-3.5 px-4 py-3.5 rounded-2xl w-full transition-all app-nav-item {% if '/expenses/' in request.path %}active{% endif %}" href="{% if request.tenant %}/t/{{ request.tenant.slug }}{% endif %}/expenses/">
+                    <span class="material-symbols-outlined text-xl">payments</span>
+                    <span class="text-sm sm:text-base font-semibold">المصروفات</span>
+                </a>
+
+                <a class="flex items-center gap-3.5 px-4 py-3.5 rounded-2xl w-full transition-all app-nav-item {% if '/reports/' in request.path %}active{% endif %}" href="{% if request.tenant %}/t/{{ request.tenant.slug }}{% endif %}/reports/">
+                    <span class="material-symbols-outlined text-xl">analytics</span>
+                    <span class="text-sm sm:text-base font-semibold">التقارير المالية (P&L)</span>
+                </a>
+
+                <a class="flex items-center gap-3.5 px-4 py-3.5 rounded-2xl w-full transition-all app-nav-item {% if '/backup/' in request.path %}active{% endif %}" href="{% if request.tenant %}/t/{{ request.tenant.slug }}{% endif %}/dashboard/backup/">
+                    <span class="material-symbols-outlined text-xl">shield</span>
+                    <span class="text-sm sm:text-base font-semibold">النسخ الاحتياطي والأمان</span>
+                </a>
+
+                <div class="pt-2 border-t border-apple-border">
+                    <a class="flex items-center gap-3.5 px-4 py-3.5 rounded-2xl w-full text-apple-secondary hover:text-apple-text transition-all" href="/admin/">
+                        <span class="material-symbols-outlined text-xl">settings</span>
+                        <span class="text-sm sm:text-base font-semibold">لوحة الإدارة</span>
+                    </a>
+                </div>
+
+                <!-- Font Scale Control - Mobile Drawer -->
+                <div class="pt-3 border-t border-apple-border">
+                    <p class="text-xs font-bold text-apple-secondary px-2 mb-2 flex items-center gap-1.5">
+                        <span class="material-symbols-outlined text-base">format_size</span>
+                        حجم الخط
+                    </p>
+                    <div class="flex items-center gap-2 bg-apple-surface-subtle border border-apple-border rounded-2xl p-1.5">
+                        <template x-for="lvl in $store.fontScale.levels" :key="lvl.key">
+                            <button type="button"
+                                    @click="$store.fontScale.setScale(lvl.key)"
+                                    :title="lvl.label"
+                                    :class="$store.fontScale.current === lvl.key
+                                        ? 'bg-primary text-white shadow-sm'
+                                        : 'text-apple-secondary hover:text-apple-text hover:bg-apple-surface'"
+                                    class="flex-1 py-2 rounded-xl transition-all duration-200 flex flex-col items-center justify-center gap-0.5 font-bold">
+                                <span :style="'font-size: ' + lvl.demo + 'px'" class="leading-none">أ</span>
+                                <span class="text-[9px] opacity-70" x-text="lvl.label"></span>
+                            </button>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- Mobile Drawer Logout Button -->
+                <div class="pt-3 border-t border-apple-border">
+                    <a class="flex items-center gap-3.5 px-4 py-3.5 rounded-2xl w-full text-red-500 hover:bg-red-500/10 border border-red-500/20 transition-all font-bold" href="{% url 'logout' %}">
+                        <span class="material-symbols-outlined text-xl">logout</span>
+                        <span class="text-sm sm:text-base">تسجيل الخروج</span>
+                    </a>
+                </div>
+
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Canvas Layout Area -->
+    <main class="flex-1 lg:pr-72 xl:pr-80 min-h-screen flex flex-col w-full transition-all duration-300">
+        <!-- Desktop / Laptop Header Bar (Sticky Top) -->
+        <header class="hidden lg:flex justify-between items-center w-full px-8 xl:px-12 h-20 border-b border-apple-border backdrop-blur-2xl z-30 sticky top-0 bg-apple-bg/75 transition-colors duration-300"
+                x-data="{
+                    searchQuery: '',
+                    searchResults: [],
+                    isSearching: false,
+                    showDropdown: false,
+                    searchTimeout: null,
+                    isDark: document.documentElement.classList.contains('dark'),
+                    toggleTheme() {
+                        this.isDark = !this.isDark;
+                        if (this.isDark) {
+                            document.documentElement.classList.add('dark');
+                            localStorage.setItem('theme', 'dark');
+                        } else {
+                            document.documentElement.classList.remove('dark');
+                            localStorage.setItem('theme', 'light');
+                        }
+                    },
+                    performSearch() {
+                        clearTimeout(this.searchTimeout);
+                        if (!this.searchQuery.trim()) {
+                            this.searchResults = [];
+                            this.showDropdown = false;
+                            return;
+                        }
+                        this.isSearching = true;
+                        this.searchTimeout = setTimeout(() => {
+                            fetch('/api/global-search/?q=' + encodeURIComponent(this.searchQuery))
+                                .then(res => res.json())
+                                .then(data => {
+                                    this.searchResults = data.results || [];
+                                    this.isSearching = false;
+                                    this.showDropdown = true;
+                                })
+                                .catch(() => {
+                                    this.isSearching = false;
+                                });
+                        }, 250);
+                    }
+                }"
+                @click.away="showDropdown = false">
+            
+            <!-- Apple-Style Global Search Bar -->
+            <div class="relative w-80 xl:w-96">
+                <input type="text"
+                       x-model="searchQuery"
+                       @input="performSearch()"
+                       @focus="if (searchResults.length > 0) showDropdown = true"
+                       @keydown.escape="showDropdown = false"
+                       class="w-full bg-slate-100 dark:bg-[#161B22] border border-slate-300 dark:border-slate-700 rounded-full py-2.5 px-6 pr-10 pl-10 text-slate-900 dark:text-slate-100 text-sm focus:outline-none focus:border-primary focus:bg-white dark:focus:bg-[#1C2128] focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500 shadow-apple-sm" 
+                       placeholder="البحث في النظام (منتجات، عملاء، فواتير، تذاكر)...">
+                
+                <!-- Search Icon -->
+                <span class="material-symbols-outlined absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 text-lg pointer-events-none">search</span>
+
+                <!-- Loading Spinner / Clear Icon -->
+                <div class="absolute left-3.5 top-1/2 -translate-y-1/2 flex items-center">
+                    <template x-if="isSearching">
+                        <span class="material-symbols-outlined text-primary text-sm animate-spin">sync</span>
+                    </template>
+                    <template x-if="!isSearching && searchQuery.length > 0">
+                        <button @click="searchQuery = ''; searchResults = []; showDropdown = false" class="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors">
+                            <span class="material-symbols-outlined text-sm">close</span>
+                        </button>
+                    </template>
+                </div>
+
+                <!-- Instant Search Dropdown Popup (100% Solid Opaque Background) -->
+                <div x-show="showDropdown && searchQuery.trim().length > 0" 
+                     x-transition:enter="transition ease-out duration-150"
+                     x-transition:enter-start="opacity-0 translate-y-2"
+                     x-transition:enter-end="opacity-100 translate-y-0"
+                     class="absolute top-full right-0 mt-2 bg-white dark:bg-[#161B22] border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl overflow-hidden z-[100] max-h-[480px] overflow-y-auto w-[360px] sm:w-[420px]"
+                     dir="rtl"
+                     style="display: none;">
+                    
+                    <template x-if="searchResults.length === 0 && !isSearching">
+                        <div class="p-6 text-center text-xs text-slate-500 dark:text-slate-400 italic">
+                            لا توجد نتائج مطابقة لـ "<span class="text-primary dark:text-sky-400 font-bold" x-text="searchQuery"></span>"
+                        </div>
+                    </template>
+
+                    <template x-for="(cat, idx) in searchResults" :key="idx">
+                        <div class="border-b border-slate-200 dark:border-slate-800 last:border-0 bg-white dark:bg-[#161B22]">
+                            <!-- Category Header -->
+                            <div class="px-4 py-2 bg-slate-100 dark:bg-[#21262D] text-[11px] font-bold text-primary dark:text-sky-400 flex items-center gap-1.5 border-b border-slate-200 dark:border-slate-700">
+                                <span class="material-symbols-outlined text-sm" x-text="cat.icon"></span>
+                                <span x-text="cat.category"></span>
+                            </div>
+                            
+                            <!-- Result Items -->
+                            <div class="divide-y divide-slate-100 dark:divide-slate-800/60 bg-white dark:bg-[#161B22]">
+                                <template x-for="(item, i) in cat.items" :key="i">
+                                    <a :href="item.url" 
+                                       @click="showDropdown = false"
+                                       class="p-3 flex items-center justify-between hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-colors text-right group block">
+                                        <div class="space-y-0.5 max-w-[260px]">
+                                            <div class="text-xs font-bold text-slate-900 dark:text-slate-100 group-hover:text-primary dark:group-hover:text-sky-400 transition-colors" x-text="item.title"></div>
+                                            <div class="text-[10px] text-slate-500 dark:text-slate-400 font-mono" x-text="item.subtitle"></div>
+                                        </div>
+                                        <template x-if="item.badge">
+                                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold font-mono whitespace-nowrap shrink-0 shadow-sm"
+                                                  :class="item.badge_type === 'error' ? 'bg-red-500/15 text-red-600 dark:text-red-400 border border-red-500/30' : (item.badge_type === 'tertiary' ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30' : 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/30')"
+                                                  x-text="item.badge">
+                                            </span>
+                                        </template>
+                                    </a>
+                                </template>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+                <!-- Smart Notifications Bell Dropdown -->
+                <div class="relative" x-data="{ showAlerts: false }">
+                    <button @click="showAlerts = !showAlerts" 
+                            type="button"
+                            class="relative p-2.5 rounded-full bg-apple-surface-subtle border border-apple-border text-apple-secondary hover:text-apple-text transition-all duration-300 shadow-apple-sm active:scale-95 cursor-pointer flex items-center justify-center"
+                            title="التنبيهات والإشعارات الذكية">
+                        <span class="material-symbols-outlined text-xl">notifications</span>
+                        
+                        {% if smart_alerts_count > 0 %}
+                            <span class="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 text-white font-mono text-[10px] font-extrabold flex items-center justify-center shadow-lg animate-pulse">
+                                {{ smart_alerts_count }}
+                            </span>
+                        {% endif %}
+                    </button>
+
+                    <!-- Notifications Dropdown Popover -->
+                    <div x-show="showAlerts"
+                         @click.away="showAlerts = false"
+                         x-transition:enter="transition ease-out duration-150"
+                         x-transition:enter-start="opacity-0 translate-y-2"
+                         x-transition:enter-end="opacity-100 translate-y-0"
+                         class="absolute top-full left-0 mt-3 bg-white dark:bg-[#161B22] border border-slate-200 dark:border-slate-700 rounded-3xl shadow-2xl overflow-hidden z-[110] w-[340px] sm:w-[400px]"
+                         dir="rtl"
+                         style="display: none;">
+                        
+                        <div class="p-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#1C2128] flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <span class="material-symbols-outlined text-amber-500 text-lg">notifications_active</span>
+                                <h3 class="text-sm font-bold text-slate-800 dark:text-slate-100">الإشعارات والتنبيهات الذكية</h3>
+                            </div>
+                            <span class="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                                {{ smart_alerts_count }} تنبيه
+                            </span>
+                        </div>
+
+                        <div class="max-h-[380px] overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
+                            {% for alert in smart_alerts %}
+                                <a href="{{ alert.url }}" class="p-3.5 block hover:bg-slate-50 dark:hover:bg-white/5 transition-colors group">
+                                    <div class="flex items-start gap-3">
+                                        <div class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-sm
+                                            {% if alert.type == 'error' %}bg-red-500/10 text-red-500 border border-red-500/20
+                                            {% else %}bg-amber-500/10 text-amber-500 border border-amber-500/20{% endif %}">
+                                            <span class="material-symbols-outlined text-lg">{{ alert.icon }}</span>
+                                        </div>
+                                        <div class="flex-1 min-w-0">
+                                            <div class="flex items-center justify-between gap-1 mb-0.5">
+                                                <span class="text-xs font-bold text-slate-900 dark:text-slate-100 group-hover:text-primary transition-colors truncate">{{ alert.title }}</span>
+                                                <span class="text-[10px] font-bold px-2 py-0.5 rounded-md shrink-0
+                                                    {% if alert.type == 'error' %}bg-red-500/15 text-red-600 dark:text-red-400
+                                                    {% else %}bg-amber-500/15 text-amber-600 dark:text-amber-400{% endif %}">
+                                                    {{ alert.badge }}
+                                                </span>
+                                            </div>
+                                            <p class="text-[11px] text-slate-500 dark:text-slate-400 leading-tight line-clamp-2">{{ alert.subtitle }}</p>
+                                        </div>
+                                    </div>
+                                </a>
+                            {% empty %}
+                                <div class="p-8 text-center text-xs text-slate-400 dark:text-slate-500 italic space-y-2">
+                                    <span class="material-symbols-outlined text-3xl text-emerald-500 block">verified</span>
+                                    <span>لا توجد تنبيهات عاجلة حالياً 👍</span>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Apple-Style Interactive Theme Toggle Switch -->
+                <button @click="toggleTheme()" 
+                        type="button"
+                        class="relative flex items-center gap-2.5 px-3 py-1.5 rounded-full bg-apple-surface-subtle border border-apple-border text-xs font-semibold text-apple-secondary hover:text-apple-text transition-all duration-300 shadow-apple-sm active:scale-95 cursor-pointer"
+                        title="تغيير المظهر (فاتح / داكن)">
+                    <!-- Light Mode Sun Icon -->
+                    <span class="material-symbols-outlined text-base transition-all duration-300"
+                          :class="isDark ? 'text-apple-secondary opacity-60' : 'text-amber-500 scale-110'">
+                        light_mode
+                    </span>
+                    
+                    <!-- Switch Pill Track & Thumb -->
+                    <div class="w-8 h-4 rounded-full bg-black/10 dark:bg-white/20 relative p-0.5 transition-colors">
+                        <div class="w-3 h-3 rounded-full bg-white dark:bg-primary shadow-sm transition-transform duration-300"
+                             :class="isDark ? '-translate-x-4' : 'translate-x-0'"></div>
+                    </div>
+
+                    <!-- Dark Mode Moon Icon -->
+                    <span class="material-symbols-outlined text-base transition-all duration-300"
+                          :class="isDark ? 'text-blue-400 scale-110' : 'text-apple-secondary opacity-60'">
+                        dark_mode
+                    </span>
+                </button>
+
+                <!-- Font Scale Control - Desktop Header -->
+                <div class="flex items-center gap-1 bg-apple-surface-subtle border border-apple-border rounded-full px-1 py-1 shadow-apple-sm"
+                     title="تغيير حجم الخط">
+                    <template x-for="lvl in $store.fontScale.levels" :key="lvl.key">
+                        <button type="button"
+                                @click="$store.fontScale.setScale(lvl.key)"
+                                :title="lvl.label"
+                                :class="$store.fontScale.current === lvl.key
+                                    ? 'bg-primary text-white shadow-sm'
+                                    : 'text-apple-secondary hover:text-apple-text hover:bg-apple-surface'"
+                                class="w-8 h-8 rounded-full transition-all duration-200 flex items-center justify-center font-extrabold cursor-pointer active:scale-90"
+                                :style="'font-size: ' + lvl.demo + 'px'">
+                            أ
+                        </button>
+                    </template>
+                </div>
+
+                <!-- User Account Info & Logout -->
+                <div class="flex items-center gap-3 border-r border-apple-border pr-5">
+                    <div class="w-9 h-9 rounded-full bg-primary/10 border border-primary/20 text-primary font-bold flex items-center justify-center text-xs">
+                        AD
+                    </div>
+                    <div class="flex flex-col text-right">
+                        <span class="text-xs font-bold text-apple-text">مسؤول النظام</span>
+                        <span class="text-[10px] text-primary font-medium">الوصول الكامل</span>
+                    </div>
+                    <a href="{% url 'logout' %}" class="p-2 rounded-xl text-red-400 hover:bg-red-500/10 transition-colors mr-1" title="تسجيل الخروج">
+                        <span class="material-symbols-outlined text-lg">logout</span>
+                    </a>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content Canvas (Centered Container Max-Width 1536px for Ultra-Wide Monitors) -->
+        <div class="p-4 sm:p-6 lg:p-10 xl:p-12 max-w-[1536px] mx-auto w-full space-y-6 sm:space-y-8 flex-grow">
+            {% if messages %}
+                <div class="space-y-3 mb-6" dir="rtl">
+                    {% for message in messages %}
+                        <div class="p-4 rounded-2xl text-sm font-bold flex items-center justify-between shadow-apple-md transition-all border
+                            {% if message.tags == 'error' %}bg-error/10 text-error border-error/30
+                            {% elif message.tags == 'success' %}bg-primary/10 text-primary border-primary/30
+                            {% else %}bg-apple-surface-subtle text-apple-text border-apple-border{% endif %}">
+                            <div class="flex items-center gap-3">
+                                <span class="material-symbols-outlined text-xl">
+                                    {% if message.tags == 'error' %}error{% elif message.tags == 'success' %}check_circle{% else %}info{% endif %}
+                                </span>
+                                <span>{{ message }}</span>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+
+    {% block extra_js %}{% endblock %}
+
+    <!-- Global Font Scale Alpine Store & Component -->
+    <script>
+        document.addEventListener('alpine:init', () => {
+            const scales = {
+                xs: '87.5%',
+                sm: '100%',
+                md: '112.5%',
+                lg: '125%'
+            };
+
+            Alpine.store('fontScale', {
+                current: localStorage.getItem('fontScale') || 'sm',
+                levels: [
+                    { key: 'xs', label: 'صغير',  demo: 10 },
+                    { key: 'sm', label: 'عادي',  demo: 12 },
+                    { key: 'md', label: 'كبير',  demo: 14 },
+                    { key: 'lg', label: 'أكبر', demo: 16 },
+                ],
+                setScale(key) {
+                    if (!scales[key]) return;
+                    this.current = key;
+                    document.documentElement.style.fontSize = scales[key];
+                    document.documentElement.setAttribute('data-font-scale', key);
+                    localStorage.setItem('fontScale', key);
+                }
+            });
+        });
+    </script>
+</body>
+</html>
