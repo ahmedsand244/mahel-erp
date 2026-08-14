@@ -176,6 +176,16 @@
                                                 </button>
                                             </form>
                                         {% endif %}
+
+                                        <form method="post" class="inline" onsubmit="return confirm('⚠️ هل أنت متأكد من حذف شركة ({{ tenant.name|escapejs }}) وكافة بياناتها نهائياً؟ هذا الإجراء لا يمكن التراجع عنه!');">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="tenant_id" value="{{ tenant.id }}">
+                                            <input type="hidden" name="action" value="delete_tenant">
+                                            <button type="submit" class="px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl text-[11px] sm:text-xs font-extrabold bg-red-600 hover:bg-red-700 text-white shadow-sm transition-all flex items-center gap-1">
+                                                <span class="material-symbols-outlined text-xs">delete</span>
+                                                <span>حذف</span>
+                                            </button>
+                                        </form>
                                     </div>
                                 </td>
                             </tr>

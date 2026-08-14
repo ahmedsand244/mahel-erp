@@ -7,7 +7,8 @@ from django.views.decorators.csrf import csrf_exempt
 from django.db.models import Sum, Count, Q
 from decimal import Decimal, InvalidOperation
 
-from inventory.models import Product
+from inventory.models import Product, Category
+from inventory.views import get_tenant_categories
 from ledger.models import Customer
 from pos.models import Order, OrderItem
 from core_project.services import pos_checkout, add_customer_debt
@@ -24,6 +25,7 @@ class POSView(TemplateView):
                 'id': p.id,
                 'name': p.name,
                 'sku': p.sku,
+                'category': p.category or 'عام',
                 'price': str(p.selling_price),
                 'stock': p.stock_quantity,
                 'image': p.image.url if p.image else ''
@@ -38,6 +40,8 @@ class POSView(TemplateView):
                 'workplace': c.workplace or '',
                 'balance': str(c.balance)
             })
+        tenant = getattr(self.request, 'tenant', None)
+        context['categories'] = get_tenant_categories(tenant) if tenant else Category.objects.all()
         context['customers'] = customers
         context['products_list_json'] = prods_list
         context['customers_list_json'] = custs_list

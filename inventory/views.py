@@ -9,8 +9,19 @@ from django.http import JsonResponse
 from decimal import Decimal, ROUND_HALF_UP
 from django.db.models import F
 from django.db import transaction
-from .models import Product, StockAlert, PurchaseOrder, PurchaseOrderItem
+from .models import Product, StockAlert, PurchaseOrder, PurchaseOrderItem, Category
 from ledger.models import Supplier
+
+
+def get_tenant_categories(tenant):
+    """جلب فئات المنتجات للشركة وإعادة إنشاء فئات افتراضية أولية إذا كانت فارغة."""
+    categories = Category.objects.filter(tenant=tenant).order_by('name')
+    if not categories.exists():
+        default_names = ['أسمدة ومخصبات زراعية', 'مبيدات حشرية وفطرية', 'قطع غيار مواقير ورش', 'معدات وآلات زراعية', 'زيوت وشحومات', 'عام / متنوع']
+        for dname in default_names:
+            Category.objects.create(name=dname, tenant=tenant)
+        categories = Category.objects.filter(tenant=tenant).order_by('name')
+    return categories
 
 
 class InventoryListView(ListView):
@@ -26,6 +37,8 @@ class InventoryListView(ListView):
             stock_quantity__lte=F('min_stock_threshold')
         ).order_by('stock_quantity', 'name')
         
+        tenant = getattr(self.request, 'tenant', None)
+        context['categories'] = get_tenant_categories(tenant) if tenant else Category.objects.all()
         context['low_stock_products'] = low_stock_products
         context['out_of_stock_count'] = low_stock_products.filter(stock_quantity__lte=0).count()
         context['low_stock_count'] = low_stock_products.filter(stock_quantity__gt=0).count()
@@ -592,4 +605,28 @@ class BarcodeGeneratorView(TemplateView):
         context['initial_barcode'] = (selected_prod.barcode or selected_prod.sku or f"PROD-{selected_prod.id}") if selected_prod else '62910001'
         context['initial_price'] = str(selected_prod.selling_price) if selected_prod else '0.00'
         return context
+
+
+class CategoryCreateView(View):
+    def post(self, request):
+        name = request.POST.get('name', '').strip()
+        if name:
+            tenant = getattr(request, 'tenant', None)
+            category, created = Category.objects.get_or_create(name=name, tenant=tenant)
+            if created:
+                messages.success(request, f'🎉 تم إضافة الفئة "{name}" بنجاح.')
+            else:
+                messages.info(request, f'الفئة "{name}" موجودة بالفعل.')
+        else:
+            messages.error(request, 'الرجاء إدخال اسم الفئة.')
+        return redirect(request.META.get('HTTP_REFERER', 'inventory:inventory_list'))
+
+
+class CategoryDeleteView(View):
+    def post(self, request, pk):
+        category = get_object_or_404(Category, pk=pk)
+        name = category.name
+        category.delete()
+        messages.success(request, f'🗑️ تم حذف الفئة "{name}" بنجاح.')
+        return redirect(request.META.get('HTTP_REFERER', 'inventory:inventory_list'))
 

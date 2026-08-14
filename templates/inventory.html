@@ -10,6 +10,7 @@
     showSinglePriceModal: false,
     showRestockModal: false,
     showExcelImportModal: false,
+    showCategoryModal: false,
     searchVal: '', 
     selectedCategory: '',
     currentEditProduct: {},
@@ -176,20 +177,26 @@
             <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-base">search</span>
         </div>
 
-        <!-- Category filter pills -->
+        <!-- Category filter pills & Category Management Button -->
         <div class="flex items-center gap-2 overflow-x-auto pb-2 lg:pb-0 w-full lg:w-auto text-xs">
             <button class="px-3 py-1.5 rounded-lg transition-all whitespace-nowrap font-bold"
-                    :class="selectedCategory === '' ? 'bg-primary text-on-primary' : 'bg-white/5 text-on-surface-variant hover:bg-white/10'"
+                    :class="selectedCategory === '' ? 'bg-primary text-on-primary shadow-md' : 'bg-white/5 text-on-surface-variant hover:bg-white/10'"
                     @click="selectedCategory = ''">
-                الكل
+                الكل 📦
             </button>
-            {% for code, label in category_choices %}
-                <button class="px-3 py-1.5 rounded-lg transition-all whitespace-nowrap font-semibold"
-                        :class="selectedCategory === '{{ code }}' ? 'bg-primary text-on-primary' : 'bg-white/5 text-on-surface-variant hover:bg-white/10'"
-                        @click="selectedCategory = '{{ code }}'">
-                    {{ label }}
+            {% for cat in categories %}
+                <button class="px-3 py-1.5 rounded-lg transition-all whitespace-nowrap font-semibold border border-white/5"
+                        :class="selectedCategory === '{{ cat.name|escapejs }}' ? 'bg-primary text-on-primary shadow-md' : 'bg-white/5 text-on-surface-variant hover:bg-white/10'"
+                        @click="selectedCategory = '{{ cat.name|escapejs }}'">
+                    {{ cat.name }}
                 </button>
             {% endfor %}
+            <button @click="showCategoryModal = true"
+                    class="px-3 py-1.5 rounded-lg bg-brand-500/20 text-brand-400 hover:bg-brand-500 hover:text-white transition-all font-extrabold flex items-center gap-1 border border-brand-500/30 whitespace-nowrap"
+                    title="إضافة تصنيف أو فئة جديدة لشركتك">
+                <span class="material-symbols-outlined text-[16px]">edit_note</span>
+                <span>إدارة الفئات 🏷️</span>
+            </button>
         </div>
     </div>
 
@@ -396,8 +403,8 @@
                 <div>
                     <label class="block text-xs font-bold text-slate-200 mb-1">تصنيف المنتج / الفئة</label>
                     <select name="category" class="w-full bg-slate-800 border border-slate-700 rounded-xl py-2.5 px-3.5 text-xs text-slate-100 focus:outline-none focus:border-primary text-right font-bold">
-                        {% for code, label in category_choices %}
-                            <option value="{{ code }}" class="bg-slate-900 text-slate-100">{{ label }}</option>
+                        {% for cat in categories %}
+                            <option value="{{ cat.name }}" class="bg-slate-900 text-slate-100">{{ cat.name }}</option>
                         {% endfor %}
                     </select>
                 </div>
@@ -708,6 +715,62 @@
                     </button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- Modal: إدارة وتعديل الفئات والتصنيفات -->
+    <div x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md p-4"
+         x-show="showCategoryModal">
+        <div class="bg-slate-900 text-slate-100 rounded-3xl p-6 sm:p-8 max-w-md w-full space-y-5 text-right shadow-2xl border border-slate-700 max-h-[85vh] overflow-y-auto" dir="rtl" @click.away="showCategoryModal = false">
+            <div class="flex items-center justify-between border-b border-slate-700/60 pb-3">
+                <h3 class="text-xl font-extrabold text-brand-400 flex items-center gap-2">
+                    <span class="material-symbols-outlined text-2xl">category</span>
+                    إدارة فئات وتصنيفات المنتجات 🏷️
+                </h3>
+                <button type="button" @click="showCategoryModal = false" class="text-slate-400 hover:text-white p-1 rounded-full hover:bg-slate-800 transition-colors">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+
+            <!-- إضافة فئة جديدة -->
+            <form method="post" action="{% url 'inventory:category_add' %}" class="space-y-3 bg-slate-800/80 p-4 rounded-2xl border border-slate-700">
+                {% csrf_token %}
+                <label class="block text-xs font-bold text-slate-200">إضافة تصنيف / فئة جديدة لشركتك</label>
+                <div class="flex gap-2">
+                    <input type="text" name="name" required placeholder="مثال: قطع كهرباء / ملابس رجالي..." class="flex-1 bg-slate-900 border border-slate-700 rounded-xl py-2.5 px-3 text-xs text-slate-100 focus:outline-none focus:border-brand-500 font-bold">
+                    <button type="submit" class="bg-brand-500 hover:bg-brand-600 text-white px-4 py-2.5 rounded-xl text-xs font-bold transition-all shadow-md flex items-center gap-1">
+                        <span class="material-symbols-outlined text-sm">add</span>
+                        إضافة
+                    </button>
+                </div>
+            </form>
+
+            <!-- قائمة الفئات الحالية مع إمكانية الحذف -->
+            <div class="space-y-2">
+                <h4 class="text-xs font-bold text-slate-400">الفئات المتاحة حالياً في نظامك ({{ categories|length }}):</h4>
+                <div class="divide-y divide-slate-800 bg-slate-950/60 rounded-2xl border border-slate-800 overflow-hidden max-h-60 overflow-y-auto">
+                    {% for cat in categories %}
+                        <div class="flex items-center justify-between p-3 text-xs hover:bg-white/5 transition-colors">
+                            <span class="font-bold text-slate-200 flex items-center gap-2">
+                                <span class="w-2 h-2 rounded-full bg-brand-400"></span>
+                                {{ cat.name }}
+                            </span>
+                            <form method="post" action="{% url 'inventory:category_delete' cat.id %}" onsubmit="return confirm('هل أنت متأكد من حذف الفئة ({{ cat.name|escapejs }})؟');" class="inline">
+                                {% csrf_token %}
+                                <button type="submit" class="p-1.5 rounded-lg hover:bg-red-500/20 text-red-400 transition-colors flex items-center justify-center" title="حذف الفئة">
+                                    <span class="material-symbols-outlined text-base">delete</span>
+                                </button>
+                            </form>
+                        </div>
+                    {% empty %}
+                        <div class="p-4 text-center text-slate-500 italic text-xs">لا توجد فئات حالية. أضف فئتك الأولى بالأعلى!</div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="pt-2">
+                <button type="button" @click="showCategoryModal = false" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 py-2.5 rounded-xl font-bold text-xs transition-colors">إغلاق</button>
+            </div>
         </div>
     </div>
 

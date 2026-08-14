@@ -2,6 +2,31 @@ from django.db import models
 from tenants.models import Tenant
 from tenants.managers import TenantManager
 
+class Category(models.Model):
+    name = models.CharField(max_length=100, verbose_name="اسم الفئة / التصنيف")
+    tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE, null=True, blank=True, db_index=True, related_name='product_categories', verbose_name="الشركة")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    objects = TenantManager()
+    all_objects = models.Manager()
+
+    class Meta:
+        ordering = ['name']
+        verbose_name = "فئة"
+        verbose_name_plural = "الفئات"
+
+    def save(self, *args, **kwargs):
+        if not self.tenant_id:
+            from tenants.middleware import get_current_tenant
+            t = get_current_tenant()
+            if t:
+                self.tenant = t
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.name
+
+
 class Product(models.Model):
     CATEGORY_CHOICES = [
         ('fertilizers', 'أسمدة ومخصبات زراعية'),

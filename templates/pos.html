@@ -335,7 +335,14 @@
             <p class="text-xs text-slate-300 font-medium">وجّه كاميرا الموبايل نحو ملصق الباركود وسيتم التعرف عليه وإضافته للسلة فوراً 👍</p>
 
             <!-- Video Camera Frame Container -->
-            <div id="barcode-camera-reader" class="w-full rounded-2xl overflow-hidden border-2 border-primary/50 bg-black min-h-[260px]"></div>
+            <div id="barcode-camera-reader" class="w-full rounded-2xl overflow-hidden border-2 border-primary/50 bg-black min-h-[240px]"></div>
+
+            <!-- Fallback Image File Upload Scanner -->
+            <div class="pt-2 border-t border-slate-800 space-y-2">
+                <label class="block text-xs font-bold text-slate-300">أو يمكنك اختيار/رفع صورة الباركود من الجهاز 📷</label>
+                <input type="file" accept="image/*" @change="scanBarcodeFromFile($event)"
+                       class="w-full text-xs text-slate-300 file:mr-2 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-primary/20 file:text-primary hover:file:bg-primary/30 cursor-pointer border border-slate-700 rounded-xl p-1 bg-slate-800">
+            </div>
 
             <div class="pt-2">
                 <button type="button" @click="stopCameraScanner()" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-100 border border-slate-700 py-3 rounded-2xl font-bold text-xs shadow-md transition-all">
@@ -377,31 +384,23 @@
                 this.showCameraScanner = true;
                 this.$nextTick(() => {
                     if (html5QrScannerInstance) {
-                        try { html5QrScannerInstance.clear(); } catch(e) {}
+                        try { html5QrScannerInstance.stop(); } catch(e) {}
                     }
-                    const formatsToSupport = [
-                        Html5QrcodeSupportedFormats.CODE_128,
-                        Html5QrcodeSupportedFormats.EAN_13,
-                        Html5QrcodeSupportedFormats.EAN_8,
-                        Html5QrcodeSupportedFormats.CODE_39,
-                        Html5QrcodeSupportedFormats.UPC_A,
-                        Html5QrcodeSupportedFormats.UPC_E,
-                        Html5QrcodeSupportedFormats.QR_CODE
-                    ];
-                    html5QrScannerInstance = new Html5QrcodeScanner("barcode-camera-reader", { 
-                        fps: 20, 
-                        qrbox: { width: 300, height: 160 },
-                        aspectRatio: 1.0,
-                        formatsToSupport: formatsToSupport,
-                        experimentalFeatures: {
-                            useBarCodeDetectorIfSupported: true
-                        }
-                    });
+                    const qrCode = new Html5Qrcode("barcode-camera-reader");
+                    html5QrScannerInstance = qrCode;
 
-                    html5QrScannerInstance.render((decodedText, decodedResult) => {
+                    const config = { fps: 15, qrbox: { width: 280, height: 160 } };
+
+                    // Start camera with facingMode environment (rear phone camera)
+                    qrCode.start({ facingMode: "environment" }, config, (decodedText) => {
                         this.onBarcodeScanned(decodedText);
-                    }, (errorMessage) => {
-                        // ignore frame parse errors
+                    }, () => {}).catch(err => {
+                        // Retry with any available camera
+                        qrCode.start({ facingMode: "user" }, config, (decodedText) => {
+                            this.onBarcodeScanned(decodedText);
+                        }, () => {}).catch(e => {
+                            console.warn("Camera start fallback to file/manual search");
+                        });
                     });
                 });
             },
@@ -410,10 +409,29 @@
                 this.showCameraScanner = false;
                 if (html5QrScannerInstance) {
                     try {
-                        html5QrScannerInstance.clear();
-                    } catch(e) {}
-                    html5QrScannerInstance = null;
+                        html5QrScannerInstance.stop().then(() => {
+                            html5QrScannerInstance.clear();
+                            html5QrScannerInstance = null;
+                        }).catch(() => {
+                            html5QrScannerInstance = null;
+                        });
+                    } catch(e) {
+                        html5QrScannerInstance = null;
+                    }
                 }
+            },
+
+            scanBarcodeFromFile(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+                const qrCode = html5QrScannerInstance || new Html5Qrcode("barcode-camera-reader");
+                qrCode.scanFile(file, true)
+                    .then(decodedText => {
+                        this.onBarcodeScanned(decodedText);
+                    })
+                    .catch(err => {
+                        alert("⚠️ لم نتمكن من قراءة الباركود من هذه الصورة. يرجى التأكد من وضوح الصورة وتجربة صورة أخرى.");
+                    });
             },
 
             onBarcodeScanned(code) {
@@ -433,6 +451,7 @@
                 } else {
                     this.searchQuery = code;
                     this.stopCameraScanner();
+                    alert(`🔍 تم مسح كود الباركود: [${code}] — تصفية نتائج البحث حسب الكود.`);
                 }
             },
             showAddCustomerModal: false,

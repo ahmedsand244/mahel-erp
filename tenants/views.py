@@ -193,6 +193,13 @@ class SuperAdminView(View):
                 tenant.plan = 'pro'
                 tenant.save()
                 messages.success(request, f'تم ترقية "{tenant.name}" إلى الباقة الاحترافية.')
+            elif action == 'delete_tenant':
+                name = tenant.name
+                owner = tenant.owner
+                tenant.delete()
+                if owner and not owner.is_superuser:
+                    owner.delete()
+                messages.success(request, f'🗑️ تم حذف شركة "{name}" وكافة بياناتها بنجاح.')
         except Tenant.DoesNotExist:
             messages.error(request, 'الشركة غير موجودة.')
         return redirect('/superadmin/')

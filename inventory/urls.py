@@ -3,7 +3,8 @@ from .views import (
     InventoryListView, ProductCreateView, ProductUpdateView,
     ProductDeleteView, QuickRestockView, BulkPriceAdjustmentView, SingleProductPriceAdjustmentView,
     PurchaseOrderListView, PurchaseOrderBuilderView, PurchaseOrderDetailView, PurchaseOrderReceiveView, PurchaseOrderDeleteView,
-    ExportProductsExcelView, DownloadSampleProductsExcelView, ImportProductsExcelView, BarcodeGeneratorView
+    ExportProductsExcelView, DownloadSampleProductsExcelView, ImportProductsExcelView, BarcodeGeneratorView,
+    CategoryCreateView, CategoryDeleteView
 )
 
 app_name = 'inventory'
@@ -28,6 +29,8 @@ urlpatterns = [
     path('orders/edit/<int:pk>/', PurchaseOrderBuilderView.as_view(), name='purchase_order_edit'),
     path('orders/<int:pk>/', PurchaseOrderDetailView.as_view(), name='purchase_order_detail'),
     path('orders/<int:pk>/receive/', PurchaseOrderReceiveView.as_view(), name='purchase_order_receive'),
-    path('orders/<int:pk>/delete/', PurchaseOrderDeleteView.as_view(), name='purchase_order_delete'),
+    # Categories Management
+    path('categories/add/', CategoryCreateView.as_view(), name='category_add'),
+    path('categories/delete/<int:pk>/', CategoryDeleteView.as_view(), name='category_delete'),
 ]
 
