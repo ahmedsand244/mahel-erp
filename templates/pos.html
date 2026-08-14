@@ -437,9 +437,10 @@
             onBarcodeScanned(code) {
                 if (!code) return;
                 const cleanCode = code.trim().toLowerCase();
+                this.searchQuery = cleanCode;
                 const matchedProd = this.products.find(p => 
-                    (p.barcode && p.barcode.toLowerCase() === cleanCode) ||
-                    (p.sku && p.sku.toLowerCase() === cleanCode) ||
+                    (p.barcode && p.barcode.toLowerCase().trim() === cleanCode) ||
+                    (p.sku && p.sku.toLowerCase().trim() === cleanCode) ||
                     (p.name && p.name.toLowerCase().includes(cleanCode))
                 );
 
@@ -449,9 +450,8 @@
                     this.stopCameraScanner();
                     alert(`✅ تم التعرف على الباركود: [${matchedProd.name}] وإضافته لسلة البيع بنجاح!`);
                 } else {
-                    this.searchQuery = code;
                     this.stopCameraScanner();
-                    alert(`🔍 تم مسح كود الباركود: [${code}] — تصفية نتائج البحث حسب الكود.`);
+                    alert(`🔍 تم البحث عن الباركود: [${code}] — يمكنك مراجعة شاشة المنتجات المفلترة.`);
                 }
             },
             showAddCustomerModal: false,
@@ -500,11 +500,12 @@
             },
 
             filteredProducts() {
-                if (!this.searchQuery) return this.products;
-                const query = this.searchQuery.toLowerCase();
+                if (!this.searchQuery || !this.searchQuery.trim()) return this.products;
+                const query = this.searchQuery.toLowerCase().trim();
                 return this.products.filter(p => 
-                    p.name.toLowerCase().includes(query) || 
-                    p.sku.toLowerCase().includes(query)
+                    (p.name && p.name.toLowerCase().includes(query)) || 
+                    (p.sku && p.sku.toLowerCase().includes(query)) ||
+                    (p.barcode && p.barcode.toLowerCase().includes(query))
                 );
             },
 

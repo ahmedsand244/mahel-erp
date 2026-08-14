@@ -394,57 +394,74 @@ class PurchaseOrderDeleteView(View):
 
 
 class ExportProductsExcelView(View):
-    """تصدير جميع منتجات المخزن إلى ملف Excel (.xlsx)"""
+    """تصدير جميع منتجات المخزن إلى ملف Excel (.xlsx) مع دعم CSV الاحتياطي"""
     def get(self, request, *args, **kwargs):
-        import openpyxl
-        from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
         from django.http import HttpResponse
-
-        wb = openpyxl.Workbook()
-        ws = wb.active
-        ws.title = "منتجات المخزن"
-        ws.views.sheetView[0].rightToLeft = True
-
-        # Headers
-        headers = ['اسم المنتج', 'الباركوود', 'التصنيف', 'سعر الشراء (ج.م)', 'سعر البيع (ج.م)', 'الكمية بالمخزن', 'الحد الأدنى']
-        ws.append(headers)
-
-        # Style headers
-        header_font = Font(name='Cairo', size=11, bold=True, color="FFFFFF")
-        header_fill = PatternFill(start_color="10B981", end_color="10B981", fill_type="solid")
-        alignment_center = Alignment(horizontal="center", vertical="center")
-        thin_border = Border(left=Side(style='thin', color='CBD5E1'), right=Side(style='thin', color='CBD5E1'),
-                             top=Side(style='thin', color='CBD5E1'), bottom=Side(style='thin', color='CBD5E1'))
-
-        for col_num, header in enumerate(headers, 1):
-            cell = ws.cell(row=1, column=col_num)
-            cell.font = header_font
-            cell.fill = header_fill
-            cell.alignment = alignment_center
-
         products = Product.objects.all().order_by('name')
-        for row_idx, p in enumerate(products, start=2):
-            ws.append([
-                p.name,
-                p.barcode or p.sku or '',
-                p.get_category_display() if hasattr(p, 'get_category_display') else p.category,
-                float(p.purchase_price),
-                float(p.selling_price),
-                p.stock_quantity,
-                p.min_stock_threshold
-            ])
-            for col_idx in range(1, len(headers) + 1):
-                cell = ws.cell(row=row_idx, column=col_idx)
-                cell.border = thin_border
-                if col_idx in [4, 5, 6, 7]:
-                    cell.alignment = Alignment(horizontal="right", vertical="center")
-                else:
-                    cell.alignment = Alignment(horizontal="right" if col_idx == 1 else "center", vertical="center")
 
-        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-        response['Content-Disposition'] = 'attachment; filename="Elnamaa_Inventory_Products.xlsx"'
-        wb.save(response)
-        return response
+        try:
+            import openpyxl
+            from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+
+            wb = openpyxl.Workbook()
+            ws = wb.active
+            ws.title = "منتجات المخزن"
+            ws.views.sheetView[0].rightToLeft = True
+
+            headers = ['اسم المنتج', 'رمز SKU / الباركود', 'التصنيف', 'سعر الشراء (ج.م)', 'سعر البيع (ج.م)', 'الكمية بالمخزن', 'الحد الأدنى']
+            ws.append(headers)
+
+            header_font = Font(name='Cairo', size=11, bold=True, color="FFFFFF")
+            header_fill = PatternFill(start_color="10B981", end_color="10B981", fill_type="solid")
+            alignment_center = Alignment(horizontal="center", vertical="center")
+            thin_border = Border(left=Side(style='thin', color='CBD5E1'), right=Side(style='thin', color='CBD5E1'),
+                                 top=Side(style='thin', color='CBD5E1'), bottom=Side(style='thin', color='CBD5E1'))
+
+            for col_num, header in enumerate(headers, 1):
+                cell = ws.cell(row=1, column=col_num)
+                cell.font = header_font
+                cell.fill = header_fill
+                cell.alignment = alignment_center
+
+            for row_idx, p in enumerate(products, start=2):
+                ws.append([
+                    p.name,
+                    p.barcode or p.sku or '',
+                    p.category or 'عام',
+                    float(p.purchase_price),
+                    float(p.selling_price),
+                    p.stock_quantity,
+                    p.min_stock_threshold
+                ])
+                for col_idx in range(1, len(headers) + 1):
+                    cell = ws.cell(row=row_idx, column=col_idx)
+                    cell.border = thin_border
+                    if col_idx in [4, 5, 6, 7]:
+                        cell.alignment = Alignment(horizontal="right", vertical="center")
+
+            response = HttpResponse(
+                content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            )
+            response['Content-Disposition'] = 'attachment; filename="inventory_products.xlsx"'
+            wb.save(response)
+            return response
+        except Exception:
+            import csv
+            response = HttpResponse(content_type='text/csv; charset=utf-8-sig')
+            response['Content-Disposition'] = 'attachment; filename="inventory_products.csv"'
+            writer = csv.writer(response)
+            writer.writerow(['اسم المنتج', 'رمز SKU / الباركود', 'التصنيف', 'سعر الشراء (ج.م)', 'سعر البيع (ج.م)', 'الكمية بالمخزن', 'الحد الأدنى'])
+            for p in products:
+                writer.writerow([
+                    p.name,
+                    p.barcode or p.sku or '',
+                    p.category or 'عام',
+                    float(p.purchase_price),
+                    float(p.selling_price),
+                    p.stock_quantity,
+                    p.min_stock_threshold
+                ])
+            return response
 
 
 class DownloadSampleProductsExcelView(View):

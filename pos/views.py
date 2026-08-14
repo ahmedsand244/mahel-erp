@@ -18,13 +18,14 @@ class POSView(TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        products = Product.objects.filter(stock_quantity__gt=0)
+        products = Product.objects.all().order_by('name')
         prods_list = []
         for p in products:
             prods_list.append({
                 'id': p.id,
                 'name': p.name,
-                'sku': p.sku,
+                'sku': p.sku or '',
+                'barcode': p.barcode or '',
                 'category': p.category or 'عام',
                 'price': str(p.selling_price),
                 'stock': p.stock_quantity,
