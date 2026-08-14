@@ -288,50 +288,70 @@ class PublicInvoiceDetailView(TemplateView):
 
 
 class ExportInvoicesExcelView(View):
-    """تصدير فواتير المبيعات إلى ملف Excel"""
+    """تصدير فواتير المبيعات إلى ملف Excel أو CSV احتياطي"""
     def get(self, request, *args, **kwargs):
-        import openpyxl
-        from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
         from django.http import HttpResponse
-
-        wb = openpyxl.Workbook()
-        ws = wb.active
-        ws.title = "فواتير المبيعات"
-        ws.views.sheetView[0].rightToLeft = True
-
-        headers = ['رقم الفاتورة', 'تاريخ الإصدار', 'العميل', 'طريقة السداد', 'إجمالي الفاتورة (ج.م)', 'التكلفة (ج.م)', 'الربح الصافي (ج.م)']
-        ws.append(headers)
-
-        header_font = Font(name='Cairo', size=11, bold=True, color="FFFFFF")
-        header_fill = PatternFill(start_color="059669", end_color="059669", fill_type="solid")
-        for col_num in range(1, len(headers) + 1):
-            cell = ws.cell(row=1, column=col_num)
-            cell.font = header_font
-            cell.fill = header_fill
-            cell.alignment = Alignment(horizontal="center", vertical="center")
-
         orders = Order.objects.select_related('customer').all().order_by('-created_at')
-        thin_border = Border(left=Side(style='thin', color='CBD5E1'), right=Side(style='thin', color='CBD5E1'),
-                             top=Side(style='thin', color='CBD5E1'), bottom=Side(style='thin', color='CBD5E1'))
 
-        for row_idx, o in enumerate(orders, start=2):
-            profit = float(o.total_amount - o.cost_of_goods_sold)
-            ws.append([
-                o.order_number,
-                o.created_at.strftime('%Y-%m-%d %H:%M'),
-                o.customer.name if o.customer else 'عميل نقدي',
-                o.get_payment_method_display(),
-                float(o.total_amount),
-                float(o.cost_of_goods_sold),
-                profit
-            ])
-            for col_idx in range(1, len(headers) + 1):
-                cell = ws.cell(row=row_idx, column=col_idx)
-                cell.border = thin_border
-                cell.alignment = Alignment(horizontal="right" if col_idx in [5, 6, 7] else "center", vertical="center")
+        try:
+            import openpyxl
+            from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
 
-        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-        response['Content-Disposition'] = 'attachment; filename="Elnamaa_Sales_Invoices.xlsx"'
-        wb.save(response)
-        return response
+            wb = openpyxl.Workbook()
+            ws = wb.active
+            ws.title = "فواتير المبيعات"
+            ws.views.sheetView[0].rightToLeft = True
+
+            headers = ['رقم الفاتورة', 'تاريخ الإصدار', 'العميل', 'طريقة السداد', 'إجمالي الفاتورة (ج.م)', 'التكلفة (ج.م)', 'الربح الصافي (ج.م)']
+            ws.append(headers)
+
+            header_font = Font(name='Cairo', size=11, bold=True, color="FFFFFF")
+            header_fill = PatternFill(start_color="059669", end_color="059669", fill_type="solid")
+            for col_num in range(1, len(headers) + 1):
+                cell = ws.cell(row=1, column=col_num)
+                cell.font = header_font
+                cell.fill = header_fill
+                cell.alignment = Alignment(horizontal="center", vertical="center")
+
+            thin_border = Border(left=Side(style='thin', color='CBD5E1'), right=Side(style='thin', color='CBD5E1'),
+                                 top=Side(style='thin', color='CBD5E1'), bottom=Side(style='thin', color='CBD5E1'))
+
+            for row_idx, o in enumerate(orders, start=2):
+                profit = float(o.total_amount - o.cost_of_goods_sold)
+                ws.append([
+                    o.order_number,
+                    o.created_at.strftime('%Y-%m-%d %H:%M'),
+                    o.customer.name if o.customer else 'عميل نقدي',
+                    o.get_payment_method_display(),
+                    float(o.total_amount),
+                    float(o.cost_of_goods_sold),
+                    profit
+                ])
+                for col_idx in range(1, len(headers) + 1):
+                    cell = ws.cell(row=row_idx, column=col_idx)
+                    cell.border = thin_border
+                    cell.alignment = Alignment(horizontal="right" if col_idx in [5, 6, 7] else "center", vertical="center")
+
+            response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="Elnamaa_Sales_Invoices.xlsx"'
+            wb.save(response)
+            return response
+        except Exception:
+            import csv
+            response = HttpResponse(content_type='text/csv; charset=utf-8-sig')
+            response['Content-Disposition'] = 'attachment; filename="Elnamaa_Sales_Invoices.csv"'
+            writer = csv.writer(response)
+            writer.writerow(['رقم الفاتورة', 'تاريخ الإصدار', 'العميل', 'طريقة السداد', 'إجمالي الفاتورة (ج.م)', 'التكلفة (ج.م)', 'الربح الصافي (ج.م)'])
+            for o in orders:
+                profit = float(o.total_amount - o.cost_of_goods_sold)
+                writer.writerow([
+                    o.order_number,
+                    o.created_at.strftime('%Y-%m-%d %H:%M'),
+                    o.customer.name if o.customer else 'عميل نقدي',
+                    o.get_payment_method_display(),
+                    float(o.total_amount),
+                    float(o.cost_of_goods_sold),
+                    profit
+                ])
+            return response
 
