@@ -89,3 +89,37 @@ def smart_notifications(request):
         'smart_alerts': alerts,
         'smart_alerts_count': len(alerts)
     }
+
+
+def tenant_subscription_info(request):
+    """
+    يوفر معلومات اشتراك الشركة والوقت المتبقي لجميع صفحات النظام
+    """
+    tenant = getattr(request, 'tenant', None)
+    if not tenant and request.user.is_authenticated:
+        from tenants.models import TenantUser, Tenant
+        membership = TenantUser.objects.filter(user=request.user).first()
+        if membership:
+            tenant = membership.tenant
+        else:
+            tenant = Tenant.objects.filter(owner=request.user).first()
+
+    if not tenant:
+        return {'subscription_info': None}
+
+    now = timezone.now()
+    end_date = tenant.trial_ends_at or (tenant.created_at + timezone.timedelta(days=14))
+    days_left = max(0, (end_date - now).days)
+    hours_left = max(0, int((end_date - now).total_seconds() // 3600))
+
+    return {
+        'subscription_info': {
+            'tenant_name': tenant.name,
+            'plan_display': tenant.get_plan_display(),
+            'days_left': days_left,
+            'hours_left': hours_left,
+            'is_expired': days_left == 0 and hours_left == 0,
+            'end_date': end_date.strftime('%Y-%m-%d'),
+            'badge_color': 'emerald' if days_left > 5 else ('amber' if days_left > 2 else 'rose'),
+        }
+    }

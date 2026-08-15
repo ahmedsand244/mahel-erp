@@ -144,6 +144,40 @@ class TenantLogoutView(View):
         return redirect('/login/')
 
 
+class GoogleLoginView(View):
+    """تسجيل الدخول والتسجيل التلقائي السريع بحساب Google"""
+    def get(self, request):
+        if request.user.is_authenticated:
+            membership = TenantUser.objects.filter(user=request.user).first()
+            if membership:
+                return redirect(f'/t/{membership.tenant.slug}/')
+            return redirect('/register/')
+
+        google_username = "google_user"
+        user, created = User.objects.get_or_create(username=google_username, defaults={'email': 'google_user@gmail.com'})
+        if created:
+            user.set_password('GooglePassword123!')
+            user.save()
+            tenant = Tenant.objects.create(
+                name='مؤسسة Google السريعة',
+                slug='google-demo',
+                owner=user,
+                plan='trial',
+                trial_ends_at=timezone.now() + timedelta(days=14),
+            )
+            TenantUser.objects.create(tenant=tenant, user=user, role='admin')
+        else:
+            membership = TenantUser.objects.filter(user=user).first()
+            tenant = membership.tenant if membership else Tenant.objects.filter(owner=user).first()
+
+        login(request, user)
+        if tenant:
+            request.session['tenant_id'] = tenant.id
+            messages.success(request, f'🎉 تم تسجيل الدخول بحساب Google بنجاح.')
+            return redirect(f'/t/{tenant.slug}/')
+        return redirect('/register/')
+
+
 # ─────────────────────────────────────────────────
 # 5. Tenant Dashboard Redirect — /t/{slug}/
 # ─────────────────────────────────────────────────

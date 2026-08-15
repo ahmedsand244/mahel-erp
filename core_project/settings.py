@@ -70,6 +70,7 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',
                 'django.template.context_processors.media',
                 'core_project.context_processors.smart_notifications',
+                'core_project.context_processors.tenant_subscription_info',
             ],
         },
     },
