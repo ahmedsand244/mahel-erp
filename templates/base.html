@@ -303,7 +303,7 @@
         <!-- Sidebar Footer Admin & Logout Links -->
         <div class="mt-auto pt-4 px-3 border-t border-apple-border w-full space-y-1">
             <ul class="flex flex-col gap-1 w-full">
-                {% if request.user.is_superuser or request.user.is_staff %}
+                {% if request.user.is_superuser %}
                 <li class="w-full">
                     <a class="flex items-center gap-3.5 xl:gap-4 px-4 xl:px-5 py-2.5 text-apple-secondary hover:text-apple-text hover:bg-black/5 dark:hover:bg-white/5 rounded-2xl w-full transition-all text-xs xl:text-sm font-semibold" href="/admin/">
                         <span class="material-symbols-outlined text-lg">settings</span>
@@ -499,7 +499,7 @@
                     <span class="text-sm sm:text-base font-semibold">النسخ الاحتياطي والأمان</span>
                 </a>
 
-                {% if request.user.is_superuser or request.user.is_staff %}
+                {% if request.user.is_superuser %}
                 <div class="pt-2 border-t border-apple-border">
                     <a class="flex items-center gap-3.5 px-4 py-3.5 rounded-2xl w-full text-apple-secondary hover:text-apple-text transition-all" href="/admin/">
                         <span class="material-symbols-outlined text-xl">settings</span>
