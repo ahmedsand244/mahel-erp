@@ -73,8 +73,9 @@ class TenantMiddleware:
             set_current_tenant(tenant)
             request.tenant = tenant
 
-            # قفل الوصول فوراً إذا انتهت فترة التجديد أو الاشتراك (لغير السوبر أدمن)
-            if tenant.is_subscription_expired and not (request.user.is_authenticated and request.user.is_superuser):
+            # قفل الوصول فوراً إذا كانت الشركة موقوفة أو انتهت فترة التجديد والاشتراك
+            if not tenant.is_active or tenant.is_subscription_expired:
+                # إذا كان المشاهد هو السوبر أدمن ولكن يتصفح موقع الشركة، نعرض له شاشة القفل أيضاً ليرى النتيجة
                 return render(request, 'tenants/subscription_expired.html', {'tenant': tenant}, status=403)
         else:
             clear_current_tenant()

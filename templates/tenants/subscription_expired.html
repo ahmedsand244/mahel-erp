@@ -68,6 +68,14 @@
 
         <!-- Action Buttons -->
         <div class="space-y-3 pt-2">
+            {% if request.user.is_superuser %}
+                <a href="/superadmin/" 
+                   class="w-full py-3.5 px-4 rounded-2xl bg-purple-600 hover:bg-purple-500 text-white text-xs sm:text-sm font-black shadow-lg flex items-center justify-center gap-2 transition-all active:scale-95 border border-purple-400/40">
+                    <span class="material-symbols-outlined text-lg">admin_panel_settings</span>
+                    <span>معاينة المالك SuperAdmin: اضغط هنا لتسريع التفعيل/التجديد 👑</span>
+                </a>
+            {% endif %}
+
             <!-- WhatsApp Support Contact Button -->
             <a href="https://api.whatsapp.com/send?phone=201012345678&text={{ 'مرحباً، أود تجديد اشتراك شركة: '|urlencode }}{{ tenant.name|urlencode }}" 
                target="_blank"
