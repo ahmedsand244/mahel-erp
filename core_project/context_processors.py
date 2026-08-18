@@ -20,6 +20,21 @@ def smart_notifications(request):
     alerts = []
     today = timezone.now().date()
 
+    # 0. تنبيه انتهاء الاشتراك والتجديد (مثبّت في أعلى التنبيهات)
+    tenant = getattr(request, 'tenant', None)
+    if tenant:
+        end_date = tenant.trial_ends_at or (tenant.created_at + timezone.timedelta(days=14))
+        days_left = max(0, (end_date.date() - today).days)
+        days_str = "اليوم" if days_left == 0 else f"{days_left} يوم"
+        alerts.append({
+            'title': f"حالة الاشتراك: متبقي {days_str} على انتهاء التجديد",
+            'subtitle': f"تاريخ الانتهاء: {end_date.strftime('%Y-%m-%d')} | الباقة الحالية: {tenant.get_plan_display()}",
+            'url': f"https://api.whatsapp.com/send?phone=201011079572&text=مرحباً، أود تجديد اشتراك شركة: {tenant.name}",
+            'type': 'warning' if days_left > 3 else 'error',
+            'icon': 'hourglass_top',
+            'badge': 'تجديد الاشتراك'
+        })
+
     # 1. تنبيهات استحقاق ديون العملاء
     overdue_customers = Customer.objects.filter(
         balance__gt=0,
