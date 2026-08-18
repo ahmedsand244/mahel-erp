@@ -10,7 +10,7 @@ Tenant Middleware — يحدد الـ Tenant الحالي من الـ URL.
   - _thread_locals  (للاستخدام في الـ models/managers)
 """
 import threading
-from django.shortcuts import redirect
+from django.shortcuts import render, redirect
 from django.http import Http404
 from django.urls import resolve
 from tenants.models import Tenant
@@ -34,7 +34,7 @@ def clear_current_tenant():
 class TenantMiddleware:
     """
     يستخرج slug الشركة من الـ URL ويحدد الـ Tenant.
-    يضيف request.tenant لكل request.
+    يتحقق من سريان الاشتراك ويقفل الوصول فوراً في حال الانتهاء.
     """
     def __init__(self, get_response):
         self.get_response = get_response
@@ -49,38 +49,36 @@ class TenantMiddleware:
             request.tenant = None
             return self.get_response(request)
 
+        tenant = None
         # استخراج slug من /t/{slug}/...
         if path.startswith('/t/'):
             parts = path.split('/')
-            # parts = ['', 't', 'slug', ...]
             if len(parts) >= 3:
                 slug = parts[2]
                 try:
-                    tenant = Tenant.objects.get(slug=slug, is_active=True)
-                    set_current_tenant(tenant)
-                    request.tenant = tenant
+                    tenant = Tenant.objects.get(slug=slug)
                 except Tenant.DoesNotExist:
                     clear_current_tenant()
                     request.tenant = None
-                    raise Http404(f"الشركة '{slug}' غير موجودة أو غير مفعّلة")
-            else:
-                clear_current_tenant()
-                request.tenant = None
+                    raise Http404(f"الشركة '{slug}' غير موجودة")
         else:
-            # روابط بدون /t/ prefix — للتوافق مع النظام القديم
-            # نحاول نجيب الـ Tenant من الـ session
             tenant_id = request.session.get('tenant_id')
             if tenant_id:
                 try:
-                    tenant = Tenant.objects.get(id=tenant_id, is_active=True)
-                    set_current_tenant(tenant)
-                    request.tenant = tenant
+                    tenant = Tenant.objects.get(id=tenant_id)
                 except Tenant.DoesNotExist:
-                    clear_current_tenant()
-                    request.tenant = None
-            else:
-                clear_current_tenant()
-                request.tenant = None
+                    tenant = None
+
+        if tenant:
+            set_current_tenant(tenant)
+            request.tenant = tenant
+
+            # قفل الوصول فوراً إذا انتهت فترة التجديد أو الاشتراك (لغير السوبر أدمن)
+            if tenant.is_subscription_expired and not (request.user.is_authenticated and request.user.is_superuser):
+                return render(request, 'tenants/subscription_expired.html', {'tenant': tenant}, status=403)
+        else:
+            clear_current_tenant()
+            request.tenant = None
 
         response = self.get_response(request)
         clear_current_tenant()

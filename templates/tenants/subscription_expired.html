@@ -1,0 +1,96 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>انتهت فترة الاشتراك — {{ tenant.name }}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            500: '#2F81F7',
+                            600: '#1F6FEB',
+                        }
+                    },
+                    fontFamily: { cairo: ['Cairo', 'sans-serif'] }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Cairo', sans-serif; background: #0D1117; color: #F0F6FC; min-height: 100vh; }
+        .glass-card { background: rgba(22, 27, 34, 0.85); backdrop-filter: blur(20px); border: 1px solid rgba(48, 54, 61, 0.8); }
+    </style>
+</head>
+<body class="antialiased flex items-center justify-center p-4 min-h-screen">
+
+    <div class="glass-card max-w-lg w-full rounded-3xl p-6 sm:p-10 text-center space-y-6 shadow-2xl border border-rose-500/30 relative overflow-hidden">
+        
+        <!-- Top Animated Lock Badge -->
+        <div class="w-20 h-20 rounded-full bg-rose-500/10 border-2 border-rose-500/30 flex items-center justify-center mx-auto shadow-lg shadow-rose-500/20">
+            <span class="material-symbols-outlined text-4xl text-rose-500 animate-pulse">lock_clock</span>
+        </div>
+
+        <div class="space-y-2">
+            <span class="px-3 py-1 rounded-full text-xs font-black bg-rose-500/20 text-rose-400 border border-rose-500/30 inline-block">
+                ⏳ انتهى اشتراك الشركة
+            </span>
+            <h1 class="text-2xl sm:text-3xl font-black text-white tracking-tight">حساب الشركة متوقف حالياً</h1>
+            <p class="text-xs sm:text-sm text-slate-400 font-semibold leading-relaxed">
+                عفواً، لقد انتهت فترة التجربة المجانية أو تاريخ اشتراك حساب شركة 
+                <span class="text-rose-400 font-bold font-mono">[{{ tenant.name }}]</span>. 
+                يرجى التواصل مع إدارة النظام للتجديد واستعادة الوصول لكافة بياناتك ورصيد حسابك فوراً.
+            </p>
+        </div>
+
+        <!-- Details Card -->
+        <div class="bg-slate-900/90 rounded-2xl p-4 border border-slate-800 space-y-2.5 text-right text-xs">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+                <span class="text-slate-400 font-bold">اسم الشركة:</span>
+                <span class="text-slate-200 font-black">{{ tenant.name }}</span>
+            </div>
+            <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+                <span class="text-slate-400 font-bold">تاريخ الانتهاء المسجل:</span>
+                <span class="font-mono text-rose-400 font-bold">{{ tenant.trial_ends_at|date:"Y-m-d H:i"|default:"غير محدد" }}</span>
+            </div>
+            <div class="flex justify-between items-center">
+                <span class="text-slate-400 font-bold">حالة الحساب:</span>
+                <span class="text-amber-400 font-extrabold">بانتظار التجديد والترقية ⚡</span>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="space-y-3 pt-2">
+            <!-- WhatsApp Support Contact Button -->
+            <a href="https://api.whatsapp.com/send?phone=201012345678&text={{ 'مرحباً، أود تجديد اشتراك شركة: '|urlencode }}{{ tenant.name|urlencode }}" 
+               target="_blank"
+               class="w-full py-3.5 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs sm:text-sm font-extrabold shadow-lg flex items-center justify-center gap-2 transition-all active:scale-95">
+                <span class="material-symbols-outlined text-lg">chat</span>
+                <span>تواصل عبر الواتساب لتجديد الاشتراك فوراً 💬</span>
+            </a>
+
+            <div class="grid grid-cols-2 gap-2">
+                <a href="/logout/" 
+                   class="py-3 px-3 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-bold transition-all flex items-center justify-center gap-1">
+                    <span class="material-symbols-outlined text-sm">logout</span>
+                    <span>تسجيل الخروج</span>
+                </a>
+                <a href="/" 
+                   class="py-3 px-3 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-bold transition-all flex items-center justify-center gap-1">
+                    <span class="material-symbols-outlined text-sm">home</span>
+                    <span>الصفحة الرئيسية</span>
+                </a>
+            </div>
+        </div>
+
+    </div>
+
+</body>
+</html>

@@ -39,6 +39,14 @@ class Tenant(models.Model):
         return False
 
     @property
+    def is_subscription_expired(self):
+        if not self.is_active:
+            return True
+        if self.trial_ends_at:
+            return timezone.now() > self.trial_ends_at
+        return False
+
+    @property
     def base_url(self):
         return f"/t/{self.slug}"
 
