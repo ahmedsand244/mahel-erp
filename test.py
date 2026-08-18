@@ -1,76 +1,57 @@
-def compare(mars_value, earth_value):
-    if mars_value < earth_value:
-        return -1
-    if mars_value > earth_value:
-        return 1
-    return 0
-
-
-def match_crystals(mars, earth):
-    if not mars:
-        return []
-
-    if len(mars) == 1:
-        return [(mars[0], earth[0])]
-
-    pivot = mars[0]
-    earth_less = []
-    earth_greater = []
-    partner = None
-
-    for item in earth:
-        relation = compare(pivot, item)
-
-        if relation < 0:
-            earth_greater.append(item)
-        elif relation > 0:
-            earth_less.append(item)
+def trap_rain_water(height):
+    """
+    Calculate the total amount of rainwater trapped between towers.
+ 
+    Input:
+        height (list[int]): Heights of the towers.
+ 
+    Output:
+        int: Total trapped rainwater.
+    """
+ 
+    if not height:
+        return 0
+ 
+    left = 0
+    right = len(height) - 1
+ 
+    left_max = 0
+    right_max = 0
+    water = 0
+ 
+    while left < right:
+ 
+        # Process the side with the smaller current height.
+        if height[left] <= height[right]:
+ 
+            if height[left] >= left_max:
+                left_max = height[left]
+            else:
+                water += left_max - height[left]
+ 
+            left += 1
+ 
         else:
-            partner = item
-
-    mars_less = []
-    mars_greater = []
-
-    for item in mars[1:]:
-        relation = compare(item, partner)
-
-        if relation < 0:
-            mars_less.append(item)
-        elif relation > 0:
-            mars_greater.append(item)
-
-    left_pairs = match_crystals(mars_less, earth_less)
-    right_pairs = match_crystals(mars_greater, earth_greater)
-
-    return left_pairs + [(pivot, partner)] + right_pairs
-
-
-def match_crystals_bruteforce(mars, earth):
-    pairs = []
-    used = [False] * len(earth)
-
-    for m in mars:
-        for index, e in enumerate(earth):
-            if used[index]:
-                continue
-
-            if compare(m, e) == 0:
-                pairs.append((m, e))
-                used[index] = True
-                break
-
-    return sorted(pairs)
-
-
-if __name__ == "__main__":
-    examples = [
-        ([45, 10, 80, 25], [25, 80, 45, 10]),
-        ([210, 125, 340, 180, 95, 275],
-         [95, 340, 275, 210, 125, 180])
-    ]
-
-    for mars, earth in examples:
-        print("Mars :", mars)
-        print("Earth:", earth)
-        print("Pairs:", match_crystals(mars, earth))
-        print()
+ 
+            if height[right] >= right_max:
+                right_max = height[right]
+            else:
+                water += right_max - height[right]
+ 
+            right -= 1
+ 
+    return water
+ 
+ 
+# Test cases
+test_cases = [
+    [4, 2, 0, 3, 2, 5],
+    [7, 0, 4, 2, 5, 0, 6, 4, 0, 5],
+    [5, 0, 0, 2, 0, 4]
+]
+ 
+for heights in test_cases:
+    result = trap_rain_water(heights)
+    print("Input :", heights)
+    print("Output:", result)
+    print()

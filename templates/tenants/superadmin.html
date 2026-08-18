@@ -116,10 +116,11 @@
                             <th class="py-3 sm:py-4 px-4 sm:px-6 whitespace-nowrap">اسم الشركة</th>
                             <th class="py-3 sm:py-4 px-4 sm:px-6 whitespace-nowrap">الرابط المخصص</th>
                             <th class="py-3 sm:py-4 px-4 sm:px-6 whitespace-nowrap">الباقة الحالية</th>
+                            <th class="py-3 sm:py-4 px-4 sm:px-6 whitespace-nowrap">انتهاء التجديد / التجربة</th>
                             <th class="py-3 sm:py-4 px-4 sm:px-6 whitespace-nowrap">حالة الاشتراك</th>
                             <th class="py-3 sm:py-4 px-4 sm:px-6 whitespace-nowrap">المالك</th>
-                            <th class="py-3 sm:py-4 px-4 sm:px-6 whitespace-nowrap">التاريخ</th>
-                            <th class="py-3 sm:py-4 px-4 sm:px-6 whitespace-nowrap text-left">التحكم</th>
+                            <th class="py-3 sm:py-4 px-4 sm:px-6 whitespace-nowrap">التسجيل</th>
+                            <th class="py-3 sm:py-4 px-4 sm:px-6 whitespace-nowrap text-left">تحديد تاريخ الترقية والتجديد</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-200 font-semibold">
@@ -138,8 +139,15 @@
                                         {% else %}bg-emerald-50 text-emerald-700 border border-emerald-200{% endif %}">
                                         {% if tenant.plan == 'trial' %}⏳ تجربة
                                         {% elif tenant.plan == 'basic' %}⚡ أساسية
-                                        {% else %}🚀 احترافية{% endif %}
+                                        {% else %}🚀 احترافية Pro{% endif %}
                                     </span>
+                                </td>
+                                <td class="py-3.5 sm:py-4 px-4 sm:px-6 whitespace-nowrap">
+                                    <div class="space-y-0.5">
+                                        <span class="font-mono text-xs font-bold text-slate-800 block">
+                                            {{ tenant.trial_ends_at|date:"Y/m/d"|default:"غير محدد" }}
+                                        </span>
+                                    </div>
                                 </td>
                                 <td class="py-3.5 sm:py-4 px-4 sm:px-6 whitespace-nowrap">
                                     <span class="inline-flex items-center gap-1 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full text-[11px] sm:text-xs font-extrabold 
@@ -151,8 +159,31 @@
                                 <td class="py-3.5 sm:py-4 px-4 sm:px-6 text-slate-600 text-xs font-bold whitespace-nowrap">{{ tenant.owner.username }}</td>
                                 <td class="py-3.5 sm:py-4 px-4 sm:px-6 text-slate-500 font-mono text-[11px] sm:text-xs whitespace-nowrap">{{ tenant.created_at|date:"Y/m/d" }}</td>
                                 <td class="py-3.5 sm:py-4 px-4 sm:px-6 text-left whitespace-nowrap">
-                                    <div class="flex items-center justify-end gap-1.5">
-                                        <a href="/t/{{ tenant.slug }}/" target="_blank" class="px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl text-[11px] sm:text-xs font-extrabold bg-brand-50 text-brand-600 hover:bg-brand-100 border border-brand-200 transition-all flex items-center gap-1">
+                                    <div class="flex items-center justify-end gap-1.5 flex-wrap">
+                                        <!-- Inline Subscription Date & Plan Upgrade Form -->
+                                        <form method="post" class="flex items-center gap-1 bg-slate-100 p-1.5 rounded-xl border border-slate-200 shadow-sm">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="tenant_id" value="{{ tenant.id }}">
+                                            <input type="hidden" name="action" value="update_subscription_date">
+                                            
+                                            <select name="plan" title="نوع الباقة" class="text-[11px] font-bold py-1 px-1.5 rounded-lg border border-slate-300 bg-white text-slate-800 focus:outline-none">
+                                                <option value="trial" {% if tenant.plan == 'trial' %}selected{% endif %}>تجربة</option>
+                                                <option value="basic" {% if tenant.plan == 'basic' %}selected{% endif %}>أساسية</option>
+                                                <option value="pro" {% if tenant.plan == 'pro' %}selected{% endif %}>Pro احترافية</option>
+                                            </select>
+
+                                            <input type="date" name="expiry_date" value="{{ tenant.trial_ends_at|date:'Y-m-d' }}" 
+                                                   title="تاريخ انتهاء الاشتراك / التجديد"
+                                                   class="text-[11px] font-mono font-bold py-1 px-1.5 rounded-lg border border-slate-300 bg-white text-slate-800 focus:outline-none">
+
+                                            <button type="submit" title="حفظ وتحديد التاريخ" 
+                                                    class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[11px] font-extrabold transition-all flex items-center gap-0.5 shadow-sm">
+                                                <span class="material-symbols-outlined text-xs">event_available</span>
+                                                <span>حفظ والتحديث</span>
+                                            </button>
+                                        </form>
+
+                                        <a href="/t/{{ tenant.slug }}/" target="_blank" class="px-2.5 py-1.5 rounded-xl text-[11px] sm:text-xs font-extrabold bg-brand-50 text-brand-600 hover:bg-brand-100 border border-brand-200 transition-all flex items-center gap-1">
                                             <span class="material-symbols-outlined text-sm">open_in_new</span>
                                             <span>دخول</span>
                                         </a>
@@ -161,27 +192,16 @@
                                             {% csrf_token %}
                                             <input type="hidden" name="tenant_id" value="{{ tenant.id }}">
                                             <input type="hidden" name="action" value="toggle_active">
-                                            <button type="submit" class="px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl text-[11px] sm:text-xs font-extrabold border transition-all {% if tenant.is_active %}bg-rose-50 text-rose-600 border-rose-200 hover:bg-rose-100{% else %}bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100{% endif %}">
+                                            <button type="submit" class="px-2.5 py-1.5 rounded-xl text-[11px] sm:text-xs font-extrabold border transition-all {% if tenant.is_active %}bg-rose-50 text-rose-600 border-rose-200 hover:bg-rose-100{% else %}bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100{% endif %}">
                                                 {% if tenant.is_active %}إيقاف{% else %}تفعيل{% endif %}
                                             </button>
                                         </form>
-
-                                        {% if tenant.plan != 'pro' %}
-                                            <form method="post" class="inline">
-                                                {% csrf_token %}
-                                                <input type="hidden" name="tenant_id" value="{{ tenant.id }}">
-                                                <input type="hidden" name="action" value="upgrade_pro">
-                                                <button type="submit" class="px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl text-[11px] sm:text-xs font-extrabold bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200 transition-all">
-                                                    ترقية Pro
-                                                </button>
-                                            </form>
-                                        {% endif %}
 
                                         <form method="post" class="inline" onsubmit="return confirm('⚠️ هل أنت متأكد من حذف شركة ({{ tenant.name|escapejs }}) وكافة بياناتها نهائياً؟ هذا الإجراء لا يمكن التراجع عنه!');">
                                             {% csrf_token %}
                                             <input type="hidden" name="tenant_id" value="{{ tenant.id }}">
                                             <input type="hidden" name="action" value="delete_tenant">
-                                            <button type="submit" class="px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl text-[11px] sm:text-xs font-extrabold bg-red-600 hover:bg-red-700 text-white shadow-sm transition-all flex items-center gap-1">
+                                            <button type="submit" class="px-2.5 py-1.5 rounded-xl text-[11px] sm:text-xs font-extrabold bg-red-600 hover:bg-red-700 text-white shadow-sm transition-all flex items-center gap-1">
                                                 <span class="material-symbols-outlined text-xs">delete</span>
                                                 <span>حذف</span>
                                             </button>
@@ -191,7 +211,7 @@
                             </tr>
                         {% empty %}
                             <tr>
-                                <td colspan="7" class="py-12 text-center text-slate-400 text-xs font-bold">
+                                <td colspan="8" class="py-12 text-center text-slate-400 text-xs font-bold">
                                     <span class="material-symbols-outlined text-3xl text-slate-300 block mb-2">business_center</span>
                                     لا توجد شركات مسجلة في النظام بعد
                                 </td>

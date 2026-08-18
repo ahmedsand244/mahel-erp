@@ -227,6 +227,22 @@ class SuperAdminView(View):
                 tenant.plan = 'pro'
                 tenant.save()
                 messages.success(request, f'تم ترقية "{tenant.name}" إلى الباقة الاحترافية.')
+            elif action == 'update_subscription_date':
+                new_date = request.POST.get('expiry_date')
+                new_plan = request.POST.get('plan')
+                if new_date:
+                    from django.utils.dateparse import parse_date
+                    import datetime
+                    parsed = parse_date(new_date)
+                    if parsed:
+                        dt = datetime.datetime.combine(parsed, datetime.time.max)
+                        if timezone.is_naive(dt):
+                            dt = timezone.make_aware(dt)
+                        tenant.trial_ends_at = dt
+                if new_plan and new_plan in ['trial', 'basic', 'pro']:
+                    tenant.plan = new_plan
+                tenant.save()
+                messages.success(request, f'🎉 تم تحديث تمديد/تاريخ اشتراك شركة "{tenant.name}" إلى ({new_date or "بدون تغيير"}) بنجاح.')
             elif action == 'delete_tenant':
                 name = tenant.name
                 owner = tenant.owner
