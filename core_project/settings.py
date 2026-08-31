@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'expenses.apps.ExpensesConfig',
     'reports.apps.ReportsConfig',
     'tenants',
+    'api',
 ]
 
 MIDDLEWARE = [

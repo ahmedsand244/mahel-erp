@@ -19,6 +19,9 @@ urlpatterns = [
     path('superadmin/', SuperAdminView.as_view(),   name='superadmin'),
     path('admin/',      admin.site.urls),
 
+    # API Endpoints for Mobile App (Flutter)
+    path('api/v1/', include('api.urls')),
+
     # Tenants SaaS routes (/t/{slug}/...)
     path('', include('tenants.urls')),
 
