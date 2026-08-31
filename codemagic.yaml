@@ -9,9 +9,10 @@ workflows:
     scripts:
       - name: Get dependencies
         script: |
-          flutter pub get
+          cd mobile_app && flutter pub get
       - name: Build APK
         script: |
-          flutter build apk --release
+          cd mobile_app && flutter build apk --release -t lib/main.dart
     artifacts:
       - mobile_app/build/app/outputs/flutter-apk/app-release.apk
+      - build/app/outputs/flutter-apk/app-release.apk
