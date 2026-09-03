@@ -383,7 +383,7 @@ class ApiFullSyncView(View):
                     except: init_bal = Decimal('0.00')
                     Supplier.objects.create(
                         name=name,
-                        company_name=s.get('company_name') or '',
+                        company=s.get('company') or s.get('company_name') or '',
                         phone=phone,
                         address=s.get('address') or '',
                         notes=s.get('notes') or '',
@@ -585,7 +585,7 @@ class DesktopSyncAllToCloudView(View):
             for s in Supplier.objects.all():
                 suppliers_list.append({
                     'name': s.name,
-                    'company_name': s.company_name or '',
+                    'company': getattr(s, 'company', '') or '',
                     'phone': s.phone or '',
                     'address': s.address or '',
                     'balance': float(s.balance or 0),
