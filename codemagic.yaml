@@ -5,7 +5,6 @@ workflows:
     instance_type: mac_mini_m2
     environment:
       flutter: stable
-      android_signing: false
     scripts:
       - name: Flutter clean 
         script: |
