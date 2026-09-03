@@ -1,8 +1,15 @@
-const CACHE_NAME = 'mahel-erp-offline-v2';
+const CACHE_NAME = 'mahel-erp-offline-v3';
 const OFFLINE_FALLBACK_URLS = [
+  '/',
   '/login/',
   '/pos/',
-  '/manifest.json'
+  '/dashboard/',
+  '/manifest.json',
+  '/static/images/logo.png',
+  '/static/vendor/css/cairo-inter.css',
+  '/static/vendor/css/material-symbols.css',
+  '/static/vendor/js/tailwind.js',
+  '/static/vendor/js/alpine.min.js'
 ];
 
 self.addEventListener('install', (event) => {

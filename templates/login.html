@@ -5,11 +5,25 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>تسجيل الدخول — النمـــــاء ERP & POS</title>
+    <!-- PWA Web App Manifest & Mobile Meta -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#2F81F7">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="النماء ERP">
+    <link rel="apple-touch-icon" href="{% static 'images/logo.png' %}">
+
     <link href="{% static 'vendor/css/cairo-inter.css' %}" rel="stylesheet">
     <link href="{% static 'vendor/css/material-symbols.css' %}" rel="stylesheet">
     <script defer src="{% static 'vendor/js/alpine.min.js' %}"></script>
     <script src="{% static 'vendor/js/tailwind.js' %}"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js').catch(() => {});
+            });
+        }
+    </script>
     <script>
         tailwind.config = {
             darkMode: 'class',
