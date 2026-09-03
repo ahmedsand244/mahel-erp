@@ -14,8 +14,35 @@
     <!-- Right Panel Wrapper: Search & Products Grid (Display contents on mobile so Cart card can sit between Search and Products!) -->
     <div class="contents xl:flex xl:flex-col xl:flex-1 xl:space-y-6">
         
+        <!-- 0. Offline POS & Cloud Sync Status Header Banner -->
+        <div class="glass-card rounded-2xl p-3 sm:p-4 order-1 xl:order-none flex flex-wrap items-center justify-between gap-3 shadow-apple-sm">
+            <div class="flex items-center gap-2">
+                <span x-show="isOnline" class="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 text-xs px-3 py-1.5 rounded-full font-bold flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span>متصل بالسيرفر (أونلاين) 🟢</span>
+                </span>
+                <span x-show="!isOnline" class="bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 text-xs px-3 py-1.5 rounded-full font-bold flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+                    <span>يعمل بدون إنترنت (أوفلاين متاح للبيع) 🟡</span>
+                </span>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <template x-if="pendingSyncCount > 0">
+                    <button type="button" @click="syncOfflineInvoices()" :disabled="isSyncing || !isOnline"
+                            class="bg-primary/20 hover:bg-primary text-primary hover:text-white border border-primary/30 px-3 py-1.5 rounded-full font-bold text-xs transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shadow-apple-sm">
+                        <span class="material-symbols-outlined text-sm" :class="isSyncing ? 'animate-spin' : ''">sync</span>
+                        <span x-text="isSyncing ? 'جارِ المزامنة...' : ('مزامنة ' + pendingSyncCount + ' فواتير أوفلاين ⚡')"></span>
+                    </button>
+                </template>
+                <template x-if="pendingSyncCount === 0 && isOnline">
+                    <span class="text-xs text-apple-secondary font-medium hidden sm:inline">جميع الفواتير متزامنة مع السحاب ✅</span>
+                </template>
+            </div>
+        </div>
+
         <!-- 1. Search Bar & Filters with Phone Camera Barcode Scanner -->
-        <div class="glass-card rounded-2xl xl:rounded-3xl p-4 sm:p-6 order-1 xl:order-none">
+        <div class="glass-card rounded-2xl xl:rounded-3xl p-4 sm:p-6 order-2 xl:order-none">
             <div class="relative w-full flex items-center gap-2.5">
                 <div class="relative flex-1">
                     <input class="apple-input text-sm sm:text-base pr-12 text-right shadow-apple-sm w-full" 
@@ -365,9 +392,25 @@
         const dbProducts = JSON.parse(document.getElementById('products-db-json').textContent || '[]');
         const dbCustomers = JSON.parse(document.getElementById('customers-db-json').textContent || '[]');
 
+        // 1. Cache to localStorage for offline launch support
+        if (dbProducts && dbProducts.length > 0) {
+            try { localStorage.setItem('mahel_cached_products', JSON.stringify(dbProducts)); } catch(e) {}
+        }
+        if (dbCustomers && dbCustomers.length > 0) {
+            try { localStorage.setItem('mahel_cached_customers', JSON.stringify(dbCustomers)); } catch(e) {}
+        }
+
+        const initialProducts = (dbProducts && dbProducts.length > 0)
+            ? dbProducts
+            : JSON.parse(localStorage.getItem('mahel_cached_products') || '[]');
+
+        const initialCustomers = (dbCustomers && dbCustomers.length > 0)
+            ? dbCustomers
+            : JSON.parse(localStorage.getItem('mahel_cached_customers') || '[]');
+
         return {
-            products: dbProducts,
-            customers: dbCustomers,
+            products: initialProducts,
+            customers: initialCustomers,
             searchQuery: '',
             customerId: '',
             customerSearchQuery: '',
@@ -379,6 +422,36 @@
             showCameraScanner: false,
             successOrderNumber: '',
             successOrderId: null,
+            isOnline: navigator.onLine,
+            pendingSyncCount: 0,
+            isSyncing: false,
+
+            init() {
+                this.updatePendingCount();
+                window.addEventListener('online', () => {
+                    this.isOnline = true;
+                    this.syncOfflineInvoices();
+                });
+                window.addEventListener('offline', () => {
+                    this.isOnline = false;
+                });
+                // Background auto-sync every 25 seconds if internet is back
+                setInterval(() => {
+                    this.isOnline = navigator.onLine;
+                    if (this.isOnline && this.pendingSyncCount > 0 && !this.isSyncing) {
+                        this.syncOfflineInvoices();
+                    }
+                }, 25000);
+            },
+
+            updatePendingCount() {
+                try {
+                    const pending = JSON.parse(localStorage.getItem('mahel_pending_invoices') || '[]');
+                    this.pendingSyncCount = pending.length;
+                } catch(e) {
+                    this.pendingSyncCount = 0;
+                }
+            },
 
             startCameraScanner() {
                 this.showCameraScanner = true;
@@ -609,6 +682,11 @@
                     return;
                 }
 
+                if (!this.cart || this.cart.length === 0) {
+                    alert('سلة المبيعات فارغة!');
+                    return;
+                }
+
                 this.isSubmitting = true;
                 
                 const payload = {
@@ -616,6 +694,12 @@
                     customer_id: this.customerId,
                     cart: this.cart
                 };
+
+                // If device is offline, record locally immediately
+                if (!navigator.onLine) {
+                    this.saveOfflineInvoice(payload, 'أنت في وضع عدم الاتصال (Offline). تم حفظ الفاتورة محلياً بنجاح! 📱');
+                    return;
+                }
 
                 fetch('{% url "pos:checkout_ajax" %}', {
                     method: 'POST',
@@ -638,14 +722,98 @@
                     }
                 })
                 .catch(err => {
+                    // Fallback to offline invoice storage on any network drop/error
+                    this.saveOfflineInvoice(payload, 'تعذر الاتصال بالسيرفر! تم حفظ الفاتورة محلياً بأمان (أوفلاين) وستُرفع تلقائياً عند عودة النت ⚡');
+                });
+            },
+
+            saveOfflineInvoice(payload, message) {
+                try {
+                    const pending = JSON.parse(localStorage.getItem('mahel_pending_invoices') || '[]');
+                    const tempNumber = 'OFF-' + Math.floor(100000 + Math.random() * 900000);
+                    const offlineRecord = {
+                        client_id: 'MOB-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
+                        order_number: tempNumber,
+                        payment_method: payload.payment_method,
+                        customer_id: payload.customer_id || null,
+                        items: payload.cart.map(item => ({
+                            product_id: item.product_id,
+                            quantity: item.quantity,
+                            unit_price: item.price
+                        })),
+                        created_at: new Date().toISOString(),
+                        total_amount: this.getCartTotal()
+                    };
+                    pending.push(offlineRecord);
+                    localStorage.setItem('mahel_pending_invoices', JSON.stringify(pending));
+
+                    // Deduct local stock immediately for cashier visibility
+                    for (const cartItem of payload.cart) {
+                        const prod = this.products.find(p => p.id === cartItem.product_id);
+                        if (prod) {
+                            prod.stock = Math.max(0, prod.stock - cartItem.quantity);
+                        }
+                    }
+                    localStorage.setItem('mahel_cached_products', JSON.stringify(this.products));
+
+                    this.updatePendingCount();
                     this.isSubmitting = false;
-                    alert('حدث خطأ في شبكة الاتصال، يرجى المحاولة لاحقاً');
+                    this.successOrderId = offlineRecord.client_id;
+                    this.successOrderNumber = tempNumber + ' (محفوظ أوفلاين)';
+                    this.showSuccess = true;
+                    this.cart = [];
+
+                    if (message) {
+                        setTimeout(() => alert(message), 100);
+                    }
+                } catch(e) {
+                    this.isSubmitting = false;
+                    alert('حدث خطأ أثناء حفظ الفاتورة محلياً: ' + e);
+                }
+            },
+
+            syncOfflineInvoices() {
+                const pending = JSON.parse(localStorage.getItem('mahel_pending_invoices') || '[]');
+                if (!pending || pending.length === 0 || this.isSyncing) return;
+
+                this.isSyncing = true;
+                const tenantSlug = '{{ current_tenant.slug|default:"mahel" }}';
+
+                fetch('/api/v1/invoices/sync/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify({
+                        tenant_slug: tenantSlug,
+                        invoices: pending
+                    })
+                })
+                .then(r => r.json())
+                .then(data => {
+                    this.isSyncing = false;
+                    if (data.success) {
+                        localStorage.removeItem('mahel_pending_invoices');
+                        this.updatePendingCount();
+                        alert(`🎉 ممتاز! تم مزامنة ${data.synced_count || pending.length} فاتورة مسجلة بدون نت مع السيرفر السحابي بنجاح!`);
+                    } else {
+                        console.warn('Sync response error:', data.error);
+                    }
+                })
+                .catch(err => {
+                    this.isSyncing = false;
+                    console.warn('Sync failed (will retry automatically):', err);
                 });
             },
 
             closeSuccessModal() {
                 this.showSuccess = false;
-                window.location.reload();
+                if (!navigator.onLine) {
+                    this.cart = [];
+                } else {
+                    window.location.reload();
+                }
             }
         };
     }
