@@ -1,13 +1,16 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>تسجيل شركة جديدة — النماء SaaS</title>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <!-- Offline Fonts & Icons -->
+    <link href="{% static 'vendor/css/cairo-inter.css' %}" rel="stylesheet">
+    <link href="{% static 'vendor/css/material-symbols.css' %}" rel="stylesheet">
+    <!-- Offline Tailwind & Alpine -->
+    <script src="{% static 'vendor/js/tailwind.js' %}"></script>
+    <script defer src="{% static 'vendor/js/alpine.min.js' %}"></script>
     <script>
         tailwind.config = {
             darkMode: 'class',
