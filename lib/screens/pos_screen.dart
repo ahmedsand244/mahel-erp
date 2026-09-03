@@ -108,7 +108,7 @@ class _PosScreenState extends State<PosScreen> {
       SnackBar(
         content: Text(
           syncedOnline
-              ? "تم حفظ الفاتورة ورفعها للسيرفر بنجاح! 🚀"
+              ? "تم تم حفظ الفاتورة ورفعها للسيرفر بنجاح! 🚀"
               : "تم حفظ الفاتورة محلياً (Offline) وسيتم المزامنة عند توفر النت ⏳",
         ),
         backgroundColor: syncedOnline ? Colors.emerald : Colors.amber.shade800,
