@@ -2,7 +2,7 @@
   "name": "النماء ERP & POS",
   "short_name": "النماء",
   "description": "نظام إدارة المبيعات والمخازن والورش والمصروفات",
-  "start_url": "/",
+  "start_url": "/login/",
   "display": "standalone",
   "background_color": "#0D1117",
   "theme_color": "#2F81F7",
