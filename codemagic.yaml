@@ -13,6 +13,6 @@ workflows:
       - name: Build Android APK
         script: |
           cd mobile_app
-          flutter build apk --release
+          flutter build apk --release --android-skip-build-dependency-validation
     artifacts:
       - mobile_app/build/app/outputs/flutter-apk/app-release.apk
