@@ -111,7 +111,7 @@ class _PosScreenState extends State<PosScreen> {
               ? "تم تم حفظ الفاتورة ورفعها للسيرفر بنجاح! 🚀"
               : "تم حفظ الفاتورة محلياً (Offline) وسيتم المزامنة عند توفر النت ⏳",
         ),
-        backgroundColor: syncedOnline ? Colors.emerald : Colors.amber.shade800,
+        backgroundColor: syncedOnline ? const Color(0xFF10B981) : Colors.amber.shade800,
       ),
     );
   }
@@ -128,10 +128,10 @@ class _PosScreenState extends State<PosScreen> {
             decoration: BoxDecoration(
               color: _isOfflineMode
                   ? Colors.amber.withOpacity(0.2)
-                  : Colors.emerald.withOpacity(0.2),
+                  : const Color(0xFF10B981).withOpacity(0.2),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: _isOfflineMode ? Colors.amber : Colors.emerald,
+                color: _isOfflineMode ? Colors.amber : const Color(0xFF10B981),
               ),
             ),
             child: Row(
@@ -139,7 +139,7 @@ class _PosScreenState extends State<PosScreen> {
                 Icon(
                   _isOfflineMode ? Icons.wifi_off_rounded : Icons.wifi_rounded,
                   size: 14,
-                  color: _isOfflineMode ? Colors.amber : Colors.emerald,
+                  color: _isOfflineMode ? Colors.amber : const Color(0xFF10B981),
                 ),
                 const SizedBox(width: 4),
                 Text(
@@ -147,7 +147,7 @@ class _PosScreenState extends State<PosScreen> {
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
-                    color: _isOfflineMode ? Colors.amber : Colors.emerald,
+                    color: _isOfflineMode ? Colors.amber : const Color(0xFF10B981),
                   ),
                 ),
               ],
@@ -200,7 +200,7 @@ class _PosScreenState extends State<PosScreen> {
                                 "${p.salePrice.toStringAsFixed(2)} ج.م",
                                 style: const TextStyle(
                                   color: Color(0xFF10B981),
-                                  fontWeight: FontWeight.black,
+                                  fontWeight: FontWeight.w900,
                                   fontSize: 15,
                                 ),
                               ),
@@ -227,7 +227,7 @@ class _PosScreenState extends State<PosScreen> {
                   child: Column(
                     children: [
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.between,
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           const Text(
                             "إجمالي السلة:",
@@ -240,7 +240,7 @@ class _PosScreenState extends State<PosScreen> {
                             "${_cartTotal.toStringAsFixed(2)} ج.م",
                             style: const TextStyle(
                               fontSize: 20,
-                              fontWeight: FontWeight.black,
+                              fontWeight: FontWeight.w900,
                               color: Color(0xFF2F81F7),
                             ),
                           ),
