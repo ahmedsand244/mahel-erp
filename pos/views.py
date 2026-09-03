@@ -395,7 +395,15 @@ class SyncLocalToCloudView(View):
             )
 
             with urllib.request.urlopen(req, timeout=15) as response:
-                res_data = json.loads(response.read().decode('utf-8'))
+                raw_content = response.read().decode('utf-8')
+                try:
+                    res_data = json.loads(raw_content)
+                except Exception:
+                    return JsonResponse({
+                        'success': False,
+                        'error': 'استجاب السيرفر السحابي بصفحة غير مهيأة. يرجى التأكد من سحب التحديث (git pull) وعمل Reload في بايثون إني وير.'
+                    }, status=400)
+
                 if res_data.get('success'):
                     return JsonResponse({
                         'success': True,

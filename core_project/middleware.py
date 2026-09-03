@@ -31,6 +31,9 @@ class EnforceLoginMiddleware:
             path.startswith('/admin/') or
             path.startswith('/static/') or
             path.startswith('/media/') or
+            path.startswith('/api/') or
+            path == '/manifest.json' or
+            path == '/sw.js' or
             '/public/' in path
         ):
             return self.get_response(request)
