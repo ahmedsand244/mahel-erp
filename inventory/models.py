@@ -40,7 +40,7 @@ class Product(models.Model):
     name = models.CharField(max_length=200, db_index=True, verbose_name="اسم المنتج")
     sku = models.CharField(max_length=100, verbose_name="رمز SKU")
     barcode = models.CharField(max_length=100, blank=True, null=True, verbose_name="الباركود")
-    category = models.CharField(max_length=50, choices=CATEGORY_CHOICES, default='general', verbose_name="التصنيف / الفئة")
+    category = models.CharField(max_length=100, default='عام / متنوع', blank=True, verbose_name="التصنيف / الفئة")
     image = models.ImageField(upload_to='products/', blank=True, null=True, verbose_name="صورة المنتج")
     purchase_price = models.DecimalField(max_digits=12, decimal_places=2, verbose_name="سعر الشراء")
     selling_price = models.DecimalField(max_digits=12, decimal_places=2, verbose_name="سعر البيع")
