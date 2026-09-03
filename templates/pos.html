@@ -695,12 +695,8 @@
                     cart: this.cart
                 };
 
-                // If device is offline, record locally immediately
-                if (!navigator.onLine) {
-                    this.saveOfflineInvoice(payload, 'أنت في وضع عدم الاتصال (Offline). تم حفظ الفاتورة محلياً بنجاح! 📱');
-                    return;
-                }
-
+                // Always attempt server checkout first!
+                // On localhost / desktop, the local server runs locally even without external internet.
                 fetch('{% url "pos:checkout_ajax" %}', {
                     method: 'POST',
                     headers: {
@@ -709,10 +705,13 @@
                     },
                     body: JSON.stringify(payload)
                 })
-                .then(res => res.json())
+                .then(res => {
+                    if (!res.ok) throw new Error('Network or server error: ' + res.status);
+                    return res.json();
+                })
                 .then(data => {
                     this.isSubmitting = false;
-            if (data.success) {
+                    if (data.success) {
                         this.successOrderId = data.order_id;
                         this.successOrderNumber = data.order_number;
                         this.showSuccess = true;
@@ -722,8 +721,8 @@
                     }
                 })
                 .catch(err => {
-                    // Fallback to offline invoice storage on any network drop/error
-                    this.saveOfflineInvoice(payload, 'تعذر الاتصال بالسيرفر! تم حفظ الفاتورة محلياً بأمان (أوفلاين) وستُرفع تلقائياً عند عودة النت ⚡');
+                    // Fallback to offline invoice storage only if server is completely unreachable (e.g. mobile app without WiFi)
+                    this.saveOfflineInvoice(payload, 'تم حفظ الفاتورة محلياً بأمان (أوفلاين) نظراً لتعذر الاتصال بالسيرفر! ستُرفع تلقائياً عند توفر الاتصال ⚡');
                 });
             },
 
@@ -779,7 +778,13 @@
                 this.isSyncing = true;
                 const tenantSlug = '{{ current_tenant.slug|default:"mahel" }}';
 
-                fetch('/api/v1/invoices/sync/', {
+                // If on localhost (desktop offline app), sync directly to cloud server
+                const isLocal = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost';
+                const syncUrl = isLocal
+                    ? 'https://webservises.pythonanywhere.com/api/v1/invoices/sync/'
+                    : '/api/v1/invoices/sync/';
+
+                fetch(syncUrl, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

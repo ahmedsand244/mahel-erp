@@ -6,7 +6,8 @@ from .views import (
     SalesInvoicesListView,
     OrderInvoiceDetailJsonView,
     PublicInvoiceDetailView,
-    ExportInvoicesExcelView
+    ExportInvoicesExcelView,
+    SyncLocalToCloudView
 )
 
 app_name = 'pos'
@@ -19,5 +20,6 @@ urlpatterns = [
     path('invoices/<int:pk>/json/', OrderInvoiceDetailJsonView.as_view(), name='invoice_detail_json'),
     path('invoices/<int:pk>/public/', PublicInvoiceDetailView.as_view(), name='public_invoice_detail'),
     path('invoices/export-excel/', ExportInvoicesExcelView.as_view(), name='export_invoices_excel'),
+    path('sync-local-to-cloud/', SyncLocalToCloudView.as_view(), name='sync_local_to_cloud'),
 ]
 

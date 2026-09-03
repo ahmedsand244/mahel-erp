@@ -210,7 +210,14 @@ class ApiInvoiceSyncView(View):
                 if not order_items_to_create:
                     continue
 
-                order_number = f"MOB-{int(timezone.now().timestamp())}-{Order.objects.count() + 1}"
+                order_number = inv.get('order_number') or f"MOB-{int(timezone.now().timestamp())}-{Order.objects.count() + 1}"
+
+                # Prevent duplicate order on re-sync
+                existing_order = Order.objects.filter(order_number=order_number).first()
+                if existing_order:
+                    synced_ids.append(existing_order.id)
+                    continue
+
                 order = Order.objects.create(
                     order_number=order_number,
                     customer=customer,

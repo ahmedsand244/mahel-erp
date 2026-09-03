@@ -336,22 +336,76 @@ class ExportInvoicesExcelView(View):
             response['Content-Disposition'] = 'attachment; filename="Elnamaa_Sales_Invoices.xlsx"'
             wb.save(response)
             return response
-        except Exception:
-            import csv
-            response = HttpResponse(content_type='text/csv; charset=utf-8-sig')
-            response['Content-Disposition'] = 'attachment; filename="Elnamaa_Sales_Invoices.csv"'
-            writer = csv.writer(response)
-            writer.writerow(['رقم الفاتورة', 'تاريخ الإصدار', 'العميل', 'طريقة السداد', 'إجمالي الفاتورة (ج.م)', 'التكلفة (ج.م)', 'الربح الصافي (ج.م)'])
-            for o in orders:
-                profit = float(o.total_amount - o.cost_of_goods_sold)
-                writer.writerow([
-                    o.order_number,
-                    o.created_at.strftime('%Y-%m-%d %H:%M'),
-                    o.customer.name if o.customer else 'عميل نقدي',
-                    o.get_payment_method_display(),
-                    float(o.total_amount),
-                    float(o.cost_of_goods_sold),
-                    profit
-                ])
-            return response
+
+        except Exception as e:
+            from django.contrib import messages
+            messages.error(request, f"حدث خطأ أثناء تصدير ملف الإكسيل: {e}")
+            return redirect('pos:invoices_list')
+
+
+import urllib.request
+import urllib.error
+
+@method_decorator(csrf_exempt, name='dispatch')
+class SyncLocalToCloudView(View):
+    """
+    يقوم بنقل ومزامنة الفواتير المسجلة محلياً في الكمبيوتر (Offline) إلى موقع السيرفر السحابي (PythonAnywhere)
+    """
+    def post(self, request, *args, **kwargs):
+        try:
+            cloud_sync_url = "https://webservises.pythonanywhere.com/api/v1/invoices/sync/"
+            
+            local_orders = Order.objects.all().prefetch_related('items__product')
+            if not local_orders.exists():
+                return JsonResponse({'success': True, 'synced_count': 0, 'message': 'لا توجد فواتير محلية للمزامنة'})
+
+            invoices_payload = []
+            tenant_slug = getattr(request, 'tenant', None)
+            slug_str = tenant_slug.slug if tenant_slug else 'mahel'
+
+            for order in local_orders:
+                items_data = []
+                for it in order.items.all():
+                    items_data.append({
+                        'product_id': it.product_id,
+                        'quantity': it.quantity,
+                        'unit_price': float(it.unit_price)
+                    })
+                
+                if items_data:
+                    invoices_payload.append({
+                        'order_number': order.order_number,
+                        'payment_method': order.payment_method,
+                        'customer_id': order.customer_id,
+                        'items': items_data
+                    })
+
+            if not invoices_payload:
+                return JsonResponse({'success': True, 'synced_count': 0})
+
+            req_body = json.dumps({
+                'tenant_slug': slug_str,
+                'invoices': invoices_payload
+            }).encode('utf-8')
+
+            req = urllib.request.Request(
+                cloud_sync_url,
+                data=req_body,
+                headers={'Content-Type': 'application/json', 'User-Agent': 'AlNamaa-Desktop-Sync/1.0'}
+            )
+
+            with urllib.request.urlopen(req, timeout=15) as response:
+                res_data = json.loads(response.read().decode('utf-8'))
+                if res_data.get('success'):
+                    return JsonResponse({
+                        'success': True,
+                        'synced_count': res_data.get('synced_count', len(invoices_payload))
+                    })
+                else:
+                    return JsonResponse({'success': False, 'error': res_data.get('error', 'فشل السيرفر في معالجة المزامنة')}, status=400)
+
+        except urllib.error.URLError as e:
+            return JsonResponse({'success': False, 'error': f'تعذر الاتصال بالسيرفر السحابي (يرجى التأكد من تشغيل الإنترنت): {str(e.reason)}'}, status=503)
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': f'خطأ أثناء المزامنة: {str(e)}'}, status=500)
 

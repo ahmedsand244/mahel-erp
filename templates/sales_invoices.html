@@ -22,6 +22,14 @@
             </div>
 
             <div class="flex items-center gap-3 w-full sm:w-auto shrink-0 flex-wrap">
+                <!-- Cloud Sync Button -->
+                <button type="button" @click="syncToCloud()" :disabled="isSyncingToCloud"
+                        class="bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/30 px-4 py-3 rounded-2xl font-bold hover:bg-blue-500 hover:text-white transition-all flex items-center justify-center gap-1.5 text-xs sm:text-sm shadow-sm cursor-pointer disabled:opacity-50"
+                        title="رفع ومزامنة جميع فواتير الكمبيوتر مع موقع السيرفر السحابي (PythonAnywhere)">
+                    <span class="material-symbols-outlined text-[18px]" :class="isSyncingToCloud ? 'animate-spin' : ''">cloud_upload</span>
+                    <span x-text="isSyncingToCloud ? 'جارِ المزامنة...' : 'مزامنة مع السحابة ☁️'"></span>
+                </button>
+
                 <a href="{% url 'pos:export_invoices_excel' %}" 
                    class="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 px-4 py-3 rounded-2xl font-bold hover:bg-emerald-500 hover:text-white transition-all flex items-center justify-center gap-1.5 text-xs sm:text-sm shadow-sm"
                    title="تصدير جميع فواتير المبيعات إلى ملف Excel">
@@ -400,7 +408,32 @@
             showModal: false,
             isLoading: false,
             selectedInvoice: null,
+            isSyncingToCloud: false,
             
+            syncToCloud() {
+                if (this.isSyncingToCloud) return;
+                this.isSyncingToCloud = true;
+
+                fetch('/pos/sync-local-to-cloud/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                })
+                .then(r => r.json())
+                .then(data => {
+                    this.isSyncingToCloud = false;
+                    if (data.success) {
+                        alert(`🎉 ممتاز! تم مزامنة ${data.synced_count} فاتورة محلية مع موقع السيرفر السحابي (PythonAnywhere) بنجاح!`);
+                        window.location.reload();
+                    } else {
+                        alert(data.error || 'فشلت المزامنة مع السيرفر السحابي');
+                    }
+                })
+                .catch(err => {
+                    this.isSyncingToCloud = false;
+                    alert('تعذر الاتصال بالسيرفر السحابي، تأكد من اتصال جهازك بالإنترنت ثم أعد المحاولة.');
+                });
+            },
+
             openInvoiceModal(orderId) {
                 this.showModal = true;
                 this.isLoading = true;
