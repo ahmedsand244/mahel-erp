@@ -6,14 +6,13 @@ workflows:
     environment:
       flutter: stable
     scripts:
-      - name: Flutter clean 
-        script: |
-          flutter clean 
       - name: Get Flutter dependencies
         script: |
+          cd mobile_app
           flutter pub get
       - name: Build Android APK
         script: |
+          cd mobile_app
           flutter build apk --release
     artifacts:
-      - build/app/outputs/flutter-apk/app-release.apk
+      - mobile_app/build/app/outputs/flutter-apk/app-release.apk
