@@ -368,6 +368,8 @@ class SyncLocalToCloudView(View):
                 for it in order.items.all():
                     items_data.append({
                         'product_id': it.product_id,
+                        'product_name': it.product.name if it.product else '',
+                        'product_sku': it.product.sku if it.product else '',
                         'quantity': it.quantity,
                         'unit_price': float(it.unit_price)
                     })

@@ -185,20 +185,27 @@ class ApiInvoiceSyncView(View):
                     qty = int(item.get('quantity', 1))
                     unit_price = float(item.get('unit_price', 0.0))
 
-                    prod = Product.objects.filter(id=prod_id).first()
+                    prod = None
+                    if prod_id:
+                        prod = Product.objects.filter(id=prod_id).first()
+                    if not prod and item.get('product_sku'):
+                        prod = Product.objects.filter(sku=item.get('product_sku')).first()
+                    if not prod and item.get('product_name'):
+                        prod = Product.objects.filter(name=item.get('product_name')).first()
+
                     if not prod:
                         continue
 
-                    cost_price = float(prod.purchase_cost or 0.0)
+                    cost_price = float(getattr(prod, 'purchase_price', 0.0) or 0.0)
                     item_total = unit_price * qty
                     item_cost = cost_price * qty
 
                     total_amount += item_total
                     total_cost += item_cost
 
-                    # Deduct inventory stock
+                    # Deduct inventory stock safely
                     prod.stock_quantity = max(0, (prod.stock_quantity or 0) - qty)
-                    prod.save()
+                    prod.save(update_fields=['stock_quantity'])
 
                     order_items_to_create.append({
                         'product': prod,
