@@ -1,0 +1,22 @@
+{
+  "name": "النماء ERP & POS",
+  "short_name": "النماء",
+  "description": "نظام إدارة المبيعات والمخازن والورش والمصروفات",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0D1117",
+  "theme_color": "#2F81F7",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "https://raw.githubusercontent.com/ahmedsand244/mahel-erp/main/static/images/logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://raw.githubusercontent.com/ahmedsand244/mahel-erp/main/static/images/logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

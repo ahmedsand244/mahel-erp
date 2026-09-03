@@ -45,3 +45,6 @@ Desktop.ini
 
 # Static files collected
 # static/
+
+.gradle/
+*.gradle.cache

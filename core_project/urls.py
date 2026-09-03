@@ -10,7 +10,30 @@ from tenants.views import (
     SuperAdminView,
 )
 
+import os
+from django.http import HttpResponse
+
+def manifest_view(request):
+    manifest_path = os.path.join(settings.BASE_DIR, 'static', 'manifest.json')
+    if os.path.exists(manifest_path):
+        with open(manifest_path, 'r', encoding='utf-8') as f:
+            return HttpResponse(f.read(), content_type='application/manifest+json; charset=utf-8')
+    return HttpResponse('{}', content_type='application/json')
+
+def service_worker_view(request):
+    sw_path = os.path.join(settings.BASE_DIR, 'static', 'sw.js')
+    if os.path.exists(sw_path):
+        with open(sw_path, 'r', encoding='utf-8') as f:
+            response = HttpResponse(f.read(), content_type='application/javascript; charset=utf-8')
+            response['Service-Worker-Allowed'] = '/'
+            return response
+    return HttpResponse('', content_type='application/javascript')
+
 urlpatterns = [
+    # PWA Endpoints
+    path('manifest.json', manifest_view, name='manifest'),
+    path('sw.js',         service_worker_view, name='service_worker'),
+
     # Core Auth & SaaS Root URLs
     path('',            LandingView.as_view(),      name='landing'),
     path('login/',      TenantLoginView.as_view(),  name='login'),
