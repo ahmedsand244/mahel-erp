@@ -7,6 +7,9 @@ workflows:
       flutter: stable
       android_signing: false
     scripts:
+      - name: Flutter clean 
+        script: |
+          flutter clean 
       - name: Get Flutter dependencies
         script: |
           flutter pub get
