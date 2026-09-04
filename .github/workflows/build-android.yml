@@ -1,0 +1,48 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-android:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.5'
+          channel: 'stable'
+          cache: true
+
+      - name: Get Flutter dependencies
+        working-directory: mobile_app
+        run: flutter pub get
+
+      - name: Build Android APK (Release)
+        working-directory: mobile_app
+        run: flutter build apk --release --no-tree-shake-icons
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mahel-erp-apk
+          path: mobile_app/build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 30
+
+      - name: Show APK info
+        run: |
+          echo "✅ APK built successfully!"
+          ls -lh mobile_app/build/app/outputs/flutter-apk/
