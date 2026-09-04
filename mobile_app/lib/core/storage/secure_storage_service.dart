@@ -19,6 +19,12 @@ class SecureStorageService {
     _prefs = await SharedPreferences.getInstance();
   }
 
+  // Instance methods
+  Future<void> writeSecure(String key, String value) => SecureStorageService.writeSecure(key, value);
+  Future<String?> readSecure(String key) => SecureStorageService.readSecure(key);
+  Future<void> deleteSecure(String key) => SecureStorageService.deleteSecure(key);
+  Future<void> clearAllSecure() => SecureStorageService.clearAllSecure();
+
   // Secure Storage (Encrypted) - for tokens, passwords, sensitive data
   static Future<void> writeSecure(String key, String value) async {
     await _secureStorage.write(key: key, value: value);

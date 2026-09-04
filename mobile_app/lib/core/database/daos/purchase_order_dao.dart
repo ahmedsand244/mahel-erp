@@ -13,7 +13,8 @@ class PurchaseOrderDao extends DatabaseAccessor<AppDatabase> {
     if (status != null && status.isNotEmpty) {
       query.where((p) => p.status.equals(status));
     }
-    return query.orderBy([OrderingTerm.desc(db.purchaseOrders.createdAt)]).get();
+    query.orderBy([(p) => OrderingTerm.desc(p.createdAt)]);
+    return query.get();
   }
 
   Future<PurchaseOrder?> getPurchaseOrderById(int id) =>

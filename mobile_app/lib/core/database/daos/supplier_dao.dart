@@ -76,7 +76,7 @@ class SupplierDao extends DatabaseAccessor<AppDatabase> {
       }
 
       if (existing != null) {
-        return update(db.suppliers).replace(SuppliersCompanion(
+        await update(db.suppliers).replace(SuppliersCompanion(
           id: Value(existing.id),
           name: supplier.name,
           company: supplier.company,
@@ -90,6 +90,7 @@ class SupplierDao extends DatabaseAccessor<AppDatabase> {
           lastModified: Value(DateTime.now()),
           syncStatus: const Value('synced'),
         ));
+        return existing.id;
       } else {
         return into(db.suppliers).insert(supplier);
       }

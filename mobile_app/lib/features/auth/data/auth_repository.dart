@@ -1,4 +1,4 @@
-﻿import 'package:dio/dio.dart';
+import 'package:dio/dio.dart';
 import 'package:mahel_pos_mobile/core/network/api_service.dart';
 import 'package:mahel_pos_mobile/core/storage/secure_storage_service.dart';
 import '../domain/auth_state.dart';
@@ -59,6 +59,6 @@ class AuthRepository {
 
   Future<void> updateTenant(String tenantSlug, String tenantName) async {
     await _storage.writeSecure('tenant_slug', tenantSlug);
-    _api._tenantSlug = tenantSlug;
+    _api.tenantSlug = tenantSlug;
   }
 }

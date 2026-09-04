@@ -22,7 +22,8 @@ class TransactionDao extends DatabaseAccessor<AppDatabase> {
     if (endDate != null) {
       query.where((t) => t.createdAt.isSmallerOrEqualValue(endDate));
     }
-    return query.orderBy([OrderingTerm.desc(db.transactions.createdAt)]).get();
+    query.orderBy([(t) => OrderingTerm.desc(t.createdAt)]);
+    return query.get();
   }
 
   Future<int> insertTransaction(TransactionsCompanion transaction) => into(db.transactions).insert(transaction);

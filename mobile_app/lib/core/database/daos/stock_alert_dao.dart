@@ -7,8 +7,8 @@ class StockAlertDao extends DatabaseAccessor<AppDatabase> {
 
   Future<List<StockAlert>> getUnresolvedAlerts({int? tenantId}) {
     final query = select(db.stockAlerts)..where((a) => a.isResolved.equals(false) & a.deletedAt.isNull());
-    // Note: tenant filtering would require joining with products table
-    return query.orderBy([OrderingTerm.desc(db.stockAlerts.createdAt)]).get();
+    query.orderBy([(a) => OrderingTerm.desc(a.createdAt)]);
+    return query.get();
   }
 
   Future<int> createAlert(StockAlertsCompanion alert) => into(db.stockAlerts).insert(alert);

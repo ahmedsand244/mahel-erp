@@ -146,7 +146,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
 
             // Cart & Checkout - Bottom Sheet Style
             SliverToBoxAdapter(
-              child: _buildCartBottomSheet(context, theme, cart, cartTotal, selectedCustomer, paymentMethod),
+              child: _buildCartBottomSheet(context, theme, cart, cartTotal, selectedCustomer, paymentMethod, customers),
             ),
           ],
         ),
@@ -257,6 +257,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
     Decimal cartTotal,
     int? selectedCustomer,
     PaymentMethod paymentMethod,
+    List<CustomerApi> customers,
   ) {
     return Container(
       decoration: BoxDecoration(
@@ -532,7 +533,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
     ref.read(cartProvider.notifier).addItem(CartItem(
       productId: product.id,
       name: product.name,
-      price: Decimal.fromDouble(product.salePrice),
+      price: Decimal.parse(product.salePrice.toString()),
       quantity: 1,
     ));
     // Haptic feedback

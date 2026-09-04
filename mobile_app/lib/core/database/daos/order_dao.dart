@@ -16,7 +16,8 @@ class OrderDao extends DatabaseAccessor<AppDatabase> {
     if (endDate != null) {
       query.where((o) => o.createdAt.isSmallerOrEqualValue(endDate));
     }
-    return query.orderBy([OrderingTerm.desc(db.orders.createdAt)]).get();
+    query.orderBy([(o) => OrderingTerm.desc(o.createdAt)]);
+    return query.get();
   }
 
   Future<Order?> getOrderById(int id) =>
@@ -28,7 +29,7 @@ class OrderDao extends DatabaseAccessor<AppDatabase> {
   Future<List<Order>> getOrdersByCustomer(int customerId) =>
       (select(db.orders)
             ..where((o) => o.customerId.equals(customerId) & o.deletedAt.isNull())
-            ..orderBy([OrderingTerm.desc(db.orders.createdAt)]))
+            ..orderBy([(o) => OrderingTerm.desc(o.createdAt)]))
           .get();
 
   Future<int> insertOrder(OrdersCompanion order) => into(db.orders).insert(order);
@@ -105,7 +106,7 @@ class OrderDao extends DatabaseAccessor<AppDatabase> {
   Stream<List<Order>> watchRecentOrders({int? tenantId, int limit = 10}) {
     final query = select(db.orders)
       ..where((o) => o.deletedAt.isNull())
-      ..orderBy([OrderingTerm.desc(db.orders.createdAt)])
+      ..orderBy([(o) => OrderingTerm.desc(o.createdAt)])
       ..limit(limit);
     if (tenantId != null) {
       query.where((o) => o.tenantId.equals(tenantId));

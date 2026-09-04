@@ -29,7 +29,7 @@ class TenantDao extends DatabaseAccessor<AppDatabase> {
     return transaction(() async {
       final existing = await getTenantBySlug(tenant.slug.value);
       if (existing != null) {
-        return update(db.tenants).replace(TenantsCompanion(
+        await update(db.tenants).replace(TenantsCompanion(
           id: Value(existing.id),
           name: tenant.name,
           slug: tenant.slug,
@@ -42,6 +42,7 @@ class TenantDao extends DatabaseAccessor<AppDatabase> {
           lastModified: Value(DateTime.now()),
           syncStatus: const Value('synced'),
         ));
+        return existing.id;
       } else {
         return into(db.tenants).insert(tenant);
       }

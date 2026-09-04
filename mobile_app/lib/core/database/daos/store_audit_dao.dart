@@ -10,7 +10,8 @@ class StoreAuditDao extends DatabaseAccessor<AppDatabase> {
     if (tenantId != null) {
       query.where((a) => a.tenantId.equals(tenantId));
     }
-    return query.orderBy([OrderingTerm.desc(db.storeAudits.createdAt)]).get();
+    query.orderBy([(a) => OrderingTerm.desc(a.createdAt)]);
+    return query.get();
   }
 
   Future<StoreAudit?> getAuditById(int id) =>

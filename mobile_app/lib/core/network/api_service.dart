@@ -27,7 +27,9 @@ class ApiService {
 
   String get baseUrl => _baseUrl;
   String? get accessToken => _accessToken;
+  String? get refreshToken => _refreshToken;
   String? get tenantSlug => _tenantSlug;
+  set tenantSlug(String? slug) => _tenantSlug = slug;
   bool get isAuthenticated => _accessToken != null;
 
   void _setupInterceptors() {

@@ -13,7 +13,8 @@ class MaintenanceDao extends DatabaseAccessor<AppDatabase> {
     if (status != null && status.isNotEmpty) {
       query.where((t) => t.status.equals(status));
     }
-    return query.orderBy([OrderingTerm.desc(db.maintenanceTickets.createdAt)]).get();
+    query.orderBy([(t) => OrderingTerm.desc(t.createdAt)]);
+    return query.get();
   }
 
   Future<MaintenanceTicket?> getTicketById(int id) =>
@@ -71,7 +72,7 @@ class MaintenanceDao extends DatabaseAccessor<AppDatabase> {
   Stream<List<MaintenanceTicket>> watchTicketsByStatus(String status, {int? tenantId}) {
     final query = select(db.maintenanceTickets)
       ..where((t) => t.deletedAt.isNull() & t.status.equals(status))
-      ..orderBy([OrderingTerm.desc(db.maintenanceTickets.createdAt)]);
+      ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]);
     if (tenantId != null) {
       query.where((t) => t.tenantId.equals(tenantId));
     }

@@ -16,7 +16,8 @@ class ExpenseDao extends DatabaseAccessor<AppDatabase> {
     if (endDate != null) {
       query.where((e) => e.createdAt.isSmallerOrEqualValue(endDate));
     }
-    return query.orderBy([OrderingTerm.desc(db.expenses.createdAt)]).get();
+    query.orderBy([(e) => OrderingTerm.desc(e.createdAt)]);
+    return query.get();
   }
 
   Future<List<Expense>> getExpensesByCategory(String category, {int? tenantId}) {

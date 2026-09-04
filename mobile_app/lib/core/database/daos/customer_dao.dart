@@ -76,7 +76,7 @@ class CustomerDao extends DatabaseAccessor<AppDatabase> {
       }
 
       if (existing != null) {
-        return update(db.customers).replace(CustomersCompanion(
+        await update(db.customers).replace(CustomersCompanion(
           id: Value(existing.id),
           name: customer.name,
           phone: customer.phone,
@@ -90,6 +90,7 @@ class CustomerDao extends DatabaseAccessor<AppDatabase> {
           lastModified: Value(DateTime.now()),
           syncStatus: const Value('synced'),
         ));
+        return existing.id;
       } else {
         return into(db.customers).insert(customer);
       }

@@ -5,16 +5,16 @@ class SyncQueueDao extends DatabaseAccessor<AppDatabase> {
   SyncQueueDao(super.db);
   AppDatabase get db => attachedDatabase;
 
-  Future<List<SyncQueue>> getPendingOperations() =>
+  Future<List<SyncQueueData>> getPendingOperations() =>
       (select(db.syncQueue)
             ..where((s) => s.status.equals('pending'))
-            ..orderBy([OrderingTerm.asc(db.syncQueue.createdAt)]))
+            ..orderBy([(s) => OrderingTerm.asc(s.createdAt)]))
           .get();
 
-  Future<List<SyncQueue>> getFailedOperations({int maxRetries = 3}) =>
+  Future<List<SyncQueueData>> getFailedOperations({int maxRetries = 3}) =>
       (select(db.syncQueue)
             ..where((s) => s.status.equals('failed') & s.retryCount.isSmallerThanValue(maxRetries))
-            ..orderBy([OrderingTerm.asc(db.syncQueue.createdAt)]))
+            ..orderBy([(s) => OrderingTerm.asc(s.createdAt)]))
           .get();
 
   Future<int> enqueueOperation(SyncQueueCompanion operation) => into(db.syncQueue).insert(operation);

@@ -38,7 +38,7 @@ class ProductDao extends DatabaseAccessor<AppDatabase> {
     final query = select(db.products)
       ..where((p) =>
           p.deletedAt.isNull() &
-          p.stockQuantity.isSmallerOrEqualValue(p.minStockThreshold));
+          p.stockQuantity.isSmallerOrEqual(p.minStockThreshold));
     if (tenantId != null) {
       query.where((p) => p.tenantId.equals(tenantId));
     }

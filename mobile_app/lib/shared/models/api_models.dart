@@ -149,10 +149,10 @@ class DashboardResponse with _$DashboardResponse {
   const factory DashboardResponse({
     required bool success,
     String? error,
-    required double todaySales,
-    required int todayOrdersCount,
-    required int lowStockCount,
-    required int totalProducts,
+    @Default(0.0) double todaySales,
+    @Default(0) int todayOrdersCount,
+    @Default(0) int lowStockCount,
+    @Default(0) int totalProducts,
   }) = _DashboardResponse;
 
   factory DashboardResponse.fromJson(Map<String, dynamic> json) => _$DashboardResponseFromJson(json);
