@@ -38,7 +38,7 @@ class ExpenseDao extends DatabaseAccessor<AppDatabase> {
 
   Future<double> getTotalExpenses({int? tenantId, DateTime? startDate, DateTime? endDate}) async {
     final expenses = await getAllExpenses(tenantId: tenantId, startDate: startDate, endDate: endDate);
-    return expenses.fold(0.0, (sum, e) => sum + e.amount);
+    return expenses.fold<double>(0.0, (double sum, e) => sum + e.amount);
   }
 
   Future<Map<String, double>> getExpensesByCategorySummary({int? tenantId, DateTime? startDate, DateTime? endDate}) async {

@@ -36,7 +36,7 @@ class TransactionDao extends DatabaseAccessor<AppDatabase> {
     );
     return transactions
         .where((t) => t.transactionType == 'pay_received')
-        .fold(0.0, (sum, t) => sum + t.amount);
+        .fold<double>(0.0, (double sum, t) => sum + t.amount);
   }
 
   Future<double> getSupplierPayments(int supplierId, {DateTime? startDate, DateTime? endDate}) async {
@@ -47,7 +47,7 @@ class TransactionDao extends DatabaseAccessor<AppDatabase> {
     );
     return transactions
         .where((t) => t.transactionType == 'pay_sent')
-        .fold(0.0, (sum, t) => sum + t.amount);
+        .fold<double>(0.0, (double sum, t) => sum + t.amount);
   }
 
   Future<Map<String, double>> getTransactionSummary({

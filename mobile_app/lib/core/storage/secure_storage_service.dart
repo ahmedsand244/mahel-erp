@@ -19,26 +19,20 @@ class SecureStorageService {
     _prefs = await SharedPreferences.getInstance();
   }
 
-  // Instance methods
-  Future<void> writeSecure(String key, String value) => SecureStorageService.writeSecure(key, value);
-  Future<String?> readSecure(String key) => SecureStorageService.readSecure(key);
-  Future<void> deleteSecure(String key) => SecureStorageService.deleteSecure(key);
-  Future<void> clearAllSecure() => SecureStorageService.clearAllSecure();
-
   // Secure Storage (Encrypted) - for tokens, passwords, sensitive data
-  static Future<void> writeSecure(String key, String value) async {
+  Future<void> writeSecure(String key, String value) async {
     await _secureStorage.write(key: key, value: value);
   }
 
-  static Future<String?> readSecure(String key) async {
+  Future<String?> readSecure(String key) async {
     return _secureStorage.read(key: key);
   }
 
-  static Future<void> deleteSecure(String key) async {
+  Future<void> deleteSecure(String key) async {
     await _secureStorage.delete(key: key);
   }
 
-  static Future<void> clearAllSecure() async {
+  Future<void> clearAllSecure() async {
     await _secureStorage.deleteAll();
   }
 
@@ -117,7 +111,7 @@ class SecureStorageService {
   static Future<void> setBiometricEnabled(bool enabled) async => writeBool(_keyBiometricEnabled, enabled);
   static bool getBiometricEnabled() => readBool(_keyBiometricEnabled);
 
-  static Future<void> setPinCode(String pin) async => writeSecure(_keyPinCode, pin);
-  static Future<String?> getPinCode() async => readSecure(_keyPinCode);
-  static Future<void> clearPinCode() async => deleteSecure(_keyPinCode);
+  static Future<void> setPinCode(String pin) async => _secureStorage.write(key: _keyPinCode, value: pin);
+  static Future<String?> getPinCode() async => _secureStorage.read(key: _keyPinCode);
+  static Future<void> clearPinCode() async => _secureStorage.delete(key: _keyPinCode);
 }
