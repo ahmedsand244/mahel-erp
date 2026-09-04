@@ -34,7 +34,7 @@ class AppTheme {
           outline: darkBorder,
           error: primaryRed,
         ),
-        cardTheme: CardThemeData(
+        cardTheme: CardTheme(
           color: darkSurface,
           elevation: 0,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -94,7 +94,7 @@ class AppTheme {
           labelStyle: GoogleFonts.cairo(color: Colors.grey.shade400, fontSize: 14),
           hintStyle: GoogleFonts.cairo(color: Colors.grey.shade500, fontSize: 14),
         ),
-        dialogTheme: DialogThemeData(
+        dialogTheme: DialogTheme(
           backgroundColor: darkSurface,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
           titleTextStyle: GoogleFonts.cairo(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
@@ -133,7 +133,7 @@ class AppTheme {
             return GoogleFonts.cairo(fontSize: 12, color: Colors.grey.shade400);
           }),
         ),
-        tabBarTheme: TabBarThemeData(
+        tabBarTheme: TabBarTheme(
           labelColor: primaryBlue,
           unselectedLabelColor: Colors.grey.shade400,
           indicator: BoxDecoration(
@@ -175,7 +175,7 @@ class AppTheme {
           outline: lightBorder,
           error: primaryRed,
         ),
-        cardTheme: CardThemeData(
+        cardTheme: CardTheme(
           color: lightSurface,
           elevation: 1,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -235,7 +235,7 @@ class AppTheme {
           labelStyle: GoogleFonts.cairo(color: Colors.grey.shade600, fontSize: 14),
           hintStyle: GoogleFonts.cairo(color: Colors.grey.shade400, fontSize: 14),
         ),
-        dialogTheme: DialogThemeData(
+        dialogTheme: DialogTheme(
           backgroundColor: lightSurface,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
           titleTextStyle: GoogleFonts.cairo(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87),
@@ -274,7 +274,7 @@ class AppTheme {
             return GoogleFonts.cairo(fontSize: 12, color: Colors.grey.shade600);
           }),
         ),
-        tabBarTheme: TabBarThemeData(
+        tabBarTheme: TabBarTheme(
           labelColor: primaryBlue,
           unselectedLabelColor: Colors.grey.shade600,
           indicator: BoxDecoration(

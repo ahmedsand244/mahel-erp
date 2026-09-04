@@ -1,9 +1,9 @@
-﻿import 'package:drift/drift.dart';
+import 'package:drift/drift.dart';
 import 'package:mahel_pos_mobile/core/database/app_database.dart';
 
-class MaintenanceDao {
-  final AppDatabase db;
-  MaintenanceDao(this.db);
+class MaintenanceDao extends DatabaseAccessor<AppDatabase> {
+  MaintenanceDao(super.db);
+  AppDatabase get db => attachedDatabase;
 
   Future<List<MaintenanceTicket>> getAllTickets({int? tenantId, String? status}) {
     final query = select(db.maintenanceTickets)..where((t) => t.deletedAt.isNull());
@@ -78,3 +78,4 @@ class MaintenanceDao {
     return query.watch();
   }
 }
+

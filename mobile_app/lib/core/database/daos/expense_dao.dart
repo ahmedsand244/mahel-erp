@@ -1,9 +1,9 @@
-﻿import 'package:drift/drift.dart';
+import 'package:drift/drift.dart';
 import 'package:mahel_pos_mobile/core/database/app_database.dart';
 
-class ExpenseDao {
-  final AppDatabase db;
-  ExpenseDao(this.db);
+class ExpenseDao extends DatabaseAccessor<AppDatabase> {
+  ExpenseDao(super.db);
+  AppDatabase get db => attachedDatabase;
 
   Future<List<Expense>> getAllExpenses({int? tenantId, DateTime? startDate, DateTime? endDate}) {
     final query = select(db.expenses)..where((e) => e.deletedAt.isNull());
@@ -49,3 +49,4 @@ class ExpenseDao {
     return summary;
   }
 }
+

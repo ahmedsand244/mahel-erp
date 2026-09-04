@@ -1,9 +1,9 @@
-﻿import 'package:drift/drift.dart';
+import 'package:drift/drift.dart';
 import 'package:mahel_pos_mobile/core/database/app_database.dart';
 
-class TenantDao {
-  final AppDatabase db;
-  TenantDao(this.db);
+class TenantDao extends DatabaseAccessor<AppDatabase> {
+  TenantDao(super.db);
+  AppDatabase get db => attachedDatabase;
 
   Future<List<Tenant>> getAllTenants() => select(db.tenants).get();
 
@@ -48,3 +48,4 @@ class TenantDao {
     });
   }
 }
+

@@ -1,9 +1,9 @@
-﻿import 'package:drift/drift.dart';
+import 'package:drift/drift.dart';
 import 'package:mahel_pos_mobile/core/database/app_database.dart';
 
-class CustomerDao {
-  final AppDatabase db;
-  CustomerDao(this.db);
+class CustomerDao extends DatabaseAccessor<AppDatabase> {
+  CustomerDao(super.db);
+  AppDatabase get db => attachedDatabase;
 
   Future<List<Customer>> getAllCustomers({int? tenantId}) {
     final query = select(db.customers)..where((c) => c.deletedAt.isNull());
@@ -107,3 +107,4 @@ class CustomerDao {
     return query.watch();
   }
 }
+

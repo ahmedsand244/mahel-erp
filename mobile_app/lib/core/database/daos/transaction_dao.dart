@@ -1,9 +1,9 @@
-﻿import 'package:drift/drift.dart';
+import 'package:drift/drift.dart';
 import 'package:mahel_pos_mobile/core/database/app_database.dart';
 
-class TransactionDao {
-  final AppDatabase db;
-  TransactionDao(this.db);
+class TransactionDao extends DatabaseAccessor<AppDatabase> {
+  TransactionDao(super.db);
+  AppDatabase get db => attachedDatabase;
 
   Future<List<Transaction>> getAllTransactions({int? tenantId, int? customerId, int? supplierId, DateTime? startDate, DateTime? endDate}) {
     final query = select(db.transactions)..where((t) => t.deletedAt.isNull());
@@ -90,3 +90,4 @@ class TransactionDao {
     };
   }
 }
+

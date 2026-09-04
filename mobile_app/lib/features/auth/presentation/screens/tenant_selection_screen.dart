@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mahel_pos_mobile/features/auth/presentation/providers/auth_providers.dart';
@@ -35,7 +35,7 @@ class TenantSelectionScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 24),
             Text(
-              'Ù…Ø±Ø­Ø¨Ø§Ù‹ ${authState is Authenticated ? authState.username : 'Ø¨ÙƒÙ…'}',
+              'مرحباً ${authState.maybeWhen(authenticated: (_, __, ___, ____, u, _____) => u, orElse: () => 'بكم')}',
               style: GoogleFonts.cairo(fontSize: 22, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),

@@ -1,9 +1,9 @@
-﻿import 'package:drift/drift.dart';
+import 'package:drift/drift.dart';
 import 'package:mahel_pos_mobile/core/database/app_database.dart';
 
-class SyncQueueDao {
-  final AppDatabase db;
-  SyncQueueDao(this.db);
+class SyncQueueDao extends DatabaseAccessor<AppDatabase> {
+  SyncQueueDao(super.db);
+  AppDatabase get db => attachedDatabase;
 
   Future<List<SyncQueue>> getPendingOperations() =>
       (select(db.syncQueue)
@@ -61,3 +61,4 @@ class SyncQueueDao {
   Future<int> clearCompleted() =>
       (delete(db.syncQueue)..where((s) => s.status.equals('completed'))).go();
 }
+

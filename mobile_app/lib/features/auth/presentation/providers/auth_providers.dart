@@ -55,17 +55,17 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   Future<void> switchTenant(String tenantSlug, String tenantName) async {
     await _repository.updateTenant(tenantSlug, tenantName);
-    if (state is _Authenticated) {
-      final current = state as _Authenticated;
-      state = AuthState.authenticated(
-        accessToken: current.accessToken,
-        refreshToken: current.refreshToken,
+    state = state.maybeWhen(
+      authenticated: (accessToken, refreshToken, _, __, username, userId) => AuthState.authenticated(
+        accessToken: accessToken,
+        refreshToken: refreshToken,
         tenantSlug: tenantSlug,
         tenantName: tenantName,
-        username: current.username,
-        userId: current.userId,
-      );
-    }
+        username: username,
+        userId: userId,
+      ),
+      orElse: () => state,
+    );
   }
 }
 

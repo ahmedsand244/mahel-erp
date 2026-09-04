@@ -1,9 +1,9 @@
-﻿import 'package:drift/drift.dart';
+import 'package:drift/drift.dart';
 import 'package:mahel_pos_mobile/core/database/app_database.dart';
 
-class PurchaseOrderDao {
-  final AppDatabase db;
-  PurchaseOrderDao(this.db);
+class PurchaseOrderDao extends DatabaseAccessor<AppDatabase> {
+  PurchaseOrderDao(super.db);
+  AppDatabase get db => attachedDatabase;
 
   Future<List<PurchaseOrder>> getAllPurchaseOrders({int? tenantId, String? status}) {
     final query = select(db.purchaseOrders)..where((p) => p.deletedAt.isNull());
@@ -87,3 +87,4 @@ class PurchaseOrderDao {
     });
   }
 }
+

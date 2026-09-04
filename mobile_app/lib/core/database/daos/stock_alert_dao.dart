@@ -1,9 +1,9 @@
-﻿import 'package:drift/drift.dart';
+import 'package:drift/drift.dart';
 import 'package:mahel_pos_mobile/core/database/app_database.dart';
 
-class StockAlertDao {
-  final AppDatabase db;
-  StockAlertDao(this.db);
+class StockAlertDao extends DatabaseAccessor<AppDatabase> {
+  StockAlertDao(super.db);
+  AppDatabase get db => attachedDatabase;
 
   Future<List<StockAlert>> getUnresolvedAlerts({int? tenantId}) {
     final query = select(db.stockAlerts)..where((a) => a.isResolved.equals(false) & a.deletedAt.isNull());
@@ -33,3 +33,4 @@ class StockAlertDao {
         ));
   }
 }
+

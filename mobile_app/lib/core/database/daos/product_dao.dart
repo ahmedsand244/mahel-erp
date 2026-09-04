@@ -1,9 +1,9 @@
-﻿import 'package:drift/drift.dart';
+import 'package:drift/drift.dart';
 import 'package:mahel_pos_mobile/core/database/app_database.dart';
 
-class ProductDao {
-  final AppDatabase db;
-  ProductDao(this.db);
+class ProductDao extends DatabaseAccessor<AppDatabase> {
+  ProductDao(super.db);
+  AppDatabase get db => attachedDatabase;
 
   Future<List<Product>> getAllProducts({int? tenantId}) {
     final query = select(db.products)..where((p) => p.deletedAt.isNull());
@@ -132,3 +132,4 @@ class ProductDao {
     };
   }
 }
+

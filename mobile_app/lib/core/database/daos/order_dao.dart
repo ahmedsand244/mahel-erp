@@ -1,9 +1,9 @@
-﻿import 'package:drift/drift.dart';
+import 'package:drift/drift.dart';
 import 'package:mahel_pos_mobile/core/database/app_database.dart';
 
-class OrderDao {
-  final AppDatabase db;
-  OrderDao(this.db);
+class OrderDao extends DatabaseAccessor<AppDatabase> {
+  OrderDao(super.db);
+  AppDatabase get db => attachedDatabase;
 
   Future<List<Order>> getAllOrders({int? tenantId, DateTime? startDate, DateTime? endDate}) {
     final query = select(db.orders)..where((o) => o.deletedAt.isNull());
@@ -113,3 +113,4 @@ class OrderDao {
     return query.watch();
   }
 }
+

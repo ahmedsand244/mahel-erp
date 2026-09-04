@@ -1,5 +1,5 @@
-import '../../core/database/app_database.dart';
-import '../../core/database/daos.dart';
+import 'package:mahel_pos_mobile/core/database/app_database.dart';
+import 'package:mahel_pos_mobile/core/database/daos.dart';
 
 class DatabaseService {
   final AppDatabase _db;

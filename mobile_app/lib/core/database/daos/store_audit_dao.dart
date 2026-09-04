@@ -1,9 +1,9 @@
-﻿import 'package:drift/drift.dart';
+import 'package:drift/drift.dart';
 import 'package:mahel_pos_mobile/core/database/app_database.dart';
 
-class StoreAuditDao {
-  final AppDatabase db;
-  StoreAuditDao(this.db);
+class StoreAuditDao extends DatabaseAccessor<AppDatabase> {
+  StoreAuditDao(super.db);
+  AppDatabase get db => attachedDatabase;
 
   Future<List<StoreAudit>> getAllAudits({int? tenantId}) {
     final query = select(db.storeAudits)..where((a) => a.deletedAt.isNull());
@@ -23,3 +23,4 @@ class StoreAuditDao {
   Future<int> deleteAudit(int id) =>
       (delete(db.storeAudits)..where((a) => a.id.equals(id))).go();
 }
+
