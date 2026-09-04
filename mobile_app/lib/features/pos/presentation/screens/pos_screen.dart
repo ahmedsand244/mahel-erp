@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:decimal/decimal.dart';
-import '../../domain/pos_models.dart';
+import 'package:mahel_pos_mobile/features/pos/domain/pos_models.dart';
 import 'package:mahel_pos_mobile/features/pos/presentation/providers/pos_providers.dart';
-// no delegate
+import 'package:mahel_pos_mobile/shared/models/api_models.dart';
 import 'package:mahel_pos_mobile/core/theme/app_theme.dart';
 import 'package:mahel_pos_mobile/shared/widgets/app_button.dart';
 import 'package:mahel_pos_mobile/shared/widgets/app_text_field.dart';

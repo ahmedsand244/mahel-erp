@@ -52,7 +52,7 @@ class OfflineInvoice with _$OfflineInvoice {
     required List<CartItem> items,
     required Decimal totalAmount,
     required DateTime createdAt,
-    bool isSynced,
+    @Default(false) bool isSynced,
   }) = _OfflineInvoice;
 
   factory OfflineInvoice.fromJson(Map<String, dynamic> json) => _$OfflineInvoiceFromJson(json);

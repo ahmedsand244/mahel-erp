@@ -1,7 +1,7 @@
-﻿import 'package:decimal/decimal.dart';
+import 'package:decimal/decimal.dart';
 import 'package:mahel_pos_mobile/core/database/database_service.dart';
 import 'package:mahel_pos_mobile/core/database/app_database.dart';
-import '../domain/pos_models.dart';
+import 'package:mahel_pos_mobile/features/pos/domain/pos_models.dart';
 
 class PosRepository {
   final DatabaseService _db;
