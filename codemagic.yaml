@@ -3,16 +3,19 @@ workflows:
     name: Build Android APK
     max_build_duration: 30
     instance_type: mac_mini_m2
+    working_directory: mobile_app
     environment:
       flutter: stable
+      android_signing: false
     scripts:
+      - name: Flutter clean
+        script: |
+          flutter clean
       - name: Get Flutter dependencies
         script: |
-          cd mobile_app
           flutter pub get
       - name: Build Android APK
         script: |
-          cd mobile_app
-          flutter build apk --release --android-skip-build-dependency-validation
+          flutter build apk --release --no-tree-shake-icons --android-skip-build-dependency-validation
     artifacts:
-      - mobile_app/build/app/outputs/flutter-apk/app-release.apk
+      - build/app/outputs/flutter-apk/app-release.apk
