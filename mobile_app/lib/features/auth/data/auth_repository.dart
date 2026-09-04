@@ -1,6 +1,6 @@
-import 'package:dio/dio.dart';
-import '../../core/network/api_service.dart';
-import '../../core/storage/secure_storage_service.dart';
+﻿import 'package:dio/dio.dart';
+import 'package:mahel_pos_mobile/core/network/api_service.dart';
+import 'package:mahel_pos_mobile/core/storage/secure_storage_service.dart';
 import '../domain/auth_state.dart';
 
 class AuthRepository {
@@ -30,7 +30,7 @@ class AuthRepository {
         userId: response.user?.id.toString() ?? '',
       );
     } else {
-      return AuthState.error(response.error ?? 'فشل تسجيل الدخول');
+      return AuthState.error(response.error ?? 'ÙØ´Ù„ ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø¯Ø®ÙˆÙ„');
     }
   }
 

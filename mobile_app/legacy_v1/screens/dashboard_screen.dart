@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/api_service.dart';
 import '../services/offline_db_service.dart';
@@ -16,7 +16,7 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   bool _isLoading = true;
   bool _isSyncing = false;
-  String _tenantName = 'النماء ERP & POS';
+  String _tenantName = 'Ø§Ù„Ù†Ù…Ø§Ø¡ ERP & POS';
   bool _isCloud = false;
 
   double _todaySales = 0.0;
@@ -35,7 +35,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Future<void> _loadDashboardData() async {
     setState(() => _isLoading = true);
     final prefs = await SharedPreferences.getInstance();
-    _tenantName = prefs.getString('tenant_name') ?? 'النماء ERP & POS';
+    _tenantName = prefs.getString('tenant_name') ?? 'Ø§Ù„Ù†Ù…Ø§Ø¡ ERP & POS';
 
     // 1. Fetch dashboard stats (tries Cloud, falls back to local SQLite)
     final stats = await ApiService.getDashboardStats();
@@ -71,7 +71,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           content: Text(
-            'تمت المزامنة بنجاح! تم رفع $pushed فاتورة وتحديث $prods صنف.',
+            'ØªÙ…Øª Ø§Ù„Ù…Ø²Ø§Ù…Ù†Ø© Ø¨Ù†Ø¬Ø§Ø­! ØªÙ… Ø±ÙØ¹ $pushed ÙØ§ØªÙˆØ±Ø© ÙˆØªØ­Ø¯ÙŠØ« $prods ØµÙ†Ù.',
             style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.bold),
           ),
         ),
@@ -84,7 +84,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           content: Text(
-            'تعذر إتمام المزامنة السحابية (${result['error'] ?? 'خطأ في الاتصال'}). أنت تعمل بأمان محلياً.',
+            'ØªØ¹Ø°Ø± Ø¥ØªÙ…Ø§Ù… Ø§Ù„Ù…Ø²Ø§Ù…Ù†Ø© Ø§Ù„Ø³Ø­Ø§Ø¨ÙŠØ© (${result['error'] ?? 'Ø®Ø·Ø£ ÙÙŠ Ø§Ù„Ø§ØªØµØ§Ù„'}). Ø£Ù†Øª ØªØ¹Ù…Ù„ Ø¨Ø£Ù…Ø§Ù† Ù…Ø­Ù„ÙŠØ§Ù‹.',
             style: const TextStyle(fontFamily: 'Cairo'),
           ),
         ),
@@ -123,7 +123,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
                 const SizedBox(width: 6),
                 Text(
-                  _isCloud ? 'متصل بالسحابة مباشر' : 'يعمل محلياً بدون نت (Offline)',
+                  _isCloud ? 'Ù…ØªØµÙ„ Ø¨Ø§Ù„Ø³Ø­Ø§Ø¨Ø© Ù…Ø¨Ø§Ø´Ø±' : 'ÙŠØ¹Ù…Ù„ Ù…Ø­Ù„ÙŠØ§Ù‹ Ø¨Ø¯ÙˆÙ† Ù†Øª (Offline)',
                   style: TextStyle(
                     fontFamily: 'Cairo',
                     fontSize: 11,
@@ -136,7 +136,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
         actions: [
           IconButton(
-            tooltip: 'تحديث ومزامنة',
+            tooltip: 'ØªØ­Ø¯ÙŠØ« ÙˆÙ…Ø²Ø§Ù…Ù†Ø©',
             icon: _isSyncing
                 ? const SizedBox(
                     width: 20,
@@ -172,7 +172,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             Icon(Icons.cloud_done_rounded, color: AppColors.primary, size: 22),
                             SizedBox(width: 10),
                             Text(
-                              'مزامنة شاملة ثنائية الاتجاه',
+                              'Ù…Ø²Ø§Ù…Ù†Ø© Ø´Ø§Ù…Ù„Ø© Ø«Ù†Ø§Ø¦ÙŠØ© Ø§Ù„Ø§ØªØ¬Ø§Ù‡',
                               style: TextStyle(
                                 fontFamily: 'Cairo',
                                 fontSize: 13,
@@ -191,7 +191,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           ),
                           icon: const Icon(Icons.sync, size: 16, color: Colors.white),
                           label: Text(
-                            _isSyncing ? 'جاري...' : 'مزامنة الآن',
+                            _isSyncing ? 'Ø¬Ø§Ø±ÙŠ...' : 'Ù…Ø²Ø§Ù…Ù†Ø© Ø§Ù„Ø¢Ù†',
                             style: const TextStyle(fontFamily: 'Cairo', fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
                           ),
                         ),
@@ -206,7 +206,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       Expanded(
                         child: _buildQuickActionButton(
                           icon: Icons.point_of_sale_rounded,
-                          title: 'شاشة البيع POS',
+                          title: 'Ø´Ø§Ø´Ø© Ø§Ù„Ø¨ÙŠØ¹ POS',
                           color: AppColors.primary,
                           onTap: () => widget.onNavigateTab?.call(1),
                         ),
@@ -215,7 +215,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       Expanded(
                         child: _buildQuickActionButton(
                           icon: Icons.inventory_2_rounded,
-                          title: 'إدارة المخزن',
+                          title: 'Ø¥Ø¯Ø§Ø±Ø© Ø§Ù„Ù…Ø®Ø²Ù†',
                           color: AppColors.success,
                           onTap: () => widget.onNavigateTab?.call(2),
                         ),
@@ -224,7 +224,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       Expanded(
                         child: _buildQuickActionButton(
                           icon: Icons.people_alt_rounded,
-                          title: 'العملاء والديون',
+                          title: 'Ø§Ù„Ø¹Ù…Ù„Ø§Ø¡ ÙˆØ§Ù„Ø¯ÙŠÙˆÙ†',
                           color: AppColors.warning,
                           onTap: () => widget.onNavigateTab?.call(3),
                         ),
@@ -235,7 +235,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
                   // --- Section Title ---
                   const Text(
-                    'مؤشرات الأداء المالي والمخزون',
+                    'Ù…Ø¤Ø´Ø±Ø§Øª Ø§Ù„Ø£Ø¯Ø§Ø¡ Ø§Ù„Ù…Ø§Ù„ÙŠ ÙˆØ§Ù„Ù…Ø®Ø²ÙˆÙ†',
                     style: TextStyle(
                       fontFamily: 'Cairo',
                       fontSize: 16,
@@ -256,33 +256,33 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     children: [
                       // Card 1: Today's Sales
                       _buildStatCard(
-                        title: 'مبيعات اليوم',
-                        value: '${_todaySales.toStringAsFixed(2)} ج.م',
-                        subtitle: 'مبيعات الكاش والآجل',
+                        title: 'Ù…Ø¨ÙŠØ¹Ø§Øª Ø§Ù„ÙŠÙˆÙ…',
+                        value: '${_todaySales.toStringAsFixed(2)} Ø¬.Ù…',
+                        subtitle: 'Ù…Ø¨ÙŠØ¹Ø§Øª Ø§Ù„ÙƒØ§Ø´ ÙˆØ§Ù„Ø¢Ø¬Ù„',
                         icon: Icons.trending_up_rounded,
                         accentColor: AppColors.primary,
                       ),
                       // Card 2: Today's Orders
                       _buildStatCard(
-                        title: 'عدد الفواتير',
-                        value: '$_todayOrders فاتورة',
-                        subtitle: 'المسجلة خلال اليوم',
+                        title: 'Ø¹Ø¯Ø¯ Ø§Ù„ÙÙˆØ§ØªÙŠØ±',
+                        value: '$_todayOrders ÙØ§ØªÙˆØ±Ø©',
+                        subtitle: 'Ø§Ù„Ù…Ø³Ø¬Ù„Ø© Ø®Ù„Ø§Ù„ Ø§Ù„ÙŠÙˆÙ…',
                         icon: Icons.receipt_long_rounded,
                         accentColor: AppColors.success,
                       ),
                       // Card 3: Inventory Capital
                       _buildStatCard(
-                        title: 'قيمة المخزون',
-                        value: '${_inventoryCost.toStringAsFixed(1)} ج.م',
-                        subtitle: '$_totalProducts صنف مسجل',
+                        title: 'Ù‚ÙŠÙ…Ø© Ø§Ù„Ù…Ø®Ø²ÙˆÙ†',
+                        value: '${_inventoryCost.toStringAsFixed(1)} Ø¬.Ù…',
+                        subtitle: '$_totalProducts ØµÙ†Ù Ù…Ø³Ø¬Ù„',
                         icon: Icons.storefront_rounded,
                         accentColor: const Color(0xFF8B5CF6),
                       ),
                       // Card 4: Low Stock Alert
                       _buildStatCard(
-                        title: 'نواقص البضاعة',
-                        value: '$_lowStockCount صنف',
-                        subtitle: 'أقل من 5 قطع',
+                        title: 'Ù†ÙˆØ§Ù‚Øµ Ø§Ù„Ø¨Ø¶Ø§Ø¹Ø©',
+                        value: '$_lowStockCount ØµÙ†Ù',
+                        subtitle: 'Ø£Ù‚Ù„ Ù…Ù† 5 Ù‚Ø·Ø¹',
                         icon: Icons.warning_amber_rounded,
                         accentColor: AppColors.danger,
                       ),
@@ -295,7 +295,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       const Text(
-                        'آخر فواتير المبيعات',
+                        'Ø¢Ø®Ø± ÙÙˆØ§ØªÙŠØ± Ø§Ù„Ù…Ø¨ÙŠØ¹Ø§Øª',
                         style: TextStyle(
                           fontFamily: 'Cairo',
                           fontSize: 16,
@@ -306,7 +306,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       TextButton(
                         onPressed: () => widget.onNavigateTab?.call(4),
                         child: const Text(
-                          'عرض الكل',
+                          'Ø¹Ø±Ø¶ Ø§Ù„ÙƒÙ„',
                           style: TextStyle(fontFamily: 'Cairo', color: AppColors.primary, fontWeight: FontWeight.bold),
                         ),
                       ),
@@ -320,7 +320,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       decoration: AppStyles.glassCard(),
                       child: const Center(
                         child: Text(
-                          'لا توجد فواتير مسجلة اليوم حتى الآن.',
+                          'Ù„Ø§ ØªÙˆØ¬Ø¯ ÙÙˆØ§ØªÙŠØ± Ù…Ø³Ø¬Ù„Ø© Ø§Ù„ÙŠÙˆÙ… Ø­ØªÙ‰ Ø§Ù„Ø¢Ù†.',
                           style: TextStyle(fontFamily: 'Cairo', color: AppColors.textSecondary),
                         ),
                       ),
@@ -460,7 +460,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    inv.customerName ?? 'زبون نقدي',
+                    inv.customerName ?? 'Ø²Ø¨ÙˆÙ† Ù†Ù‚Ø¯ÙŠ',
                     style: const TextStyle(
                       fontFamily: 'Cairo',
                       fontSize: 14,
@@ -469,7 +469,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                   ),
                   Text(
-                    '${inv.items.length} صنف • ${inv.createdAt.hour}:${inv.createdAt.minute.toString().padLeft(2, '0')}',
+                    '${inv.items.length} ØµÙ†Ù â€¢ ${inv.createdAt.hour}:${inv.createdAt.minute.toString().padLeft(2, '0')}',
                     style: const TextStyle(
                       fontFamily: 'Cairo',
                       fontSize: 11,
@@ -484,7 +484,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                '${inv.totalAmount.toStringAsFixed(2)} ج.م',
+                '${inv.totalAmount.toStringAsFixed(2)} Ø¬.Ù…',
                 style: const TextStyle(
                   fontFamily: 'Cairo',
                   fontSize: 15,
@@ -499,7 +499,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
-                  inv.isSynced ? 'متزامنة سحابياً' : 'محفوظة محلياً',
+                  inv.isSynced ? 'Ù…ØªØ²Ø§Ù…Ù†Ø© Ø³Ø­Ø§Ø¨ÙŠØ§Ù‹' : 'Ù…Ø­ÙÙˆØ¸Ø© Ù…Ø­Ù„ÙŠØ§Ù‹',
                   style: TextStyle(
                     fontFamily: 'Cairo',
                     fontSize: 9,
@@ -515,3 +515,4 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 }
+

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../models/product.dart';
 import '../services/offline_db_service.dart';
 import '../services/api_service.dart';
@@ -61,8 +61,8 @@ class _InventoryScreenState extends State<InventoryScreen> {
     final priceController = TextEditingController();
     final costController = TextEditingController();
     final qtyController = TextEditingController(text: '10');
-    final categoryController = TextEditingController(text: 'عام');
-    final unitController = TextEditingController(text: 'حبة');
+    final categoryController = TextEditingController(text: 'Ø¹Ø§Ù…');
+    final unitController = TextEditingController(text: 'Ø­Ø¨Ø©');
 
     showDialog(
       context: context,
@@ -73,41 +73,41 @@ class _InventoryScreenState extends State<InventoryScreen> {
           children: [
             Icon(Icons.add_box_rounded, color: AppColors.primary),
             SizedBox(width: 8),
-            Text('إضافة صنف جديد للمخزن', style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.textPrimary)),
+            Text('Ø¥Ø¶Ø§ÙØ© ØµÙ†Ù Ø¬Ø¯ÙŠØ¯ Ù„Ù„Ù…Ø®Ø²Ù†', style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.textPrimary)),
           ],
         ),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              _buildDialogField('اسم الصنف *', nameController, Icons.label_outline),
+              _buildDialogField('Ø§Ø³Ù… Ø§Ù„ØµÙ†Ù *', nameController, Icons.label_outline),
               const SizedBox(height: 10),
-              _buildDialogField('الباركود / الكود', barcodeController, Icons.qr_code_2_rounded),
+              _buildDialogField('Ø§Ù„Ø¨Ø§Ø±ÙƒÙˆØ¯ / Ø§Ù„ÙƒÙˆØ¯', barcodeController, Icons.qr_code_2_rounded),
               const SizedBox(height: 10),
               Row(
                 children: [
-                  Expanded(child: _buildDialogField('سعر البيع *', priceController, Icons.attach_money_rounded, isNumber: true)),
+                  Expanded(child: _buildDialogField('Ø³Ø¹Ø± Ø§Ù„Ø¨ÙŠØ¹ *', priceController, Icons.attach_money_rounded, isNumber: true)),
                   const SizedBox(width: 8),
-                  Expanded(child: _buildDialogField('سعر التكلفة', costController, Icons.money_off_rounded, isNumber: true)),
+                  Expanded(child: _buildDialogField('Ø³Ø¹Ø± Ø§Ù„ØªÙƒÙ„ÙØ©', costController, Icons.money_off_rounded, isNumber: true)),
                 ],
               ),
               const SizedBox(height: 10),
               Row(
                 children: [
-                  Expanded(child: _buildDialogField('الكمية *', qtyController, Icons.numbers_rounded, isNumber: true)),
+                  Expanded(child: _buildDialogField('Ø§Ù„ÙƒÙ…ÙŠØ© *', qtyController, Icons.numbers_rounded, isNumber: true)),
                   const SizedBox(width: 8),
-                  Expanded(child: _buildDialogField('الوحدة', unitController, Icons.straighten_rounded)),
+                  Expanded(child: _buildDialogField('Ø§Ù„ÙˆØ­Ø¯Ø©', unitController, Icons.straighten_rounded)),
                 ],
               ),
               const SizedBox(height: 10),
-              _buildDialogField('التصنيف', categoryController, Icons.category_outlined),
+              _buildDialogField('Ø§Ù„ØªØµÙ†ÙŠÙ', categoryController, Icons.category_outlined),
             ],
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('إلغاء', style: TextStyle(fontFamily: 'Cairo', color: AppColors.textSecondary)),
+            child: const Text('Ø¥Ù„ØºØ§Ø¡', style: TextStyle(fontFamily: 'Cairo', color: AppColors.textSecondary)),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -118,7 +118,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
 
               if (name.isEmpty || price <= 0) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('يرجى كتابة اسم الصنف وسعر البيع!', style: TextStyle(fontFamily: 'Cairo')), backgroundColor: AppColors.danger),
+                  const SnackBar(content: Text('ÙŠØ±Ø¬Ù‰ ÙƒØªØ§Ø¨Ø© Ø§Ø³Ù… Ø§Ù„ØµÙ†Ù ÙˆØ³Ø¹Ø± Ø§Ù„Ø¨ÙŠØ¹!', style: TextStyle(fontFamily: 'Cairo')), backgroundColor: AppColors.danger),
                 );
                 return;
               }
@@ -131,8 +131,8 @@ class _InventoryScreenState extends State<InventoryScreen> {
                 salePrice: price,
                 costPrice: cost,
                 stockQuantity: qty,
-                unit: unitController.text.trim().isNotEmpty ? unitController.text.trim() : 'حبة',
-                categoryName: categoryController.text.trim().isNotEmpty ? categoryController.text.trim() : 'عام',
+                unit: unitController.text.trim().isNotEmpty ? unitController.text.trim() : 'Ø­Ø¨Ø©',
+                categoryName: categoryController.text.trim().isNotEmpty ? categoryController.text.trim() : 'Ø¹Ø§Ù…',
               );
 
               await OfflineDbService.instance.addOrUpdateProduct(newProd);
@@ -140,14 +140,14 @@ class _InventoryScreenState extends State<InventoryScreen> {
               Navigator.of(ctx).pop();
               _loadProducts();
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('تمت إضافة الصنف وحفظه بنجاح!', style: TextStyle(fontFamily: 'Cairo')), backgroundColor: AppColors.success),
+                const SnackBar(content: Text('ØªÙ…Øª Ø¥Ø¶Ø§ÙØ© Ø§Ù„ØµÙ†Ù ÙˆØ­ÙØ¸Ù‡ Ø¨Ù†Ø¬Ø§Ø­!', style: TextStyle(fontFamily: 'Cairo')), backgroundColor: AppColors.success),
               );
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
-            child: const Text('حفظ الصنف', style: TextStyle(fontFamily: 'Cairo', color: Colors.white, fontWeight: FontWeight.bold)),
+            child: const Text('Ø­ÙØ¸ Ø§Ù„ØµÙ†Ù', style: TextStyle(fontFamily: 'Cairo', color: Colors.white, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -179,10 +179,10 @@ class _InventoryScreenState extends State<InventoryScreen> {
       appBar: AppBar(
         backgroundColor: AppColors.surface,
         elevation: 0,
-        title: const Text('المخزن والمنتجات', style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+        title: const Text('Ø§Ù„Ù…Ø®Ø²Ù† ÙˆØ§Ù„Ù…Ù†ØªØ¬Ø§Øª', style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
         actions: [
           IconButton(
-            tooltip: 'تحديث المخزن',
+            tooltip: 'ØªØ­Ø¯ÙŠØ« Ø§Ù„Ù…Ø®Ø²Ù†',
             icon: const Icon(Icons.refresh_rounded, color: AppColors.primary),
             onPressed: _loadProducts,
           ),
@@ -199,7 +199,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
                     onChanged: (_) => _applyFilter(),
                     style: const TextStyle(fontFamily: 'Cairo', color: AppColors.textPrimary),
                     decoration: InputDecoration(
-                      hintText: 'ابحث في المخزن باسم الصنف أو الباركود...',
+                      hintText: 'Ø§Ø¨Ø­Ø« ÙÙŠ Ø§Ù„Ù…Ø®Ø²Ù† Ø¨Ø§Ø³Ù… Ø§Ù„ØµÙ†Ù Ø£Ùˆ Ø§Ù„Ø¨Ø§Ø±ÙƒÙˆØ¯...',
                       hintStyle: const TextStyle(fontFamily: 'Cairo', color: AppColors.textSecondary, fontSize: 13),
                       prefixIcon: const Icon(Icons.search_rounded, color: AppColors.primary),
                       filled: true,
@@ -216,11 +216,11 @@ class _InventoryScreenState extends State<InventoryScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        'إجمالي الأصناف: ${_filteredProducts.length}',
+                        'Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„Ø£ØµÙ†Ø§Ù: ${_filteredProducts.length}',
                         style: const TextStyle(fontFamily: 'Cairo', fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.textSecondary),
                       ),
                       Text(
-                        'نواقص: ${_products.where((p) => p.stockQuantity <= 5).length}',
+                        'Ù†ÙˆØ§Ù‚Øµ: ${_products.where((p) => p.stockQuantity <= 5).length}',
                         style: const TextStyle(fontFamily: 'Cairo', fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.danger),
                       ),
                     ],
@@ -229,7 +229,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
                 const SizedBox(height: 8),
                 Expanded(
                   child: _filteredProducts.isEmpty
-                      ? const Center(child: Text('لا توجد أصناف بالمخزن!', style: TextStyle(fontFamily: 'Cairo', color: AppColors.textSecondary)))
+                      ? const Center(child: Text('Ù„Ø§ ØªÙˆØ¬Ø¯ Ø£ØµÙ†Ø§Ù Ø¨Ø§Ù„Ù…Ø®Ø²Ù†!', style: TextStyle(fontFamily: 'Cairo', color: AppColors.textSecondary)))
                       : ListView.builder(
                           padding: const EdgeInsets.all(16),
                           itemCount: _filteredProducts.length,
@@ -271,7 +271,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
                                         ),
                                         const SizedBox(height: 6),
                                         Text(
-                                          'سعر البيع: ${p.salePrice.toStringAsFixed(2)} ج.م  •  التكلفة: ${p.costPrice.toStringAsFixed(2)} ج.م',
+                                          'Ø³Ø¹Ø± Ø§Ù„Ø¨ÙŠØ¹: ${p.salePrice.toStringAsFixed(2)} Ø¬.Ù…  â€¢  Ø§Ù„ØªÙƒÙ„ÙØ©: ${p.costPrice.toStringAsFixed(2)} Ø¬.Ù…',
                                           style: const TextStyle(fontFamily: 'Cairo', fontSize: 11, color: AppColors.primary),
                                         ),
                                       ],
@@ -289,7 +289,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
                                           borderRadius: BorderRadius.circular(10),
                                         ),
                                         child: Text(
-                                          isOut ? 'نفد' : '${p.stockQuantity} ${p.unit}',
+                                          isOut ? 'Ù†ÙØ¯' : '${p.stockQuantity} ${p.unit}',
                                           style: TextStyle(
                                             fontFamily: 'Cairo',
                                             fontSize: 13,
@@ -314,8 +314,9 @@ class _InventoryScreenState extends State<InventoryScreen> {
         onPressed: _showAddProductDialog,
         backgroundColor: AppColors.primary,
         icon: const Icon(Icons.add_rounded, color: Colors.white),
-        label: const Text('إضافة صنف', style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.bold, color: Colors.white)),
+        label: const Text('Ø¥Ø¶Ø§ÙØ© ØµÙ†Ù', style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.bold, color: Colors.white)),
       ),
     );
   }
 }
+

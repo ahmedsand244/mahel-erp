@@ -1,8 +1,8 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+﻿import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:decimal/decimal.dart';
-import '../domain/pos_models.dart';
-import '../data/pos_repository.dart';
-import '../../../core/database/database_service.dart';
+import 'package:mahel_pos_mobile/features/pos/domain/pos_models.dart';
+import 'package:mahel_pos_mobile/features/pos/data/pos_repository.dart';
+import 'package:mahel_pos_mobile/core/database/database_service.dart';
 
 final posRepositoryProvider = Provider<PosRepository>((ref) {
   return PosRepository(ref.watch(databaseServiceProvider));

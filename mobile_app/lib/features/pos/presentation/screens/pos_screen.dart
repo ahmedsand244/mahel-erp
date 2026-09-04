@@ -1,13 +1,13 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:decimal/decimal.dart';
 import '../../domain/pos_models.dart';
-import '../../providers/pos_providers.dart';
-import '../../../inventory/presentation/screens/product_search_delegate.dart';
-import '../../../core/theme/app_theme.dart';
-import '../../../shared/widgets/app_button.dart';
-import '../../../shared/widgets/app_text_field.dart';
+import 'package:mahel_pos_mobile/features/pos/presentation/providers/pos_providers.dart';
+// no delegate
+import 'package:mahel_pos_mobile/core/theme/app_theme.dart';
+import 'package:mahel_pos_mobile/shared/widgets/app_button.dart';
+import 'package:mahel_pos_mobile/shared/widgets/app_text_field.dart';
 
 class PosScreen extends ConsumerStatefulWidget {
   const PosScreen({super.key});
@@ -83,8 +83,8 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                     Expanded(
                       child: Text(
                         isOnline
-                            ? 'متصل بالسيرفر (أونلاين) 🟢'
-                            : 'يعمل بدون إنترنت (أوفلاين متاح للبيع) 🟡',
+                            ? 'Ù…ØªØµÙ„ Ø¨Ø§Ù„Ø³ÙŠØ±ÙØ± (Ø£ÙˆÙ†Ù„Ø§ÙŠÙ†) ðŸŸ¢'
+                            : 'ÙŠØ¹Ù…Ù„ Ø¨Ø¯ÙˆÙ† Ø¥Ù†ØªØ±Ù†Øª (Ø£ÙˆÙÙ„Ø§ÙŠÙ† Ù…ØªØ§Ø­ Ù„Ù„Ø¨ÙŠØ¹) ðŸŸ¡',
                         style: GoogleFonts.cairo(
                           fontSize: 13,
                           fontWeight: FontWeight.bold,
@@ -106,7 +106,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                     Expanded(
                       child: AppTextField(
                         controller: _searchController,
-                        hintText: 'ابحث عن منتج بالاسم أو رمز الباركوود...',
+                        hintText: 'Ø§Ø¨Ø­Ø« Ø¹Ù† Ù…Ù†ØªØ¬ Ø¨Ø§Ù„Ø§Ø³Ù… Ø£Ùˆ Ø±Ù…Ø² Ø§Ù„Ø¨Ø§Ø±ÙƒÙˆÙˆØ¯...',
                         prefixIcon: const Icon(Icons.search),
                         onChanged: (v) => ref.read(searchQueryProvider.notifier).state = v,
                       ),
@@ -114,7 +114,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                     const SizedBox(width: 12),
                     AppButton.icon(
                       icon: Icons.photo_camera,
-                      label: 'مسح بالباركود',
+                      label: 'Ù…Ø³Ø­ Ø¨Ø§Ù„Ø¨Ø§Ø±ÙƒÙˆØ¯',
                       onPressed: _openBarcodeScanner,
                       backgroundColor: theme.colorScheme.primary.withOpacity(0.15),
                       foregroundColor: theme.colorScheme.primary,
@@ -206,7 +206,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
-                        isLowStock ? 'منخفض (${product.stockQuantity})' : 'متوفر (${product.stockQuantity})',
+                        isLowStock ? 'Ù…Ù†Ø®ÙØ¶ (${product.stockQuantity})' : 'Ù…ØªÙˆÙØ± (${product.stockQuantity})',
                         style: GoogleFonts.cairo(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white),
                       ),
                     ),
@@ -230,7 +230,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    '${product.salePrice.toStringAsFixed(2)} ج.م',
+                    '${product.salePrice.toStringAsFixed(2)} Ø¬.Ù…',
                     style: GoogleFonts.cairo(
                       fontSize: 15,
                       fontWeight: FontWeight.w900,
@@ -317,7 +317,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                             child: Text(
                               selectedCustomer != null
                                   ? _getCustomerName(customers, selectedCustomer)
-                                  : 'عميل نقدي سريع',
+                                  : 'Ø¹Ù…ÙŠÙ„ Ù†Ù‚Ø¯ÙŠ Ø³Ø±ÙŠØ¹',
                               style: GoogleFonts.cairo(
                                 fontSize: 14,
                                 fontWeight: FontWeight.bold,
@@ -338,7 +338,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                 const SizedBox(width: 12),
                 AppButton.icon(
                   icon: Icons.person_add,
-                  label: '+ عميل جديد',
+                  label: '+ Ø¹Ù…ÙŠÙ„ Ø¬Ø¯ÙŠØ¯',
                   onPressed: _openAddCustomerModal,
                   backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
                   foregroundColor: theme.colorScheme.primary,
@@ -353,7 +353,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
               padding: const EdgeInsets.all(32),
               child: Center(
                 child: Text(
-                  'سلة المشتريات فارغة. اضغط على أي منتج لإضافته.',
+                  'Ø³Ù„Ø© Ø§Ù„Ù…Ø´ØªØ±ÙŠØ§Øª ÙØ§Ø±ØºØ©. Ø§Ø¶ØºØ· Ø¹Ù„Ù‰ Ø£ÙŠ Ù…Ù†ØªØ¬ Ù„Ø¥Ø¶Ø§ÙØªÙ‡.',
                   style: GoogleFonts.cairo(color: theme.colorScheme.onSurfaceVariant, fontSize: 13),
                 ),
               ),
@@ -386,11 +386,11 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      'المجموع الإجمالي',
+                      'Ø§Ù„Ù…Ø¬Ù…ÙˆØ¹ Ø§Ù„Ø¥Ø¬Ù…Ø§Ù„ÙŠ',
                       style: GoogleFonts.cairo(fontSize: 16, fontWeight: FontWeight.bold),
                     ),
                     Text(
-                      '${cartTotal.toStringAsFixed(2)} ج.م',
+                      '${cartTotal.toStringAsFixed(2)} Ø¬.Ù…',
                       style: GoogleFonts.cairo(
                         fontSize: 22,
                         fontWeight: FontWeight.w900,
@@ -403,7 +403,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                 _buildPaymentMethodSelector(paymentMethod, theme),
                 const SizedBox(height: 16),
                 AppButton(
-                  label: 'إتمام الفاتورة',
+                  label: 'Ø¥ØªÙ…Ø§Ù… Ø§Ù„ÙØ§ØªÙˆØ±Ø©',
                   icon: Icons.shopping_basket,
                   onPressed: cart.isEmpty || _isSubmitting ? null : _submitCheckout,
                   isLoading: _isSubmitting,
@@ -438,7 +438,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                   overflow: TextOverflow.ellipsis,
                 ),
                 Text(
-                  '${item.price.toStringAsFixed(2)} ج.م',
+                  '${item.price.toStringAsFixed(2)} Ø¬.Ù…',
                   style: GoogleFonts.cairo(fontSize: 12, fontWeight: FontWeight.bold, color: theme.colorScheme.primary),
                 ),
               ],
@@ -466,7 +466,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
           ),
           const SizedBox(width: 8),
           Text(
-            '${item.totalPrice.toStringAsFixed(2)} ج.م',
+            '${item.totalPrice.toStringAsFixed(2)} Ø¬.Ù…',
             style: GoogleFonts.cairo(fontSize: 13, fontWeight: FontWeight.bold, color: theme.colorScheme.primary),
           ),
           IconButton(

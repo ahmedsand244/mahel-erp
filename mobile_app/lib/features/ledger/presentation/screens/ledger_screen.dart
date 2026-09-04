@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../shared/widgets/placeholder_screen.dart';
+import 'package:mahel_pos_mobile/shared/widgets/placeholder_screen.dart';
 
 class LedgerScreen extends StatelessWidget {
   const LedgerScreen({super.key});
@@ -8,7 +8,7 @@ class LedgerScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const PlaceholderScreen(
-      title: 'الديون والشكك',
+      title: 'Ø§Ù„Ø¯ÙŠÙˆÙ† ÙˆØ§Ù„Ø´ÙƒÙƒ',
       icon: Icons.menu_book_rounded,
       color: Color(0xFFF59E0B),
     );

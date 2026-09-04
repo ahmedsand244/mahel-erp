@@ -1,5 +1,5 @@
-import 'package:drift/drift.dart';
-import '../../app_database.dart';
+﻿import 'package:drift/drift.dart';
+import 'package:mahel_pos_mobile/core/database/app_database.dart';
 
 class CustomerDao {
   final AppDatabase db;

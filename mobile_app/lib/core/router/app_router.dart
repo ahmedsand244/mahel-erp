@@ -1,17 +1,17 @@
-import 'package:go_router/go_router.dart';
+﻿import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../features/auth/presentation/screens/login_screen.dart';
-import '../features/auth/presentation/screens/tenant_selection_screen.dart';
-import '../features/auth/presentation/screens/pin_lock_screen.dart';
-import '../features/pos/presentation/screens/pos_screen.dart';
-import '../features/dashboard/presentation/screens/dashboard_screen.dart';
-import '../features/inventory/presentation/screens/inventory_screen.dart';
-import '../features/ledger/presentation/screens/ledger_screen.dart';
-import '../features/maintenance/presentation/screens/maintenance_screen.dart';
-import '../features/expenses/presentation/screens/expenses_screen.dart';
-import '../features/reports/presentation/screens/reports_screen.dart';
-import '../features/settings/presentation/screens/settings_screen.dart';
-import '../shared/widgets/main_scaffold.dart';
+import 'package:mahel_pos_mobile/features/auth/presentation/screens/login_screen.dart';
+import 'package:mahel_pos_mobile/features/auth/presentation/screens/tenant_selection_screen.dart';
+import 'package:mahel_pos_mobile/features/auth/presentation/screens/pin_lock_screen.dart';
+import 'package:mahel_pos_mobile/features/pos/presentation/screens/pos_screen.dart';
+import 'package:mahel_pos_mobile/features/dashboard/presentation/screens/dashboard_screen.dart';
+import 'package:mahel_pos_mobile/features/inventory/presentation/screens/inventory_screen.dart';
+import 'package:mahel_pos_mobile/features/ledger/presentation/screens/ledger_screen.dart';
+import 'package:mahel_pos_mobile/features/maintenance/presentation/screens/maintenance_screen.dart';
+import 'package:mahel_pos_mobile/features/expenses/presentation/screens/expenses_screen.dart';
+import 'package:mahel_pos_mobile/features/reports/presentation/screens/reports_screen.dart';
+import 'package:mahel_pos_mobile/features/settings/presentation/screens/settings_screen.dart';
+import 'package:mahel_pos_mobile/shared/widgets/main_scaffold.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authStateProvider);

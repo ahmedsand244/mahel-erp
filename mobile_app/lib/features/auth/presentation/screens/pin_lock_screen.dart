@@ -1,8 +1,8 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../providers/auth_providers.dart';
-import '../../../core/storage/secure_storage_service.dart';
+import 'package:mahel_pos_mobile/features/auth/presentation/providers/auth_providers.dart';
+import 'package:mahel_pos_mobile/core/storage/secure_storage_service.dart';
 
 class PinLockScreen extends ConsumerStatefulWidget {
   const PinLockScreen({super.key});
@@ -42,12 +42,12 @@ class _PinLockScreenState extends ConsumerState<PinLockScreen> {
               ),
               const SizedBox(height: 24),
               Text(
-                'إدخال رمز PIN',
+                'Ø¥Ø¯Ø®Ø§Ù„ Ø±Ù…Ø² PIN',
                 style: GoogleFonts.cairo(fontSize: 22, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
               Text(
-                'أدخل رمز الدخول السريع للوصول للنظام',
+                'Ø£Ø¯Ø®Ù„ Ø±Ù…Ø² Ø§Ù„Ø¯Ø®ÙˆÙ„ Ø§Ù„Ø³Ø±ÙŠØ¹ Ù„Ù„ÙˆØµÙˆÙ„ Ù„Ù„Ù†Ø¸Ø§Ù…',
                 style: GoogleFonts.cairo(fontSize: 13, color: theme.colorScheme.onSurfaceVariant),
                 textAlign: TextAlign.center,
               ),
@@ -80,7 +80,7 @@ class _PinLockScreenState extends ConsumerState<PinLockScreen> {
               TextButton(
                 onPressed: () => _usePasswordInstead(),
                 child: Text(
-                  'استخدام كلمة المرور بدلاً من PIN',
+                  'Ø§Ø³ØªØ®Ø¯Ø§Ù… ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ± Ø¨Ø¯Ù„Ø§Ù‹ Ù…Ù† PIN',
                   style: GoogleFonts.cairo(color: theme.colorScheme.primary),
                 ),
               ),
@@ -96,7 +96,7 @@ class _PinLockScreenState extends ConsumerState<PinLockScreen> {
       ['1', '2', '3'],
       ['4', '5', '6'],
       ['7', '8', '9'],
-      ['', '0', '⌫'],
+      ['', '0', 'âŒ«'],
     ];
 
     return Column(
@@ -122,7 +122,7 @@ class _PinLockScreenState extends ConsumerState<PinLockScreen> {
                     child: Text(
                       key,
                       style: GoogleFonts.cairo(
-                        fontSize: key == '⌫' ? 20 : 24,
+                        fontSize: key == 'âŒ«' ? 20 : 24,
                         fontWeight: FontWeight.bold,
                         color: theme.colorScheme.onSurface,
                       ),
@@ -138,7 +138,7 @@ class _PinLockScreenState extends ConsumerState<PinLockScreen> {
   }
 
   void _onKeyPressed(String key) {
-    if (key == '⌫') {
+    if (key == 'âŒ«') {
       if (_enteredPin.isNotEmpty) {
         setState(() => _enteredPin.removeLast());
       }
@@ -164,7 +164,7 @@ class _PinLockScreenState extends ConsumerState<PinLockScreen> {
       }
     } else {
       setState(() {
-        _errorMessage = 'رمز PIN غير صحيح';
+        _errorMessage = 'Ø±Ù…Ø² PIN ØºÙŠØ± ØµØ­ÙŠØ­';
         _enteredPin.clear();
       });
       await Future.delayed(const Duration(seconds: 1));

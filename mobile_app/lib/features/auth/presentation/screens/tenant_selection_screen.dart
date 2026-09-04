@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../providers/auth_providers.dart';
+import 'package:mahel_pos_mobile/features/auth/presentation/providers/auth_providers.dart';
 
 class TenantSelectionScreen extends ConsumerWidget {
   const TenantSelectionScreen({super.key});
@@ -12,7 +12,7 @@ class TenantSelectionScreen extends ConsumerWidget {
     
     return Scaffold(
       appBar: AppBar(
-        title: Text('اختر الشركة', style: GoogleFonts.cairo()),
+        title: Text('Ø§Ø®ØªØ± Ø§Ù„Ø´Ø±ÙƒØ©', style: GoogleFonts.cairo()),
         centerTitle: true,
         automaticallyImplyLeading: false,
       ),
@@ -35,23 +35,23 @@ class TenantSelectionScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 24),
             Text(
-              'مرحباً ${authState is Authenticated ? authState.username : 'بكم'}',
+              'Ù…Ø±Ø­Ø¨Ø§Ù‹ ${authState is Authenticated ? authState.username : 'Ø¨ÙƒÙ…'}',
               style: GoogleFonts.cairo(fontSize: 22, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Text(
-              'اختر الشركة للدخول',
+              'Ø§Ø®ØªØ± Ø§Ù„Ø´Ø±ÙƒØ© Ù„Ù„Ø¯Ø®ÙˆÙ„',
               style: GoogleFonts.cairo(fontSize: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
             ),
             const SizedBox(height: 32),
-            _buildTenantCard(context, 'mahel', 'شركة النماء', Icons.storefront_rounded),
+            _buildTenantCard(context, 'mahel', 'Ø´Ø±ÙƒØ© Ø§Ù„Ù†Ù…Ø§Ø¡', Icons.storefront_rounded),
             const SizedBox(height: 16),
-            _buildTenantCard(context, 'demo', 'شركة تجريبية', Icons.science_rounded),
+            _buildTenantCard(context, 'demo', 'Ø´Ø±ÙƒØ© ØªØ¬Ø±ÙŠØ¨ÙŠØ©', Icons.science_rounded),
             const SizedBox(height: 32),
             TextButton.icon(
               onPressed: () => ref.read(authStateProvider.notifier).logout(),
               icon: const Icon(Icons.logout),
-              label: Text('تسجيل خروج', style: GoogleFonts.cairo()),
+              label: Text('ØªØ³Ø¬ÙŠÙ„ Ø®Ø±ÙˆØ¬', style: GoogleFonts.cairo()),
             ),
           ],
         ),

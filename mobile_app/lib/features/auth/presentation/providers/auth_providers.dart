@@ -1,9 +1,9 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+﻿import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/auth_repository.dart';
 import '../../domain/auth_state.dart';
-import '../../../core/network/api_service.dart';
-import '../../../core/storage/secure_storage_service.dart';
-import '../../../core/database/database_service.dart';
+import 'package:mahel_pos_mobile/core/network/api_service.dart';
+import 'package:mahel_pos_mobile/core/storage/secure_storage_service.dart';
+import 'package:mahel_pos_mobile/core/database/database_service.dart';
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
   return AuthRepository(

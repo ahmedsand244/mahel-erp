@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/api_service.dart';
 import '../theme/app_theme.dart';
@@ -41,7 +41,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final password = _passwordController.text.trim();
 
     if (username.isEmpty || password.isEmpty) {
-      setState(() => _errorMessage = 'يرجى إدخال اسم المستخدم وكلمة المرور');
+      setState(() => _errorMessage = 'ÙŠØ±Ø¬Ù‰ Ø¥Ø¯Ø®Ø§Ù„ Ø§Ø³Ù… Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù… ÙˆÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ±');
       return;
     }
 
@@ -61,7 +61,7 @@ class _LoginScreenState extends State<LoginScreen> {
       );
     } else {
       final errMsg = result['error']?.toString() ?? '';
-      if (errMsg.contains('تعذر الاتصال') || errMsg.contains('SocketException')) {
+      if (errMsg.contains('ØªØ¹Ø°Ø± Ø§Ù„Ø§ØªØµØ§Ù„') || errMsg.contains('SocketException')) {
         // Offline mode - allow login with saved credentials
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('username', username);
@@ -69,7 +69,7 @@ class _LoginScreenState extends State<LoginScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
-              'لا يوجد اتصال بالإنترنت — تم الدخول بوضع العمل المحلي (Offline) بنجاح!',
+              'Ù„Ø§ ÙŠÙˆØ¬Ø¯ Ø§ØªØµØ§Ù„ Ø¨Ø§Ù„Ø¥Ù†ØªØ±Ù†Øª â€” ØªÙ… Ø§Ù„Ø¯Ø®ÙˆÙ„ Ø¨ÙˆØ¶Ø¹ Ø§Ù„Ø¹Ù…Ù„ Ø§Ù„Ù…Ø­Ù„ÙŠ (Offline) Ø¨Ù†Ø¬Ø§Ø­!',
               style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.bold),
             ),
             backgroundColor: AppColors.warning,
@@ -80,7 +80,7 @@ class _LoginScreenState extends State<LoginScreen> {
           MaterialPageRoute(builder: (_) => const MainNavigationScreen()),
         );
       } else {
-        setState(() => _errorMessage = result['error'] ?? 'فشل تسجيل الدخول');
+        setState(() => _errorMessage = result['error'] ?? 'ÙØ´Ù„ ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø¯Ø®ÙˆÙ„');
       }
     }
   }
@@ -119,7 +119,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 20),
                 const Text(
-                  'النماء ERP & POS',
+                  'Ø§Ù„Ù†Ù…Ø§Ø¡ ERP & POS',
                   style: TextStyle(
                     fontFamily: 'Cairo',
                     fontSize: 28,
@@ -128,7 +128,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
                 const Text(
-                  'نظام إدارة المبيعات والمخزن المتكامل',
+                  'Ù†Ø¸Ø§Ù… Ø¥Ø¯Ø§Ø±Ø© Ø§Ù„Ù…Ø¨ÙŠØ¹Ø§Øª ÙˆØ§Ù„Ù…Ø®Ø²Ù† Ø§Ù„Ù…ØªÙƒØ§Ù…Ù„',
                   style: TextStyle(
                     fontFamily: 'Cairo',
                     fontSize: 13,
@@ -149,7 +149,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       Icon(Icons.wifi_off_rounded, color: AppColors.success, size: 14),
                       SizedBox(width: 6),
                       Text(
-                        'يعمل 100% بدون إنترنت (Offline First)',
+                        'ÙŠØ¹Ù…Ù„ 100% Ø¨Ø¯ÙˆÙ† Ø¥Ù†ØªØ±Ù†Øª (Offline First)',
                         style: TextStyle(fontFamily: 'Cairo', fontSize: 11, color: AppColors.success, fontWeight: FontWeight.bold),
                       ),
                     ],
@@ -165,7 +165,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       const Text(
-                        'تسجيل الدخول',
+                        'ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø¯Ø®ÙˆÙ„',
                         style: TextStyle(fontFamily: 'Cairo', fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
                       ),
                       const SizedBox(height: 20),
@@ -176,7 +176,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         style: const TextStyle(fontFamily: 'Cairo', color: AppColors.textPrimary),
                         textInputAction: TextInputAction.next,
                         decoration: InputDecoration(
-                          labelText: 'اسم المستخدم',
+                          labelText: 'Ø§Ø³Ù… Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù…',
                           labelStyle: const TextStyle(fontFamily: 'Cairo', color: AppColors.textSecondary),
                           prefixIcon: const Icon(Icons.person_outline_rounded, color: AppColors.primary),
                           filled: true,
@@ -196,7 +196,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         textInputAction: TextInputAction.done,
                         onSubmitted: (_) => _handleLogin(),
                         decoration: InputDecoration(
-                          labelText: 'كلمة المرور',
+                          labelText: 'ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ±',
                           labelStyle: const TextStyle(fontFamily: 'Cairo', color: AppColors.textSecondary),
                           prefixIcon: const Icon(Icons.lock_outline_rounded, color: AppColors.primary),
                           suffixIcon: IconButton(
@@ -245,7 +245,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           child: _isLoading
                               ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white))
-                              : const Text('دخول', style: TextStyle(fontFamily: 'Cairo', fontSize: 17, fontWeight: FontWeight.bold, color: Colors.white)),
+                              : const Text('Ø¯Ø®ÙˆÙ„', style: TextStyle(fontFamily: 'Cairo', fontSize: 17, fontWeight: FontWeight.bold, color: Colors.white)),
                         ),
                       ),
                     ],
@@ -254,7 +254,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 const SizedBox(height: 20),
                 const Text(
-                  'نسخة 1.0.0 — مطور بواسطة نظام النماء ERP',
+                  'Ù†Ø³Ø®Ø© 1.0.0 â€” Ù…Ø·ÙˆØ± Ø¨ÙˆØ§Ø³Ø·Ø© Ù†Ø¸Ø§Ù… Ø§Ù„Ù†Ù…Ø§Ø¡ ERP',
                   style: TextStyle(fontFamily: 'Cairo', fontSize: 11, color: AppColors.textSecondary),
                 ),
               ],
@@ -265,3 +265,4 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 }
+

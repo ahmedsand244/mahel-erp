@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../models/product.dart';
 import '../models/customer.dart';
 import '../models/invoice.dart';
@@ -17,8 +17,8 @@ class _PosScreenState extends State<PosScreen> {
   List<ProductModel> _allProducts = [];
   List<ProductModel> _filteredProducts = [];
   List<CustomerModel> _customers = [];
-  List<String> _categories = ['الكل'];
-  String _selectedCategory = 'الكل';
+  List<String> _categories = ['Ø§Ù„ÙƒÙ„'];
+  String _selectedCategory = 'Ø§Ù„ÙƒÙ„';
 
   final Map<int, int> _cart = {}; // productId -> quantity
   CustomerModel? _selectedCustomer;
@@ -40,7 +40,7 @@ class _PosScreenState extends State<PosScreen> {
     final products = await OfflineDbService.instance.getOfflineProducts();
     final customers = await OfflineDbService.instance.getOfflineCustomers();
 
-    final cats = {'الكل'};
+    final cats = {'Ø§Ù„ÙƒÙ„'};
     for (var p in products) {
       if (p.categoryName.isNotEmpty) cats.add(p.categoryName);
     }
@@ -74,7 +74,7 @@ class _PosScreenState extends State<PosScreen> {
     final q = _searchController.text.trim().toLowerCase();
     setState(() {
       _filteredProducts = _allProducts.where((p) {
-        final matchesCat = _selectedCategory == 'الكل' || p.categoryName == _selectedCategory;
+        final matchesCat = _selectedCategory == 'Ø§Ù„ÙƒÙ„' || p.categoryName == _selectedCategory;
         final matchesQuery = q.isEmpty ||
             p.name.toLowerCase().contains(q) ||
             p.barcode.toLowerCase().contains(q) ||
@@ -88,7 +88,7 @@ class _PosScreenState extends State<PosScreen> {
     if (p.stockQuantity <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('عفواً، نفدت كمية هذا الصنف من المخزن!', style: TextStyle(fontFamily: 'Cairo')),
+          content: Text('Ø¹ÙÙˆØ§Ù‹ØŒ Ù†ÙØ¯Øª ÙƒÙ…ÙŠØ© Ù‡Ø°Ø§ Ø§Ù„ØµÙ†Ù Ù…Ù† Ø§Ù„Ù…Ø®Ø²Ù†!', style: TextStyle(fontFamily: 'Cairo')),
           backgroundColor: AppColors.danger,
           duration: Duration(seconds: 1),
         ),
@@ -100,7 +100,7 @@ class _PosScreenState extends State<PosScreen> {
     if (currentQty >= p.stockQuantity) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('لا تتوفر كمية إضافية بالمخزن!', style: TextStyle(fontFamily: 'Cairo')),
+          content: Text('Ù„Ø§ ØªØªÙˆÙØ± ÙƒÙ…ÙŠØ© Ø¥Ø¶Ø§ÙÙŠØ© Ø¨Ø§Ù„Ù…Ø®Ø²Ù†!', style: TextStyle(fontFamily: 'Cairo')),
           backgroundColor: AppColors.warning,
           duration: Duration(seconds: 1),
         ),
@@ -143,7 +143,7 @@ class _PosScreenState extends State<PosScreen> {
     if (_paymentMethod == 'deferred' && _selectedCustomer == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('يرجى تحديد العميل أولاً لتسجيل فاتورة آجل/شكك!', style: TextStyle(fontFamily: 'Cairo')),
+          content: Text('ÙŠØ±Ø¬Ù‰ ØªØ­Ø¯ÙŠØ¯ Ø§Ù„Ø¹Ù…ÙŠÙ„ Ø£ÙˆÙ„Ø§Ù‹ Ù„ØªØ³Ø¬ÙŠÙ„ ÙØ§ØªÙˆØ±Ø© Ø¢Ø¬Ù„/Ø´ÙƒÙƒ!', style: TextStyle(fontFamily: 'Cairo')),
           backgroundColor: AppColors.danger,
         ),
       );
@@ -166,7 +166,7 @@ class _PosScreenState extends State<PosScreen> {
       clientId: clientId,
       paymentMethod: _paymentMethod,
       customerId: _selectedCustomer?.id,
-      customerName: _selectedCustomer?.name ?? 'زبون نقدي',
+      customerName: _selectedCustomer?.name ?? 'Ø²Ø¨ÙˆÙ† Ù†Ù‚Ø¯ÙŠ',
       totalAmount: _finalTotal,
       createdAt: DateTime.now(),
       items: invoiceItems,
@@ -192,19 +192,19 @@ class _PosScreenState extends State<PosScreen> {
           children: [
             Icon(Icons.check_circle_rounded, color: AppColors.success, size: 28),
             SizedBox(width: 8),
-            Text('تم إصدار الفاتورة!', style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+            Text('ØªÙ… Ø¥ØµØ¯Ø§Ø± Ø§Ù„ÙØ§ØªÙˆØ±Ø©!', style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
           ],
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('رقم الفاتورة: $clientId', style: const TextStyle(fontFamily: 'Cairo', fontSize: 13, color: AppColors.textSecondary)),
+            Text('Ø±Ù‚Ù… Ø§Ù„ÙØ§ØªÙˆØ±Ø©: $clientId', style: const TextStyle(fontFamily: 'Cairo', fontSize: 13, color: AppColors.textSecondary)),
             const SizedBox(height: 6),
-            Text('المبلغ الإجمالي: ${_finalTotal.toStringAsFixed(2)} ج.م', style: const TextStyle(fontFamily: 'Cairo', fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.primary)),
-            Text('طريقة الدفع: ${_paymentMethod == "cash" ? "نقدي (كاش)" : "آجل (شكك)"}', style: const TextStyle(fontFamily: 'Cairo', fontSize: 13, color: AppColors.textSecondary)),
+            Text('Ø§Ù„Ù…Ø¨Ù„Øº Ø§Ù„Ø¥Ø¬Ù…Ø§Ù„ÙŠ: ${_finalTotal.toStringAsFixed(2)} Ø¬.Ù…', style: const TextStyle(fontFamily: 'Cairo', fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.primary)),
+            Text('Ø·Ø±ÙŠÙ‚Ø© Ø§Ù„Ø¯ÙØ¹: ${_paymentMethod == "cash" ? "Ù†Ù‚Ø¯ÙŠ (ÙƒØ§Ø´)" : "Ø¢Ø¬Ù„ (Ø´ÙƒÙƒ)"}', style: const TextStyle(fontFamily: 'Cairo', fontSize: 13, color: AppColors.textSecondary)),
             if (_selectedCustomer != null)
-              Text('العميل: ${_selectedCustomer!.name}', style: const TextStyle(fontFamily: 'Cairo', fontSize: 13, color: AppColors.textSecondary)),
+              Text('Ø§Ù„Ø¹Ù…ÙŠÙ„: ${_selectedCustomer!.name}', style: const TextStyle(fontFamily: 'Cairo', fontSize: 13, color: AppColors.textSecondary)),
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(8),
@@ -214,7 +214,7 @@ class _PosScreenState extends State<PosScreen> {
                   Icon(Icons.offline_pin_rounded, color: AppColors.success, size: 18),
                   SizedBox(width: 6),
                   Expanded(
-                    child: Text('حُفظت بأمان محلياً وستُرفع تلقائياً عند توفر النت.', style: TextStyle(fontFamily: 'Cairo', fontSize: 11, color: AppColors.success)),
+                    child: Text('Ø­ÙÙØ¸Øª Ø¨Ø£Ù…Ø§Ù† Ù…Ø­Ù„ÙŠØ§Ù‹ ÙˆØ³ØªÙØ±ÙØ¹ ØªÙ„Ù‚Ø§Ø¦ÙŠØ§Ù‹ Ø¹Ù†Ø¯ ØªÙˆÙØ± Ø§Ù„Ù†Øª.', style: TextStyle(fontFamily: 'Cairo', fontSize: 11, color: AppColors.success)),
                   ),
                 ],
               ),
@@ -237,7 +237,7 @@ class _PosScreenState extends State<PosScreen> {
               backgroundColor: AppColors.primary,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
-            child: const Text('فاتورة جديدة', style: TextStyle(fontFamily: 'Cairo', color: Colors.white, fontWeight: FontWeight.bold)),
+            child: const Text('ÙØ§ØªÙˆØ±Ø© Ø¬Ø¯ÙŠØ¯Ø©', style: TextStyle(fontFamily: 'Cairo', color: Colors.white, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -268,7 +268,7 @@ class _PosScreenState extends State<PosScreen> {
                         children: [
                           Icon(Icons.shopping_cart_rounded, color: AppColors.primary),
                           SizedBox(width: 8),
-                          Text('سلة المبيعات', style: TextStyle(fontFamily: 'Cairo', fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+                          Text('Ø³Ù„Ø© Ø§Ù„Ù…Ø¨ÙŠØ¹Ø§Øª', style: TextStyle(fontFamily: 'Cairo', fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
                         ],
                       ),
                       IconButton(
@@ -283,7 +283,7 @@ class _PosScreenState extends State<PosScreen> {
                   Expanded(
                     child: _cart.isEmpty
                         ? const Center(
-                            child: Text('السلة فارغة!', style: TextStyle(fontFamily: 'Cairo', color: AppColors.textSecondary)),
+                            child: Text('Ø§Ù„Ø³Ù„Ø© ÙØ§Ø±ØºØ©!', style: TextStyle(fontFamily: 'Cairo', color: AppColors.textSecondary)),
                           )
                         : ListView(
                             children: _cart.entries.map((entry) {
@@ -300,7 +300,7 @@ class _PosScreenState extends State<PosScreen> {
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
                                           Text(p.name, style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
-                                          Text('${p.salePrice.toStringAsFixed(2)} ج.م', style: const TextStyle(fontFamily: 'Cairo', fontSize: 12, color: AppColors.primary)),
+                                          Text('${p.salePrice.toStringAsFixed(2)} Ø¬.Ù…', style: const TextStyle(fontFamily: 'Cairo', fontSize: 12, color: AppColors.primary)),
                                         ],
                                       ),
                                     ),
@@ -341,7 +341,7 @@ class _PosScreenState extends State<PosScreen> {
                         child: DropdownButtonFormField<CustomerModel?>(
                           value: _selectedCustomer,
                           decoration: InputDecoration(
-                            labelText: 'العميل',
+                            labelText: 'Ø§Ù„Ø¹Ù…ÙŠÙ„',
                             labelStyle: const TextStyle(fontFamily: 'Cairo', color: AppColors.textSecondary, fontSize: 12),
                             contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.border)),
@@ -349,8 +349,8 @@ class _PosScreenState extends State<PosScreen> {
                           ),
                           dropdownColor: AppColors.surface,
                           items: [
-                            const DropdownMenuItem(value: null, child: Text('زبون نقدي عام', style: TextStyle(fontFamily: 'Cairo', fontSize: 13, color: AppColors.textPrimary))),
-                            ..._customers.map((c) => DropdownMenuItem(value: c, child: Text('${c.name} (${c.balance.toStringAsFixed(0)} ج.م)', style: const TextStyle(fontFamily: 'Cairo', fontSize: 13, color: AppColors.textPrimary)))),
+                            const DropdownMenuItem(value: null, child: Text('Ø²Ø¨ÙˆÙ† Ù†Ù‚Ø¯ÙŠ Ø¹Ø§Ù…', style: TextStyle(fontFamily: 'Cairo', fontSize: 13, color: AppColors.textPrimary))),
+                            ..._customers.map((c) => DropdownMenuItem(value: c, child: Text('${c.name} (${c.balance.toStringAsFixed(0)} Ø¬.Ù…)', style: const TextStyle(fontFamily: 'Cairo', fontSize: 13, color: AppColors.textPrimary)))),
                           ],
                           onChanged: (val) {
                             setModalState(() => _selectedCustomer = val);
@@ -371,7 +371,7 @@ class _PosScreenState extends State<PosScreen> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             ChoiceChip(
-                              label: const Text('كاش', style: TextStyle(fontFamily: 'Cairo', fontSize: 11)),
+                              label: const Text('ÙƒØ§Ø´', style: TextStyle(fontFamily: 'Cairo', fontSize: 11)),
                               selected: _paymentMethod == 'cash',
                               selectedColor: AppColors.success,
                               onSelected: (val) {
@@ -383,7 +383,7 @@ class _PosScreenState extends State<PosScreen> {
                             ),
                             const SizedBox(width: 4),
                             ChoiceChip(
-                              label: const Text('آجل', style: TextStyle(fontFamily: 'Cairo', fontSize: 11)),
+                              label: const Text('Ø¢Ø¬Ù„', style: TextStyle(fontFamily: 'Cairo', fontSize: 11)),
                               selected: _paymentMethod == 'deferred',
                               selectedColor: AppColors.warning,
                               onSelected: (val) {
@@ -407,8 +407,8 @@ class _PosScreenState extends State<PosScreen> {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('الإجمالي النهائي:', style: TextStyle(fontFamily: 'Cairo', fontSize: 12, color: AppColors.textSecondary)),
-                          Text('${_finalTotal.toStringAsFixed(2)} ج.م', style: const TextStyle(fontFamily: 'Cairo', fontSize: 22, fontWeight: FontWeight.w900, color: AppColors.primary)),
+                          const Text('Ø§Ù„Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„Ù†Ù‡Ø§Ø¦ÙŠ:', style: TextStyle(fontFamily: 'Cairo', fontSize: 12, color: AppColors.textSecondary)),
+                          Text('${_finalTotal.toStringAsFixed(2)} Ø¬.Ù…', style: const TextStyle(fontFamily: 'Cairo', fontSize: 22, fontWeight: FontWeight.w900, color: AppColors.primary)),
                         ],
                       ),
                       ElevatedButton.icon(
@@ -419,7 +419,7 @@ class _PosScreenState extends State<PosScreen> {
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                         ),
                         icon: const Icon(Icons.check_rounded, color: Colors.white),
-                        label: const Text('إتمام الفاتورة', style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.bold, fontSize: 15, color: Colors.white)),
+                        label: const Text('Ø¥ØªÙ…Ø§Ù… Ø§Ù„ÙØ§ØªÙˆØ±Ø©', style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.bold, fontSize: 15, color: Colors.white)),
                       ),
                     ],
                   ),
@@ -439,10 +439,10 @@ class _PosScreenState extends State<PosScreen> {
       appBar: AppBar(
         backgroundColor: AppColors.surface,
         elevation: 0,
-        title: const Text('نقطة البيع (POS)', style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+        title: const Text('Ù†Ù‚Ø·Ø© Ø§Ù„Ø¨ÙŠØ¹ (POS)', style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
         actions: [
           IconButton(
-            tooltip: 'تحديث الأصناف',
+            tooltip: 'ØªØ­Ø¯ÙŠØ« Ø§Ù„Ø£ØµÙ†Ø§Ù',
             icon: const Icon(Icons.refresh_rounded, color: AppColors.primary),
             onPressed: _loadData,
           ),
@@ -460,7 +460,7 @@ class _PosScreenState extends State<PosScreen> {
                     onChanged: (_) => _applyFilter(),
                     style: const TextStyle(fontFamily: 'Cairo', color: AppColors.textPrimary),
                     decoration: InputDecoration(
-                      hintText: 'ابحث بالاسم، الباركود، أو الكود...',
+                      hintText: 'Ø§Ø¨Ø­Ø« Ø¨Ø§Ù„Ø§Ø³Ù…ØŒ Ø§Ù„Ø¨Ø§Ø±ÙƒÙˆØ¯ØŒ Ø£Ùˆ Ø§Ù„ÙƒÙˆØ¯...',
                       hintStyle: const TextStyle(fontFamily: 'Cairo', color: AppColors.textSecondary, fontSize: 13),
                       prefixIcon: const Icon(Icons.search_rounded, color: AppColors.primary),
                       suffixIcon: _searchController.text.isNotEmpty
@@ -519,7 +519,7 @@ class _PosScreenState extends State<PosScreen> {
                 Expanded(
                   child: _filteredProducts.isEmpty
                       ? const Center(
-                          child: Text('لا توجد أصناف مطابقة!', style: TextStyle(fontFamily: 'Cairo', color: AppColors.textSecondary)),
+                          child: Text('Ù„Ø§ ØªÙˆØ¬Ø¯ Ø£ØµÙ†Ø§Ù Ù…Ø·Ø§Ø¨Ù‚Ø©!', style: TextStyle(fontFamily: 'Cairo', color: AppColors.textSecondary)),
                         )
                       : GridView.builder(
                           padding: const EdgeInsets.all(16),
@@ -558,7 +558,7 @@ class _PosScreenState extends State<PosScreen> {
                                             borderRadius: BorderRadius.circular(6),
                                           ),
                                           child: Text(
-                                            isOutOfStock ? 'نفد' : '${p.stockQuantity} ${p.unit}',
+                                            isOutOfStock ? 'Ù†ÙØ¯' : '${p.stockQuantity} ${p.unit}',
                                             style: TextStyle(
                                               fontFamily: 'Cairo',
                                               fontSize: 10,
@@ -596,7 +596,7 @@ class _PosScreenState extends State<PosScreen> {
                                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                       children: [
                                         Text(
-                                          '${p.salePrice.toStringAsFixed(2)} ج.م',
+                                          '${p.salePrice.toStringAsFixed(2)} Ø¬.Ù…',
                                           style: const TextStyle(
                                             fontFamily: 'Cairo',
                                             fontSize: 14,
@@ -639,8 +639,8 @@ class _PosScreenState extends State<PosScreen> {
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('$_cartItemCount قطعة في السلة', style: const TextStyle(fontFamily: 'Cairo', fontSize: 11, color: AppColors.textSecondary)),
-                        Text('${_finalTotal.toStringAsFixed(2)} ج.م', style: const TextStyle(fontFamily: 'Cairo', fontSize: 18, fontWeight: FontWeight.w900, color: AppColors.primary)),
+                        Text('$_cartItemCount Ù‚Ø·Ø¹Ø© ÙÙŠ Ø§Ù„Ø³Ù„Ø©', style: const TextStyle(fontFamily: 'Cairo', fontSize: 11, color: AppColors.textSecondary)),
+                        Text('${_finalTotal.toStringAsFixed(2)} Ø¬.Ù…', style: const TextStyle(fontFamily: 'Cairo', fontSize: 18, fontWeight: FontWeight.w900, color: AppColors.primary)),
                       ],
                     ),
                     ElevatedButton.icon(
@@ -651,7 +651,7 @@ class _PosScreenState extends State<PosScreen> {
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                       ),
                       icon: const Icon(Icons.shopping_bag_rounded, color: Colors.white),
-                      label: const Text('عرض السلة والدفع', style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.bold, fontSize: 14, color: Colors.white)),
+                      label: const Text('Ø¹Ø±Ø¶ Ø§Ù„Ø³Ù„Ø© ÙˆØ§Ù„Ø¯ÙØ¹', style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.bold, fontSize: 14, color: Colors.white)),
                     ),
                   ],
                 ),
@@ -660,3 +660,4 @@ class _PosScreenState extends State<PosScreen> {
     );
   }
 }
+

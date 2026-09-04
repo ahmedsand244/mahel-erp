@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../providers/auth_providers.dart';
+import 'package:mahel_pos_mobile/features/auth/presentation/providers/auth_providers.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -94,7 +94,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'النماء POS & ERP',
+                    'Ø§Ù„Ù†Ù…Ø§Ø¡ POS & ERP',
                     style: GoogleFonts.cairo(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
@@ -103,7 +103,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'تسجيل الدخول لنظام الكاشير والمبيعات',
+                    'ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø¯Ø®ÙˆÙ„ Ù„Ù†Ø¸Ø§Ù… Ø§Ù„ÙƒØ§Ø´ÙŠØ± ÙˆØ§Ù„Ù…Ø¨ÙŠØ¹Ø§Øª',
                     style: GoogleFonts.cairo(
                       fontSize: 13,
                       color: theme.colorScheme.onSurfaceVariant,
@@ -113,32 +113,32 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   TextFormField(
                     controller: _tenantController,
                     decoration: InputDecoration(
-                      labelText: 'كود الشركة / المؤسسة',
+                      labelText: 'ÙƒÙˆØ¯ Ø§Ù„Ø´Ø±ÙƒØ© / Ø§Ù„Ù…Ø¤Ø³Ø³Ø©',
                       prefixIcon: const Icon(Icons.storefront_rounded),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16),
                       ),
                     ),
-                    validator: (v) => v?.isEmpty ?? true ? 'مطلوب' : null,
+                    validator: (v) => v?.isEmpty ?? true ? 'Ù…Ø·Ù„ÙˆØ¨' : null,
                   ),
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: _usernameController,
                     decoration: InputDecoration(
-                      labelText: 'اسم المستخدم',
+                      labelText: 'Ø§Ø³Ù… Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù…',
                       prefixIcon: const Icon(Icons.person_rounded),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16),
                       ),
                     ),
-                    validator: (v) => v?.isEmpty ?? true ? 'مطلوب' : null,
+                    validator: (v) => v?.isEmpty ?? true ? 'Ù…Ø·Ù„ÙˆØ¨' : null,
                   ),
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: _passwordController,
                     obscureText: _obscurePassword,
                     decoration: InputDecoration(
-                      labelText: 'كلمة المرور',
+                      labelText: 'ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ±',
                       prefixIcon: const Icon(Icons.lock_rounded),
                       suffixIcon: IconButton(
                         icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility),
@@ -148,7 +148,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         borderRadius: BorderRadius.circular(16),
                       ),
                     ),
-                    validator: (v) => v?.isEmpty ?? true ? 'مطلوب' : null,
+                    validator: (v) => v?.isEmpty ?? true ? 'Ù…Ø·Ù„ÙˆØ¨' : null,
                   ),
                   const SizedBox(height: 24),
                   SizedBox(
@@ -165,7 +165,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       child: _isLoading
                           ? const CircularProgressIndicator(color: Colors.white)
                           : Text(
-                              'دخول الكاشير ⚡',
+                              'Ø¯Ø®ÙˆÙ„ Ø§Ù„ÙƒØ§Ø´ÙŠØ± âš¡',
                               style: GoogleFonts.cairo(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,

@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../core/router/app_router.dart';
+import 'package:mahel_pos_mobile/core/router/app_router.dart';
 
 class MainScaffold extends ConsumerWidget {
   final Widget child;
@@ -59,7 +59,7 @@ class MainScaffold extends ConsumerWidget {
           NavigationDestination(
             icon: Icon(Icons.dashboard_outlined),
             selectedIcon: Icon(Icons.dashboard_rounded),
-            label: 'لوحة القيادة',
+            label: 'Ù„ÙˆØ­Ø© Ø§Ù„Ù‚ÙŠØ§Ø¯Ø©',
           ),
           NavigationDestination(
             icon: Icon(Icons.point_of_sale_outlined),
@@ -69,32 +69,32 @@ class MainScaffold extends ConsumerWidget {
           NavigationDestination(
             icon: Icon(Icons.inventory_2_outlined),
             selectedIcon: Icon(Icons.inventory_2_rounded),
-            label: 'المخزن',
+            label: 'Ø§Ù„Ù…Ø®Ø²Ù†',
           ),
           NavigationDestination(
             icon: Icon(Icons.menu_book_outlined),
             selectedIcon: Icon(Icons.menu_book_rounded),
-            label: 'الديون',
+            label: 'Ø§Ù„Ø¯ÙŠÙˆÙ†',
           ),
           NavigationDestination(
             icon: Icon(Icons.build_outlined),
             selectedIcon: Icon(Icons.build_rounded),
-            label: 'الصيانة',
+            label: 'Ø§Ù„ØµÙŠØ§Ù†Ø©',
           ),
           NavigationDestination(
             icon: Icon(Icons.payments_outlined),
             selectedIcon: Icon(Icons.payments_rounded),
-            label: 'المصروفات',
+            label: 'Ø§Ù„Ù…ØµØ±ÙˆÙØ§Øª',
           ),
           NavigationDestination(
             icon: Icon(Icons.analytics_outlined),
             selectedIcon: Icon(Icons.analytics_rounded),
-            label: 'التقارير',
+            label: 'Ø§Ù„ØªÙ‚Ø§Ø±ÙŠØ±',
           ),
           NavigationDestination(
             icon: Icon(Icons.settings_outlined),
             selectedIcon: Icon(Icons.settings_rounded),
-            label: 'الإعدادات',
+            label: 'Ø§Ù„Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª',
           ),
         ],
       ),
