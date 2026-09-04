@@ -4,6 +4,8 @@ part 'auth_state.freezed.dart';
 
 @freezed
 class AuthState with _$AuthState {
+  const AuthState._();
+
   const factory AuthState.authenticated({
     required String accessToken,
     required String refreshToken,

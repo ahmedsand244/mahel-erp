@@ -6,6 +6,8 @@ part 'pos_models.g.dart';
 
 @freezed
 class CartItem with _$CartItem {
+  const CartItem._();
+
   const factory CartItem({
     required int productId,
     required String name,
@@ -21,6 +23,8 @@ class CartItem with _$CartItem {
 
 @freezed
 class PaymentMethod with _$PaymentMethod {
+  const PaymentMethod._();
+
   const factory PaymentMethod.cash() = _Cash;
   const factory PaymentMethod.visa() = _Visa;
   const factory PaymentMethod.deferred() = _Deferred;

@@ -36,7 +36,7 @@ class TenantUsers extends Table {
   DateTimeColumn get deletedAt => dateTime().nullable()();
 
   @override
-  Set<Column> get primaryKey => {tenantId, userId};
+  List<Set<Column>> get uniqueKeys => [{tenantId, userId}];
 }
 
 class Users extends Table {

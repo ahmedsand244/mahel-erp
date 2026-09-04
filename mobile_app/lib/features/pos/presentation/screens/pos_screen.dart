@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:decimal/decimal.dart';
@@ -476,8 +476,8 @@ class _PosScreenState extends ConsumerState<PosScreen> {
             constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
           ),
         ],
-      );
-    }
+      ),
+    );
   }
 
   Widget _buildPaymentMethodSelector(PaymentMethod selected, ThemeData theme) {
