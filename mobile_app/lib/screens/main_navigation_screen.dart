@@ -66,34 +66,38 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           index: _currentIndex,
           children: _screens,
         ),
-        bottomNavigationBar: NavigationBar(
-          selectedIndex: _currentIndex,
-          onDestinationSelected: _navigateToTab,
-          backgroundColor: AppColors.surface,
-          surfaceTintColor: Colors.transparent,
-          indicatorColor: AppColors.primarySubtle,
-          destinations: _destinations,
-          labelTextStyle: WidgetStateProperty.resolveWith((states) {
-            if (states.contains(WidgetState.selected)) {
+        bottomNavigationBar: NavigationBarTheme(
+          data: NavigationBarThemeData(
+            backgroundColor: AppColors.surface,
+            indicatorColor: AppColors.primarySubtle,
+            surfaceTintColor: Colors.transparent,
+            labelTextStyle: WidgetStateProperty.resolveWith((states) {
+              if (states.contains(WidgetState.selected)) {
+                return const TextStyle(
+                  fontFamily: 'Cairo',
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primary,
+                );
+              }
               return const TextStyle(
                 fontFamily: 'Cairo',
                 fontSize: 11,
-                fontWeight: FontWeight.bold,
-                color: AppColors.primary,
+                color: AppColors.textSecondary,
               );
-            }
-            return const TextStyle(
-              fontFamily: 'Cairo',
-              fontSize: 11,
-              color: AppColors.textSecondary,
-            );
-          }),
-          iconTheme: WidgetStateProperty.resolveWith((states) {
-            if (states.contains(WidgetState.selected)) {
-              return const IconThemeData(color: AppColors.primary, size: 24);
-            }
-            return const IconThemeData(color: AppColors.textSecondary, size: 22);
-          }),
+            }),
+            iconTheme: WidgetStateProperty.resolveWith((states) {
+              if (states.contains(WidgetState.selected)) {
+                return const IconThemeData(color: AppColors.primary, size: 24);
+              }
+              return const IconThemeData(color: AppColors.textSecondary, size: 22);
+            }),
+          ),
+          child: NavigationBar(
+            selectedIndex: _currentIndex,
+            onDestinationSelected: _navigateToTab,
+            destinations: _destinations,
+          ),
         ),
       ),
     );
