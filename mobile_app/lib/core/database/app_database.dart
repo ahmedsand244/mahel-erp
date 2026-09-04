@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:path_provider/path_provider.dart';
@@ -170,7 +171,7 @@ class Orders extends Table {
 class OrderItems extends Table {
   IntColumn get id => integer().autoIncrement()();
   IntColumn get orderId => integer().references(Orders, #id, onDelete: KeyAction.cascade)();
-  IntColumn get productId => integer().references(Products, #id, onDelete: KeyAction.protect)();
+  IntColumn get productId => integer().references(Products, #id, onDelete: KeyAction.restrict)();
   IntColumn get quantity => integer().withDefault(const Constant(1))();
   RealColumn get unitPrice => real()();
   RealColumn get cost => real()();
@@ -244,7 +245,7 @@ class MaintenanceTickets extends Table {
 class TicketPartConsumptions extends Table {
   IntColumn get id => integer().autoIncrement()();
   IntColumn get ticketId => integer().references(MaintenanceTickets, #id, onDelete: KeyAction.cascade)();
-  IntColumn get productId => integer().references(Products, #id, onDelete: KeyAction.protect)();
+  IntColumn get productId => integer().references(Products, #id, onDelete: KeyAction.restrict)();
   IntColumn get quantity => integer().withDefault(const Constant(1))();
   RealColumn get priceCharged => real()();
   RealColumn get cost => real()();
@@ -337,14 +338,6 @@ LazyDatabase _openConnection() {
   return LazyDatabase(() async {
     final dbFolder = await getApplicationDocumentsDirectory();
     final file = File(p.join(dbFolder.path, 'mahel_pos_offline.db'));
-    if (await file.exists()) {
-      return NativeDatabase(file);
-    }
-    await open.overrideFor(OperatingSystem.android, () async {
-      final dbFolder = await getApplicationDocumentsDirectory();
-      final file = File(p.join(dbFolder.path, 'mahel_pos_offline.db'));
-      return NativeDatabase.createInBackground(file);
-    });
     return NativeDatabase.createInBackground(file);
   });
 }

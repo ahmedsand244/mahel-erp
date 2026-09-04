@@ -1,9 +1,10 @@
-﻿import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/auth_repository.dart';
 import '../../domain/auth_state.dart';
 import 'package:mahel_pos_mobile/core/network/api_service.dart';
 import 'package:mahel_pos_mobile/core/storage/secure_storage_service.dart';
 import 'package:mahel_pos_mobile/core/database/database_service.dart';
+import 'package:mahel_pos_mobile/core/database/app_database.dart';
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
   return AuthRepository(
@@ -69,10 +70,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
 }
 
 final apiServiceProvider = Provider<ApiService>((ref) {
-  final storage = ref.watch(secureStorageProvider);
   return ApiService(
     baseUrl: 'https://webservises.pythonanywhere.com',
-    storage: storage,
+    storage: SecureStorageService.secureStorage,
   );
 });
 

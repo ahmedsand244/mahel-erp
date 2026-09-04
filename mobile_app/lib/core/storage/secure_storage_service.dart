@@ -11,6 +11,8 @@ class SecureStorageService {
     ),
   );
 
+  static FlutterSecureStorage get secureStorage => _secureStorage;
+
   static SharedPreferences? _prefs;
 
   static Future<void> init() async {

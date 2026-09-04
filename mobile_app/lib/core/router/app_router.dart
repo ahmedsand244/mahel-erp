@@ -1,6 +1,7 @@
-﻿import 'package:go_router/go_router.dart';
+import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mahel_pos_mobile/features/auth/presentation/screens/login_screen.dart';
+import 'package:mahel_pos_mobile/features/auth/presentation/providers/auth_providers.dart';
 import 'package:mahel_pos_mobile/features/auth/presentation/screens/tenant_selection_screen.dart';
 import 'package:mahel_pos_mobile/features/auth/presentation/screens/pin_lock_screen.dart';
 import 'package:mahel_pos_mobile/features/pos/presentation/screens/pos_screen.dart';
