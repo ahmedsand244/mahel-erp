@@ -46,7 +46,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
       if (searchQuery.isEmpty) return true;
       final q = searchQuery.toLowerCase();
       return p.name.toLowerCase().contains(q) ||
-          p.sku.toLowerCase().contains(q) ||
+          (p.sku?.toLowerCase().contains(q) ?? false) ||
           (p.barcode?.toLowerCase().contains(q) ?? false);
     }).toList();
 
@@ -177,21 +177,13 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(color: theme.colorScheme.outline.withOpacity(0.2)),
                       ),
-                      child: product.imagePath != null
-                          ? ClipRRect(
-                              borderRadius: BorderRadius.circular(12),
-                              child: Image.asset(
-                                product.imagePath!,
-                                fit: BoxFit.cover,
-                              ),
-                            )
-                          : Center(
-                              child: Icon(
-                                Icons.inventory_2_rounded,
-                                size: 40,
-                                color: theme.colorScheme.onSurfaceVariant,
-                              ),
-                            ),
+                      child: Center(
+                        child: Icon(
+                          Icons.inventory_2_rounded,
+                          size: 40,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
                     ),
                   ),
                   Positioned(
@@ -565,8 +557,8 @@ class _PosScreenState extends ConsumerState<PosScreen> {
     final paymentMethod = ref.read(paymentMethodProvider);
     final selectedCustomer = ref.read(selectedCustomerProvider);
 
-    if (paymentMethod is PaymentMethod.deferred && selectedCustomer == null) {
-      // Show error
+    final isDeferred = paymentMethod.maybeWhen(deferred: () => true, orElse: () => false);
+    if (isDeferred && selectedCustomer == null) {
       setState(() => _isSubmitting = false);
       return;
     }
