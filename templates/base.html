@@ -192,6 +192,53 @@
                 font-weight: bold !important;
             }
         }
+
+        /* ── High-Contrast, Crystal Clear Navigation Links (Desktop Sidebar & Mobile Drawer) ── */
+        .app-nav-item {
+            color: #1E293B !important; /* Deep dark slate - fully clear and readable */
+            font-weight: 700 !important;
+        }
+        .dark .app-nav-item {
+            color: #F1F5F9 !important; /* Crisp white-slate in dark mode */
+        }
+        .app-nav-item .material-symbols-outlined {
+            color: #475569 !important; /* Slate 600 */
+            transition: color 0.2s ease;
+        }
+        .dark .app-nav-item .material-symbols-outlined {
+            color: #94A3B8 !important;
+        }
+        .app-nav-item:hover {
+            background-color: #EFF6FF !important;
+            color: #1D4ED8 !important;
+        }
+        .dark .app-nav-item:hover {
+            background-color: rgba(37, 99, 235, 0.15) !important;
+            color: #60A5FA !important;
+        }
+        .app-nav-item:hover .material-symbols-outlined {
+            color: #1D4ED8 !important;
+        }
+        .dark .app-nav-item:hover .material-symbols-outlined {
+            color: #60A5FA !important;
+        }
+        .app-nav-item.active {
+            background: linear-gradient(135deg, rgba(37, 99, 235, 0.14), rgba(30, 64, 175, 0.09)) !important;
+            color: #1D4ED8 !important;
+            font-weight: 800 !important;
+            border: 1px solid rgba(37, 99, 235, 0.25) !important;
+        }
+        .dark .app-nav-item.active {
+            background: rgba(37, 99, 235, 0.25) !important;
+            color: #93C5FD !important;
+            border: 1px solid rgba(59, 130, 246, 0.35) !important;
+        }
+        .app-nav-item.active .material-symbols-outlined {
+            color: #1D4ED8 !important;
+        }
+        .dark .app-nav-item.active .material-symbols-outlined {
+            color: #93C5FD !important;
+        }
     </style>
 
     {% block extra_head %}{% endblock %}
@@ -516,6 +563,11 @@
                     <span class="text-sm sm:text-base font-semibold">النسخ الاحتياطي والأمان</span>
                 </a>
 
+                <a class="flex items-center gap-3.5 px-4 py-3.5 rounded-2xl w-full transition-all app-nav-item {% if '/profile/' in request.path %}active{% endif %}" href="/profile/">
+                    <span class="material-symbols-outlined text-xl text-blue-600 dark:text-blue-400">manage_accounts</span>
+                    <span class="text-sm sm:text-base font-bold">إعدادات الحساب و Google</span>
+                </a>
+
 
                 <!-- Font Scale Control - Mobile Drawer -->
                 <div class="pt-3 border-t border-apple-border">
@@ -539,8 +591,13 @@
                     </div>
                 </div>
 
-                <!-- Mobile Drawer Logout Button -->
-                <div class="pt-3 border-t border-apple-border">
+                <!-- Mobile Drawer Account Settings & Logout Buttons -->
+                <div class="pt-3 border-t border-apple-border space-y-2">
+                    <a class="flex items-center gap-3.5 px-4 py-3.5 rounded-2xl w-full text-blue-600 dark:text-blue-400 hover:bg-blue-500/10 border border-blue-500/25 transition-all font-bold {% if '/profile/' in request.path %}bg-blue-500/15{% endif %}" href="/profile/">
+                        <span class="material-symbols-outlined text-xl">manage_accounts</span>
+                        <span class="text-sm sm:text-base">إعدادات الحساب و Google</span>
+                    </a>
+
                     <a class="flex items-center gap-3.5 px-4 py-3.5 rounded-2xl w-full text-red-500 hover:bg-red-500/10 border border-red-500/20 transition-all font-bold" href="{% url 'logout' %}">
                         <span class="material-symbols-outlined text-xl">logout</span>
                         <span class="text-sm sm:text-base">تسجيل الخروج</span>

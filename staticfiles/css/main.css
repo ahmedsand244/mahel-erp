@@ -202,21 +202,62 @@ body {
    -------------------------------------------------------------------------- */
 .app-nav-item {
   font-variation-settings: 'FILL' 0;
-  color: var(--text-secondary);
+  color: #1E293B;
   border-radius: 0.875rem;
   transition: all 200ms cubic-bezier(0.16, 1, 0.3, 1);
+  font-weight: 700;
+}
+
+.dark .app-nav-item {
+  color: #F1F5F9;
+}
+
+.app-nav-item .material-symbols-outlined {
+  color: #475569;
+}
+
+.dark .app-nav-item .material-symbols-outlined {
+  color: #94A3B8;
 }
 
 .app-nav-item:hover {
-  background-color: var(--color-hover-bg);
-  color: var(--text-primary);
+  background-color: #EFF6FF;
+  color: #1D4ED8;
+}
+
+.dark .app-nav-item:hover {
+  background-color: rgba(37, 99, 235, 0.15);
+  color: #60A5FA;
+}
+
+.app-nav-item:hover .material-symbols-outlined {
+  color: #1D4ED8;
+}
+
+.dark .app-nav-item:hover .material-symbols-outlined {
+  color: #60A5FA;
 }
 
 .app-nav-item.active {
   font-variation-settings: 'FILL' 1;
-  background-color: var(--accent-primary-light);
-  color: var(--accent-primary);
-  font-weight: 700;
+  background-color: rgba(37, 99, 235, 0.12) !important;
+  color: #1D4ED8 !important;
+  font-weight: 800 !important;
+  border: 1px solid rgba(37, 99, 235, 0.25) !important;
+}
+
+.dark .app-nav-item.active {
+  background-color: rgba(37, 99, 235, 0.25) !important;
+  color: #93C5FD !important;
+  border: 1px solid rgba(59, 130, 246, 0.35) !important;
+}
+
+.app-nav-item.active .material-symbols-outlined {
+  color: #1D4ED8 !important;
+}
+
+.dark .app-nav-item.active .material-symbols-outlined {
+  color: #93C5FD !important;
 }
 
 /* --------------------------------------------------------------------------
