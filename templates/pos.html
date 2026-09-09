@@ -203,7 +203,26 @@
                 <div class="p-3 bg-apple-surface-subtle border border-apple-border rounded-2xl flex items-center justify-between gap-3 text-right">
                     <div class="flex-1 min-w-0">
                         <h4 class="text-xs sm:text-sm font-bold text-apple-text truncate" x-text="item.name"></h4>
-                        <span class="text-xs text-primary font-bold font-mono" x-text="parseFloat(item.price).toFixed(2) + ' ج.م'"></span>
+                        <div class="flex items-center gap-2 mt-1">
+                            <!-- زر تعديل السعر / الفصال -->
+                            <button type="button" 
+                                    @click="openPriceEditModal(item)" 
+                                    class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg border text-xs font-mono font-bold transition-all"
+                                    :class="item.price < item.original_price ? 'bg-amber-500/15 border-amber-500/40 text-amber-400 hover:bg-amber-500/25' : 'bg-primary/10 border-primary/20 text-primary hover:bg-primary/20'"
+                                    title="اضغط لتعديل سعر البيع أو عمل فصال للعميل">
+                                <span class="material-symbols-outlined text-[13px]">edit</span>
+                                <span x-text="parseFloat(item.price).toFixed(2) + ' ج.م'"></span>
+                            </button>
+                            <template x-if="item.price < item.original_price">
+                                <span class="text-[10px] text-apple-secondary line-through font-mono" x-text="parseFloat(item.original_price).toFixed(2) + ' ج.م'"></span>
+                            </template>
+                        </div>
+                        <template x-if="item.price < item.original_price">
+                            <div class="text-[10px] text-amber-400 font-bold mt-0.5 flex items-center gap-0.5">
+                                <span class="material-symbols-outlined text-[11px]">local_offer</span>
+                                خصم فصال: <span x-text="(item.original_price - item.price).toFixed(2)"></span> ج.م للقطعة
+                            </div>
+                        </template>
                     </div>
                     <div class="flex items-center gap-2 bg-apple-surface border border-apple-border rounded-full px-2.5 py-1">
                         <button class="text-apple-secondary hover:text-apple-text" @click="decreaseQty(item)">
@@ -378,6 +397,67 @@
             </div>
         </div>
     </div>
+
+    <!-- Modal: تعديل السعر / مراعاة وفصال العميل -->
+    <div x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md p-4"
+         x-show="showPriceEditModal" style="display: none;">
+        <div class="bg-slate-900 text-slate-100 rounded-3xl p-6 sm:p-8 max-w-md w-full space-y-4 shadow-2xl border border-amber-500/30 text-right" dir="rtl" @click.away="showPriceEditModal = false">
+            <div class="flex items-center justify-between border-b border-slate-700/60 pb-3">
+                <h3 class="text-base font-bold text-amber-400 flex items-center gap-2">
+                    <span class="material-symbols-outlined text-xl">price_change</span>
+                    مراعاة في السعر / فصال العميل 🏷️
+                </h3>
+                <button type="button" @click="showPriceEditModal = false" class="text-slate-400 hover:text-white p-1 rounded-full hover:bg-slate-800 transition-colors">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+
+            <template x-if="editingItem">
+                <div class="space-y-4">
+                    <div class="bg-slate-800/80 p-3.5 rounded-2xl border border-slate-700 space-y-2">
+                        <div class="font-bold text-sm text-slate-100" x-text="editingItem.name"></div>
+                        <div class="flex items-center justify-between text-xs pt-1 border-t border-slate-700/60">
+                            <span class="text-slate-400">السعر الافتراضي للبيع:</span>
+                            <span class="font-mono font-bold text-slate-200" x-text="parseFloat(editingItem.original_price).toFixed(2) + ' ج.م'"></span>
+                        </div>
+                        <div class="flex items-center justify-between text-xs">
+                            <span class="text-amber-400/90 font-medium">سعر الشراء والتكلفة (الحد الأدنى):</span>
+                            <span class="font-mono font-bold text-amber-400" x-text="parseFloat(editingItem.cost || 0).toFixed(2) + ' ج.م'"></span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-200 mb-1.5">أدخل سعر البيع المتفق عليه للقطعة (ج.م):</label>
+                        <input type="number" step="0.5" min="0" 
+                               x-model="tempPriceInput" 
+                               @keyup.enter="applyCustomPrice()"
+                               class="w-full bg-slate-800 border rounded-xl py-3 px-4 text-base text-amber-400 focus:outline-none text-right font-mono font-extrabold transition-colors"
+                               :class="parseFloat(tempPriceInput) < editingItem.cost ? 'border-red-500 focus:border-red-500' : 'border-amber-500/40 focus:border-amber-500'">
+                        
+                        <!-- رسالة تحذير الخسارة -->
+                        <div x-show="parseFloat(tempPriceInput) < editingItem.cost" class="text-xs text-red-400 font-bold mt-1.5 flex items-center gap-1">
+                            <span class="material-symbols-outlined text-sm">warning</span>
+                            تنبيه: لا يمكن البيع بأقل من سعر الشراء (<span x-text="parseFloat(editingItem.cost).toFixed(2)"></span> ج.م) منعاً للخسارة!
+                        </div>
+                    </div>
+
+                    <div class="flex gap-2.5 pt-2">
+                        <button type="button" 
+                                @click="applyCustomPrice()" 
+                                :disabled="parseFloat(tempPriceInput) < editingItem.cost || !tempPriceInput || parseFloat(tempPriceInput) <= 0"
+                                class="flex-1 bg-gradient-to-r from-amber-500 to-amber-600 disabled:opacity-40 disabled:cursor-not-allowed text-slate-950 font-extrabold py-3 rounded-xl text-xs sm:text-sm shadow-lg shadow-amber-500/20 active:scale-95 transition-all">
+                            تأكيد السعر المتفق عليه 👍
+                        </button>
+                        <button type="button" 
+                                @click="resetOriginalPrice()" 
+                                class="px-3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-3 rounded-xl text-xs border border-slate-700 transition-all">
+                            السعر الأصلي
+                        </button>
+                    </div>
+                </div>
+            </template>
+        </div>
+    </div>
 </div>
 
 {{ products_list_json|json_script:"products-db-json" }}
@@ -417,6 +497,9 @@
             isCustomerDropdownOpen: false,
             paymentMethod: 'cash',
             cart: [],
+            showPriceEditModal: false,
+            editingItem: null,
+            tempPriceInput: '',
             isSubmitting: false,
             showSuccess: false,
             showCameraScanner: false,
@@ -591,13 +674,47 @@
                     }
                     existing.quantity++;
                 } else {
+                    const sellPrice = parseFloat(product.price) || 0;
+                    const costPrice = parseFloat(product.cost || 0);
                     this.cart.push({
                         product_id: product.id,
                         name: product.name,
-                        price: product.price,
+                        price: sellPrice,
+                        original_price: sellPrice,
+                        cost: costPrice,
                         quantity: 1
                     });
                 }
+            },
+
+            openPriceEditModal(item) {
+                this.editingItem = item;
+                this.tempPriceInput = item.price;
+                this.showPriceEditModal = true;
+            },
+
+            applyCustomPrice() {
+                if (!this.editingItem) return;
+                const newPrice = parseFloat(this.tempPriceInput);
+                if (isNaN(newPrice) || newPrice <= 0) {
+                    alert('يرجى إدخال سعر صحيح أكبر من الصفر');
+                    return;
+                }
+                const cost = parseFloat(this.editingItem.cost || 0);
+                if (cost > 0 && newPrice < cost) {
+                    alert(`⚠️ تنبيه: لا يمكن البيع بأقل من سعر التكلفة والشراء (${cost.toFixed(2)} ج.م)!`);
+                    return;
+                }
+                this.editingItem.price = newPrice;
+                this.showPriceEditModal = false;
+                this.editingItem = null;
+            },
+
+            resetOriginalPrice() {
+                if (!this.editingItem) return;
+                this.editingItem.price = this.editingItem.original_price;
+                this.showPriceEditModal = false;
+                this.editingItem = null;
             },
 
             increaseQty(item) {

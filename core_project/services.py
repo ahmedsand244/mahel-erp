@@ -40,8 +40,18 @@ def pos_checkout(order_number, payment_method, cart_items, customer_id=None):
         if product.stock_quantity < qty:
             raise ValueError(f"الكمية غير كافية في المخزن للمنتج: {product.name}")
 
-        item_sell_price = product.selling_price
         item_cost = product.purchase_price
+        custom_price = item.get('price')
+        if custom_price is not None:
+            try:
+                parsed_price = Decimal(str(custom_price))
+                if parsed_price < item_cost:
+                    raise ValueError(f"لا يمكن بيع '{product.name}' بسعر ({parsed_price} ج.م) أقل من سعر التكلفة والشراء ({item_cost} ج.م)!")
+                item_sell_price = parsed_price
+            except (ValueError, TypeError):
+                item_sell_price = product.selling_price
+        else:
+            item_sell_price = product.selling_price
         
         # Calculate sub-totals
         item_total = item_sell_price * qty

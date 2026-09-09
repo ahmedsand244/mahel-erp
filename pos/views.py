@@ -28,6 +28,7 @@ class POSView(TemplateView):
                 'barcode': p.barcode or '',
                 'category': p.category or 'عام',
                 'price': str(p.selling_price),
+                'cost': str(p.purchase_price),
                 'stock': p.stock_quantity,
                 'image': p.image.url if p.image else ''
             })
