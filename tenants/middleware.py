@@ -43,7 +43,7 @@ class TenantMiddleware:
         path = request.path_info
 
         # الصفحات العامة التي لا تحتاج Tenant
-        PUBLIC_PATHS = ['/login/', '/logout/', '/register/', '/superadmin/', '/admin/', '/static/', '/media/', '/api/', '/manifest.json', '/sw.js']
+        PUBLIC_PATHS = ['/login/', '/logout/', '/register/', '/superadmin/', '/admin/', '/static/', '/media/', '/api/', '/manifest.json', '/sw.js', '/dashboard/']
         if any(path.startswith(p) for p in PUBLIC_PATHS):
             clear_current_tenant()
             request.tenant = None

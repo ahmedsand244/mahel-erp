@@ -27,6 +27,41 @@ class Category(models.Model):
         return self.name
 
 
+def generate_unique_sku(tenant=None):
+    """توليد كود SKU تلقائي بتسلسل رقمي نظيف SKU-0001 أو فريد"""
+    import re
+    import random
+    qs = Product.all_objects.filter(sku__iregex=r'^SKU-\d+')
+    if qs.exists():
+        max_num = 0
+        for p in qs:
+            m = re.search(r'\d+', p.sku)
+            if m:
+                try:
+                    val = int(m.group(0))
+                    if val > max_num:
+                        max_num = val
+                except ValueError:
+                    pass
+        candidate = f"SKU-{(max_num + 1):04d}"
+        if not Product.all_objects.filter(sku=candidate).exists():
+            return candidate
+
+    while True:
+        candidate = f"SKU-{random.randint(1000, 99999):04d}"
+        if not Product.all_objects.filter(sku=candidate).exists():
+            return candidate
+
+
+def generate_unique_barcode():
+    """توليد باركود تلقائي قياسي مكون من 12 رقم يبدأ بـ 622"""
+    import random
+    while True:
+        candidate = f"622{random.randint(100000000, 999999999)}"
+        if not Product.all_objects.filter(barcode=candidate).exists():
+            return candidate
+
+
 class Product(models.Model):
     CATEGORY_CHOICES = [
         ('fertilizers', 'أسمدة ومخصبات زراعية'),
@@ -38,7 +73,7 @@ class Product(models.Model):
     ]
 
     name = models.CharField(max_length=200, db_index=True, verbose_name="اسم المنتج")
-    sku = models.CharField(max_length=100, verbose_name="رمز SKU")
+    sku = models.CharField(max_length=100, blank=True, default='', verbose_name="رمز SKU")
     barcode = models.CharField(max_length=100, blank=True, null=True, verbose_name="الباركود")
     category = models.CharField(max_length=100, default='عام / متنوع', blank=True, verbose_name="التصنيف / الفئة")
     image = models.ImageField(upload_to='products/', blank=True, null=True, verbose_name="صورة المنتج")
@@ -67,8 +102,15 @@ class Product(models.Model):
             t = get_current_tenant()
             if t:
                 self.tenant = t
-        if self.barcode == "":
-            self.barcode = None
+
+        # توليد SKU تلقائي إذا تُرك فارغاً
+        if not self.sku or str(self.sku).strip() in ['', 'None', '-']:
+            self.sku = generate_unique_sku(self.tenant)
+
+        # توليد باركود تلقائي إذا تُرك فارغاً
+        if not self.barcode or str(self.barcode).strip() in ['', 'None', '-']:
+            self.barcode = generate_unique_barcode()
+
         super().save(*args, **kwargs)
 
     def __str__(self):

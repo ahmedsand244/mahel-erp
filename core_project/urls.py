@@ -29,6 +29,8 @@ def service_worker_view(request):
             return response
     return HttpResponse('', content_type='application/javascript')
 
+from core_project.views import dashboard_redirect_view
+
 urlpatterns = [
     # PWA Endpoints
     path('manifest.json', manifest_view, name='manifest'),
@@ -36,6 +38,7 @@ urlpatterns = [
 
     # Core Auth & SaaS Root URLs
     path('',            LandingView.as_view(),      name='landing'),
+    path('dashboard/',  dashboard_redirect_view,    name='dashboard_root'),
     path('login/',      TenantLoginView.as_view(),  name='login'),
     path('logout/',     TenantLogoutView.as_view(), name='logout'),
     path('register/',   RegisterView.as_view(),     name='register'),

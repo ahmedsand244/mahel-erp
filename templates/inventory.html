@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load l10n %}
 
 {% block title %}إدارة المخزن والمستودع - النماء{% endblock %}
 
@@ -262,7 +263,7 @@
                         <td class="p-4">
                             <div class="flex items-center gap-2">
                                 <span class="text-primary font-bold font-mono text-base">{{ p.selling_price|floatformat:2 }} ج.م</span>
-                                <button @click="currentSingleProduct = { id: '{{ p.id }}', name: '{{ p.name|escapejs }}', selling_price: '{{ p.selling_price }}' }; showSinglePriceModal = true;"
+                                <button @click="currentSingleProduct = { id: '{{ p.id }}', name: '{{ p.name|escapejs }}', selling_price: ('{{ p.selling_price|unlocalize }}').replace(',', '.') }; showSinglePriceModal = true;"
                                         class="p-1 rounded bg-tertiary/10 hover:bg-tertiary/20 text-tertiary text-xs transition-colors border border-tertiary/20 flex items-center gap-0.5"
                                         title="تعديل سعر هذا المنتج بنسبة مئوية (%)">
                                     <span class="material-symbols-outlined text-[14px]">trending_up</span>
@@ -293,7 +294,7 @@
                         <td class="p-4 text-center">
                             <div class="flex items-center justify-center gap-1">
                                 <!-- تزويد مخزون سريع -->
-                                <button @click="currentRestockProduct = { id: '{{ p.id }}', name: '{{ p.name|escapejs }}', stock_quantity: '{{ p.stock_quantity }}' }; showRestockModal = true;"
+                                <button @click="currentRestockProduct = { id: '{{ p.id }}', name: '{{ p.name|escapejs }}', stock_quantity: '{{ p.stock_quantity|unlocalize }}' }; showRestockModal = true;"
                                         class="p-2 rounded-lg hover:bg-primary/20 text-primary transition-colors"
                                         title="إضافة كمية شحنة جديدة للمخزون">
                                     <span class="material-symbols-outlined text-[20px]">add_box</span>
@@ -304,13 +305,13 @@
                                         @click="currentEditProduct = {
                                             id: '{{ p.id }}',
                                             name: '{{ p.name|escapejs }}',
-                                            sku: '{{ p.sku|escapejs }}',
+                                            sku: '{{ p.sku|default:''|escapejs }}',
                                             barcode: '{{ p.barcode|default:''|escapejs }}',
                                             category: '{{ p.category }}',
-                                            purchase_price: '{{ p.purchase_price }}',
-                                            selling_price: '{{ p.selling_price }}',
-                                            stock_quantity: '{{ p.stock_quantity }}',
-                                            min_stock_threshold: '{{ p.min_stock_threshold }}',
+                                            purchase_price: ('{{ p.purchase_price|unlocalize }}').replace(',', '.'),
+                                            selling_price: ('{{ p.selling_price|unlocalize }}').replace(',', '.'),
+                                            stock_quantity: '{{ p.stock_quantity|unlocalize }}',
+                                            min_stock_threshold: '{{ p.min_stock_threshold|unlocalize }}',
                                             imageUrl: '{% if p.image %}{{ p.image.url }}{% endif %}'
                                         }; showEditModal = true;">
                                     <span class="material-symbols-outlined text-[20px]">edit</span>
@@ -391,12 +392,12 @@
 
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-xs font-bold text-slate-200 mb-1">رمز SKU (الرمز المرجعي)</label>
-                        <input type="text" name="sku" required placeholder="مثال: YMH-15HP" class="w-full bg-slate-800 border border-slate-700 rounded-xl py-2.5 px-3.5 text-xs text-slate-100 focus:outline-none focus:border-primary text-right font-mono placeholder:text-slate-500">
+                        <label class="block text-xs font-bold text-slate-200 mb-1">رمز SKU (توليد تلقائي)</label>
+                        <input type="text" name="sku" placeholder="توليد تلقائي إذا تُرك فارغاً" class="w-full bg-slate-800 border border-slate-700 rounded-xl py-2.5 px-3.5 text-xs text-slate-100 focus:outline-none focus:border-primary text-right font-mono placeholder:text-slate-500">
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-slate-200 mb-1">الباركود (اختياري)</label>
-                        <input type="text" name="barcode" placeholder="مثال: 6221000998877" class="w-full bg-slate-800 border border-slate-700 rounded-xl py-2.5 px-3.5 text-xs text-slate-100 focus:outline-none focus:border-primary text-right font-mono placeholder:text-slate-500">
+                        <label class="block text-xs font-bold text-slate-200 mb-1">الباركود (توليد تلقائي)</label>
+                        <input type="text" name="barcode" placeholder="توليد تلقائي إذا تُرك فارغاً" class="w-full bg-slate-800 border border-slate-700 rounded-xl py-2.5 px-3.5 text-xs text-slate-100 focus:outline-none focus:border-primary text-right font-mono placeholder:text-slate-500">
                     </div>
                 </div>
 
@@ -472,11 +473,11 @@
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-xs font-bold text-slate-200 mb-1">رمز SKU</label>
-                        <input type="text" name="sku" x-model="currentEditProduct.sku" required class="w-full bg-slate-800 border border-slate-700 rounded-xl py-2.5 px-3.5 text-xs text-slate-100 focus:outline-none focus:border-primary text-right font-mono">
+                        <input type="text" name="sku" x-model="currentEditProduct.sku" placeholder="توليد تلقائي إذا تُرك فارغاً" class="w-full bg-slate-800 border border-slate-700 rounded-xl py-2.5 px-3.5 text-xs text-slate-100 focus:outline-none focus:border-primary text-right font-mono">
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-slate-200 mb-1">الباركود</label>
-                        <input type="text" name="barcode" x-model="currentEditProduct.barcode" class="w-full bg-slate-800 border border-slate-700 rounded-xl py-2.5 px-3.5 text-xs text-slate-100 focus:outline-none focus:border-primary text-right font-mono">
+                        <input type="text" name="barcode" x-model="currentEditProduct.barcode" placeholder="توليد تلقائي إذا تُرك فارغاً" class="w-full bg-slate-800 border border-slate-700 rounded-xl py-2.5 px-3.5 text-xs text-slate-100 focus:outline-none focus:border-primary text-right font-mono">
                     </div>
                 </div>
 

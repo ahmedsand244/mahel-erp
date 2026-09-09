@@ -25,3 +25,29 @@ def user_logout(request):
     logout(request)
     messages.info(request, "تم تسجيل الخروج بنجاح.")
     return redirect('login')
+
+
+def dashboard_redirect_view(request):
+    """
+    إعادة توجيه ذكية لرابط /dashboard/ المستخدم كـ start_url في تطبيق الهاتف / PWA.
+    يحول المستخدم مباشرة إلى لوحة تحكم شركته /t/{slug}/dashboard/ أو لصفحة تسجيل الدخول.
+    """
+    if not request.user.is_authenticated:
+        return redirect('/login/?next=/dashboard/')
+
+    from tenants.models import TenantUser, Tenant
+    membership = TenantUser.objects.filter(user=request.user).order_by('-joined_at').first()
+    if membership and membership.tenant:
+        request.session['tenant_id'] = membership.tenant.id
+        return redirect(f'/t/{membership.tenant.slug}/dashboard/')
+
+    tenant = Tenant.objects.filter(owner=request.user).first()
+    if tenant:
+        request.session['tenant_id'] = tenant.id
+        return redirect(f'/t/{tenant.slug}/dashboard/')
+
+    if request.user.is_superuser:
+        return redirect('/superadmin/')
+
+    return redirect('/')
+
