@@ -145,37 +145,161 @@ class TenantLogoutView(View):
 
 
 class GoogleLoginView(View):
-    """تسجيل الدخول والتسجيل التلقائي السريع بحساب Google"""
+    """
+    بدء مصادقة Google OAuth 2.0 الحقيقية.
+    يحول المستخدم إلى شاشة تفويض واختيار الحساب في Google.
+    """
     def get(self, request):
+        import os
+        import urllib.parse
+        from django.conf import settings
+
         if request.user.is_authenticated:
             membership = TenantUser.objects.filter(user=request.user).first()
             if membership:
                 return redirect(f'/t/{membership.tenant.slug}/')
-            return redirect('/register/')
+            return redirect('/')
 
-        google_username = "google_user"
-        user, created = User.objects.get_or_create(username=google_username, defaults={'email': 'google_user@gmail.com'})
-        if created:
-            user.set_password('GooglePassword123!')
-            user.save()
-            tenant = Tenant.objects.create(
-                name='مؤسسة Google السريعة',
-                slug='google-demo',
-                owner=user,
-                plan='trial',
-                trial_ends_at=timezone.now() + timedelta(days=14),
+        client_id = getattr(settings, 'GOOGLE_CLIENT_ID', '') or os.environ.get('GOOGLE_CLIENT_ID', '')
+        if not client_id:
+            messages.error(
+                request,
+                '⚠️ لم يتم ضبط GOOGLE_CLIENT_ID في إعدادات النظام (.env). يرجى إضافة بيانات الاعتماد لتفعيل تسجيل الدخول بجوجل.'
             )
-            TenantUser.objects.create(tenant=tenant, user=user, role='admin')
-        else:
-            membership = TenantUser.objects.filter(user=user).first()
-            tenant = membership.tenant if membership else Tenant.objects.filter(owner=user).first()
+            return redirect('/login/')
 
-        login(request, user)
-        if tenant:
+        # تحديد رابط الـ Callback بدقة (يدعم localhost و pythonanywhere)
+        scheme = 'https' if request.is_secure() or request.headers.get('x-forwarded-proto') == 'https' else 'http'
+        host = request.get_host()
+        redirect_uri = f"{scheme}://{host}/login/google/callback/"
+        request.session['google_oauth_redirect_uri'] = redirect_uri
+
+        params = {
+            'client_id': client_id,
+            'redirect_uri': redirect_uri,
+            'response_type': 'code',
+            'scope': 'openid email profile',
+            'access_type': 'online',
+            'prompt': 'select_account'
+        }
+        google_auth_url = 'https://accounts.google.com/o/oauth2/v2/auth?' + urllib.parse.urlencode(params)
+        return redirect(google_auth_url)
+
+
+class GoogleCallbackView(View):
+    """
+    استقبال رمز التفويض (code) من Google، استبداله بالـ Token، وجلب بيانات المستخدم وتوثيقه في Django.
+    """
+    def get(self, request):
+        import os
+        import requests
+        from django.conf import settings
+
+        code = request.GET.get('code')
+        error = request.GET.get('error')
+
+        if error or not code:
+            messages.error(request, 'تم إلغاء تسجيل الدخول بحساب Google أو حدث خطأ أثناء التفويض.')
+            return redirect('/login/')
+
+        client_id = getattr(settings, 'GOOGLE_CLIENT_ID', '') or os.environ.get('GOOGLE_CLIENT_ID', '')
+        client_secret = getattr(settings, 'GOOGLE_CLIENT_SECRET', '') or os.environ.get('GOOGLE_CLIENT_SECRET', '')
+
+        if not client_id or not client_secret:
+            messages.error(request, 'بيانات اعتماد Google OAuth غير مكتملة في ملف .env.')
+            return redirect('/login/')
+
+        scheme = 'https' if request.is_secure() or request.headers.get('x-forwarded-proto') == 'https' else 'http'
+        host = request.get_host()
+        default_redirect_uri = f"{scheme}://{host}/login/google/callback/"
+        redirect_uri = request.session.get('google_oauth_redirect_uri', default_redirect_uri)
+
+        # 1. تبديل الـ Code بـ Access Token من سيرفرات جوجل الرسمية
+        token_url = 'https://oauth2.googleapis.com/token'
+        token_data = {
+            'code': code,
+            'client_id': client_id,
+            'client_secret': client_secret,
+            'redirect_uri': redirect_uri,
+            'grant_type': 'authorization_code'
+        }
+
+        try:
+            token_resp = requests.post(token_url, data=token_data, timeout=10)
+            token_json = token_resp.json()
+            access_token = token_json.get('access_token')
+
+            if not access_token:
+                messages.error(request, f"فشل مصادقة Google: {token_json.get('error_description', 'رمز التفويض منتهي أو غير صالح')}")
+                return redirect('/login/')
+
+            # 2. جلب بيانات البروفايل من Google UserInfo API
+            userinfo_url = 'https://www.googleapis.com/oauth2/v3/userinfo'
+            userinfo_resp = requests.get(userinfo_url, headers={'Authorization': f'Bearer {access_token}'}, timeout=10)
+            user_info = userinfo_resp.json()
+
+            email = user_info.get('email')
+            name = user_info.get('name') or user_info.get('given_name') or 'مستخدم جوجل'
+
+            if not email:
+                messages.error(request, 'تعذر جلب البريد الإلكتروني لحساب Google.')
+                return redirect('/login/')
+
+            # 3. التحقق من وجود المستخدم بالبريد الإلكتروني
+            user = User.objects.filter(email=email).first()
+            if not user:
+                # إنشاء اسم مستخدم فريد
+                base_username = email.split('@')[0].replace('.', '_').replace('-', '_')
+                candidate_username = base_username
+                counter = 1
+                while User.objects.filter(username=candidate_username).exists():
+                    candidate_username = f"{base_username}_{counter}"
+                    counter += 1
+
+                user = User.objects.create_user(
+                    username=candidate_username,
+                    email=email,
+                    first_name=name[:30]
+                )
+                user.set_unusable_password()
+                user.save()
+
+                # إنشاء شركة جديدة وربطها بالمستخدم مع باقة تجريبية
+                tenant_slug = make_slug(f"{candidate_username}-co")
+                tenant = Tenant.objects.create(
+                    name=f"شركة {name}",
+                    slug=tenant_slug,
+                    owner=user,
+                    plan='trial',
+                    trial_ends_at=timezone.now() + timedelta(days=14),
+                )
+                TenantUser.objects.create(tenant=tenant, user=user, role='admin')
+            else:
+                membership = TenantUser.objects.filter(user=user).order_by('-joined_at').first()
+                tenant = membership.tenant if membership else Tenant.objects.filter(owner=user).first()
+                if not tenant:
+                    tenant_slug = make_slug(f"{user.username}-co")
+                    tenant = Tenant.objects.create(
+                        name=f"شركة {user.first_name or user.username}",
+                        slug=tenant_slug,
+                        owner=user,
+                        plan='trial',
+                        trial_ends_at=timezone.now() + timedelta(days=14),
+                    )
+                    TenantUser.objects.create(tenant=tenant, user=user, role='admin')
+
+            # 4. تسجيل الدخول للجلسة بنجاح
+            login(request, user)
             request.session['tenant_id'] = tenant.id
-            messages.success(request, f'🎉 تم تسجيل الدخول بحساب Google بنجاح.')
-            return redirect(f'/t/{tenant.slug}/')
-        return redirect('/register/')
+            messages.success(request, f"🎉 مرحباً بك يا {name}! تم تسجيل الدخول بحساب Google بنجاح.")
+            return redirect(f'/t/{tenant.slug}/dashboard/')
+
+        except requests.RequestException as req_err:
+            messages.error(request, f"حدث خطأ في الاتصال بسيرفرات Google: {str(req_err)}")
+            return redirect('/login/')
+        except Exception as e:
+            messages.error(request, f"حدث خطأ أثناء معالجة تسجيل الدخول: {str(e)}")
+            return redirect('/login/')
 
 
 # ─────────────────────────────────────────────────

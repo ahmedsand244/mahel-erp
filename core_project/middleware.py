@@ -24,6 +24,7 @@ class EnforceLoginMiddleware:
         # - لوحة تحكم المالك (تتحقق من is_superuser داخلياً)
         if (
             path == '/' or
+            path.startswith('/desktop/') or
             path.startswith('/login/') or
             path.startswith('/logout/') or
             path.startswith('/register/') or

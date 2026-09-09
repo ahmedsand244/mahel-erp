@@ -51,3 +51,26 @@ def dashboard_redirect_view(request):
 
     return redirect('/')
 
+
+def desktop_launch_view(request):
+    """
+    نقطة انطلاق تطبيق الديسكتوب أوفلاين:
+    تسجيل دخول سريع وتلقائي لحساب المتجر المحلي والتوجيه فوراً لشاشة نقطة البيع /pos/
+    دون المرور بصفحة اللاندينج أو طلب تسجيل الدخول يدوياً في حالة عدم وجود إنترنت.
+    """
+    from django.contrib.auth.models import User
+    from django.contrib.auth import login
+    from tenants.models import Tenant, TenantUser
+
+    if not request.user.is_authenticated:
+        # تسجيل الدخول كأدمن محلي أو أول مستخدم في النظام
+        user = User.objects.filter(is_superuser=True).first() or User.objects.first()
+        if user:
+            login(request, user)
+            membership = TenantUser.objects.filter(user=user).first()
+            tenant = membership.tenant if membership else Tenant.objects.first()
+            if tenant:
+                request.session['tenant_id'] = tenant.id
+
+    return redirect('/pos/')
+

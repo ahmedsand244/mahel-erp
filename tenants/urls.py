@@ -5,6 +5,7 @@ from tenants.views import (
     TenantLoginView,
     TenantLogoutView,
     GoogleLoginView,
+    GoogleCallbackView,
     TenantHomeView,
     SuperAdminView,
 )
@@ -18,6 +19,7 @@ urlpatterns = [
     path('register/', RegisterView.as_view(),      name='register'),
     path('login/',    TenantLoginView.as_view(),   name='login'),
     path('login/google/', GoogleLoginView.as_view(), name='google_login'),
+    path('login/google/callback/', GoogleCallbackView.as_view(), name='google_callback'),
     path('logout/',   TenantLogoutView.as_view(),  name='logout'),
 
     # Superadmin

@@ -43,8 +43,8 @@ def main():
     time.sleep(1.5)
 
     local_ip = get_local_ip()
-    local_url = 'http://127.0.0.1:8000'
-    cloud_url = 'https://webservises.pythonanywhere.com'
+    local_url = 'http://127.0.0.1:8000/desktop/launch/'
+    cloud_url = 'https://webservises.pythonanywhere.com/pos/'
 
     target_url = os.environ.get('APP_URL')
     if len(sys.argv) > 1:
@@ -59,7 +59,7 @@ def main():
     if not target_url:
         # Auto-detect internet connection
         print("🔍 جاري فحص اتصال الإنترنت بالسيرفر السحابي...")
-        if check_internet(cloud_url, timeout=1.5):
+        if check_internet('https://webservises.pythonanywhere.com', timeout=1.5):
             target_url = cloud_url
             mode_label = "🌐 السحابي (متصل بالإنترنت)"
         else:

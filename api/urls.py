@@ -6,7 +6,8 @@ from api.views import (
     ApiInvoiceSyncView,
     ApiDashboardSummaryView,
     ApiFullSyncView,
-    DesktopSyncAllToCloudView
+    DesktopSyncAllToCloudView,
+    DesktopPullFromCloudView
 )
 
 urlpatterns = [
@@ -17,4 +18,5 @@ urlpatterns = [
     path('dashboard/', ApiDashboardSummaryView.as_view(), name='api_dashboard'),
     path('sync/full/', ApiFullSyncView.as_view(), name='api_full_sync'),
     path('desktop/sync-all/', DesktopSyncAllToCloudView.as_view(), name='desktop_sync_all'),
+    path('desktop/pull-from-cloud/', DesktopPullFromCloudView.as_view(), name='desktop_pull_from_cloud'),
 ]

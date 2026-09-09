@@ -305,9 +305,68 @@ import urllib.error
 @method_decorator(csrf_exempt, name='dispatch')
 class ApiFullSyncView(View):
     """
-    POST /api/v1/sync/full/
-    Comprehensive Two-Way Sync Endpoint for Products, Customers, Suppliers, Invoices & Expenses
+    GET  /api/v1/sync/full/ -> تصدير أحدث المنتجات والعملاء للمزامنة مع الديسكتوب
+    POST /api/v1/sync/full/ -> استقبال كافة البيانات وتخزينها
     """
+    def get(self, request):
+        """
+        تصدير كافة المنتجات والعملاء والموردين لمزامنتها مع أجهزة سطح المكتب المحلية (Desktop Offline-First).
+        """
+        tenant_slug = request.GET.get('tenant')
+        tenant = None
+        if tenant_slug:
+            tenant = Tenant.objects.filter(slug=tenant_slug, is_active=True).first()
+
+        products_qs = Product.objects.all().order_by('name')
+        customers_qs = Customer.objects.all().order_by('name')
+        suppliers_qs = Supplier.objects.all().order_by('name')
+        if tenant:
+            products_qs = products_qs.filter(tenant=tenant)
+            customers_qs = customers_qs.filter(tenant=tenant)
+            suppliers_qs = suppliers_qs.filter(tenant=tenant)
+
+        products_list = []
+        for p in products_qs:
+            products_list.append({
+                'name': p.name,
+                'sku': p.sku or '',
+                'barcode': p.barcode or '',
+                'category': p.category or 'عام',
+                'purchase_price': float(p.purchase_price or 0),
+                'selling_price': float(p.selling_price or 0),
+                'stock_quantity': p.stock_quantity,
+                'min_stock_threshold': p.min_stock_threshold
+            })
+
+        customers_list = []
+        for c in customers_qs:
+            customers_list.append({
+                'name': c.name,
+                'phone': c.phone or '',
+                'workplace': c.workplace or '',
+                'address': c.address or '',
+                'balance': float(c.balance or 0),
+                'notes': c.notes or ''
+            })
+
+        suppliers_list = []
+        for s in suppliers_qs:
+            suppliers_list.append({
+                'name': s.name,
+                'company': getattr(s, 'company', '') or '',
+                'phone': s.phone or '',
+                'address': s.address or '',
+                'balance': float(s.balance or 0),
+                'notes': s.notes or ''
+            })
+
+        return JsonResponse({
+            'success': True,
+            'products': products_list,
+            'customers': customers_list,
+            'suppliers': suppliers_list
+        })
+
     def post(self, request):
         try:
             payload = json.loads(request.body.decode('utf-8'))
@@ -654,3 +713,119 @@ class DesktopSyncAllToCloudView(View):
             return JsonResponse({'success': False, 'error': f'تعذر الاتصال بالسيرفر السحابي (يرجى التأكد من تشغيل الإنترنت): {str(e.reason)}'}, status=503)
         except Exception as e:
             return JsonResponse({'success': False, 'error': f'خطأ أثناء المزامنة الشاملة: {str(e)}'}, status=500)
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class DesktopPullFromCloudView(View):
+    """
+    POST /api/v1/desktop/pull-from-cloud/
+    سحب وتحديث كافة المنتجات والعملاء من السيرفر السحابي إلى قاعدة البيانات المحلية على جهاز الديسكتوب
+    """
+    def post(self, request):
+        try:
+            cloud_url = "https://webservises.pythonanywhere.com/api/v1/sync/full/"
+            req = urllib.request.Request(
+                cloud_url,
+                headers={'User-Agent': 'AlNamaa-Desktop-Universal-Sync/1.0'}
+            )
+            with urllib.request.urlopen(req, timeout=25) as resp:
+                data = json.loads(resp.read().decode('utf-8'))
+
+            if not data.get('success'):
+                return JsonResponse({'success': False, 'error': 'فشل السيرفر السحابي في تقديم البيانات'}, status=502)
+
+            products_data = data.get('products', [])
+            customers_data = data.get('customers', [])
+            suppliers_data = data.get('suppliers', [])
+
+            updated_prods = 0
+            created_prods = 0
+
+            with transaction.atomic():
+                # 1. Update/Create Products
+                for p in products_data:
+                    sku = (p.get('sku') or '').strip()
+                    name = (p.get('name') or '').strip()
+                    barcode = (p.get('barcode') or '').strip()
+                    if not name:
+                        continue
+
+                    prod = None
+                    if sku:
+                        prod = Product.objects.filter(sku=sku).first()
+                    if not prod and barcode:
+                        prod = Product.objects.filter(barcode=barcode).first()
+                    if not prod:
+                        prod = Product.objects.filter(name=name).first()
+
+                    if prod:
+                        prod.purchase_price = Decimal(str(p.get('purchase_price', 0)))
+                        prod.selling_price = Decimal(str(p.get('selling_price', 0)))
+                        prod.stock_quantity = int(p.get('stock_quantity', 0))
+                        if barcode: prod.barcode = barcode
+                        if sku: prod.sku = sku
+                        if p.get('category'): prod.category = p.get('category')
+                        prod.save()
+                        updated_prods += 1
+                    else:
+                        Product.objects.create(
+                            name=name,
+                            sku=sku or None,
+                            barcode=barcode or None,
+                            category=p.get('category') or 'عام',
+                            purchase_price=Decimal(str(p.get('purchase_price', 0))),
+                            selling_price=Decimal(str(p.get('selling_price', 0))),
+                            stock_quantity=int(p.get('stock_quantity', 0)),
+                            min_stock_threshold=int(p.get('min_stock_threshold', 5))
+                        )
+                        created_prods += 1
+
+                # 2. Update/Create Customers
+                updated_custs = 0
+                created_custs = 0
+                for c in customers_data:
+                    phone = (c.get('phone') or '').strip() or None
+                    name = (c.get('name') or '').strip()
+                    if not name:
+                        continue
+                    cust = Customer.objects.filter(phone=phone).first() if phone else None
+                    if not cust:
+                        cust = Customer.objects.filter(name=name).first()
+
+                    if cust:
+                        if c.get('workplace'): cust.workplace = c.get('workplace')
+                        if c.get('address'): cust.address = c.get('address')
+                        if 'balance' in c:
+                            try: cust.balance = Decimal(str(c['balance']))
+                            except: pass
+                        cust.save()
+                        updated_custs += 1
+                    else:
+                        try: init_bal = Decimal(str(c.get('balance', 0)))
+                        except: init_bal = Decimal('0.00')
+                        Customer.objects.create(
+                            name=name,
+                            phone=phone,
+                            workplace=c.get('workplace', ''),
+                            address=c.get('address', ''),
+                            balance=init_bal,
+                            notes=c.get('notes', '')
+                        )
+                        created_custs += 1
+
+            return JsonResponse({
+                'success': True,
+                'message': f'تم سحب البيانات من السحابة بنجاح! تم استيراد/تحديث {created_prods + updated_prods} منتج و {created_custs + updated_custs} عميل.',
+                'stats': {
+                    'products_created': created_prods,
+                    'products_updated': updated_prods,
+                    'customers_created': created_custs,
+                    'customers_updated': updated_custs
+                }
+            })
+
+        except urllib.error.URLError as e:
+            return JsonResponse({'success': False, 'error': f'تعذر الاتصال بالسيرفر السحابي (يرجى التأكد من تشغيل الإنترنت): {str(e.reason)}'}, status=503)
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': f'خطأ أثناء سحب البيانات السحابية: {str(e)}'}, status=500)
+

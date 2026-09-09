@@ -29,7 +29,7 @@ def service_worker_view(request):
             return response
     return HttpResponse('', content_type='application/javascript')
 
-from core_project.views import dashboard_redirect_view
+from core_project.views import dashboard_redirect_view, desktop_launch_view
 
 urlpatterns = [
     # PWA Endpoints
@@ -37,9 +37,10 @@ urlpatterns = [
     path('sw.js',         service_worker_view, name='service_worker'),
 
     # Core Auth & SaaS Root URLs
-    path('',            LandingView.as_view(),      name='landing'),
-    path('dashboard/',  dashboard_redirect_view,    name='dashboard_root'),
-    path('login/',      TenantLoginView.as_view(),  name='login'),
+    path('',                LandingView.as_view(),      name='landing'),
+    path('desktop/launch/', desktop_launch_view,        name='desktop_launch'),
+    path('dashboard/',      dashboard_redirect_view,    name='dashboard_root'),
+    path('login/',          TenantLoginView.as_view(),  name='login'),
     path('logout/',     TenantLogoutView.as_view(), name='logout'),
     path('register/',   RegisterView.as_view(),     name='register'),
     path('superadmin/', SuperAdminView.as_view(),   name='superadmin'),
