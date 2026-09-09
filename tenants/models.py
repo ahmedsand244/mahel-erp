@@ -79,7 +79,7 @@ class UserSocialAuth(models.Model):
     2. الربط التلقائي عبر البريد الإلكتروني عند تسجيل الدخول.
     3. منع ربط نفس حساب Google بأكثر من مستخدم محلي.
     """
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='social_auth', verbose_name="المستخدم")
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='social_auths', verbose_name="المستخدم")
     google_id = models.CharField(max_length=255, unique=True, null=True, blank=True, verbose_name="Google Sub/ID")
     google_email = models.EmailField(null=True, blank=True, verbose_name="البريد الإلكتروني لحساب Google")
     linked_at = models.DateTimeField(auto_now_add=True, verbose_name="تاريخ الربط")

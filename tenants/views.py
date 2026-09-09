@@ -302,7 +302,7 @@ class GoogleCallbackView(View):
                 messages.error(request, 'تعذر جلب البريد الإلكتروني أو معرّف الحساب من Google.')
                 return redirect('/profile/' if action == 'link' else '/login/')
 
-            # ── الحالة الأولى: ربط حساب حالي مسجل دخوله (Account Linking) ──
+            # ── الحالة الأولى: ربط حساب حالي مسجل دخوله (Account Linking - يدعم ربط أكثر من حساب) ──
             if action == 'link':
                 target_user = request.user if request.user.is_authenticated else User.objects.filter(id=link_user_id).first()
                 if not target_user:
@@ -315,15 +315,23 @@ class GoogleCallbackView(View):
                     messages.error(request, f'⚠️ لا يمكن الربط: حساب Google هذا ({email}) مربوط بالفعل بمستخدم آخر ({other_social.user.username})!')
                     return redirect('/profile/')
 
-                UserSocialAuth.objects.update_or_create(
+                # فحص ما إذا كان هذا الحساب مربوطاً بالفعل لنفس المستخدم
+                my_existing = UserSocialAuth.objects.filter(user=target_user, google_id=google_id).first()
+                if my_existing:
+                    messages.info(request, f'💡 حساب Google هذا ({email}) مربوط بالفعل بحسابك مسبقاً.')
+                    return redirect('/profile/')
+
+                # إضافة الحساب الجديد لقائمة حسابات Google المربوطة
+                UserSocialAuth.objects.create(
                     user=target_user,
-                    defaults={'google_id': google_id, 'google_email': email}
+                    google_id=google_id,
+                    google_email=email
                 )
                 if not target_user.email:
                     target_user.email = email
                     target_user.save(update_fields=['email'])
 
-                messages.success(request, f'🎉 تم ربط حسابك بنجاح بحساب Google ({email})! يمكنك الآن استخدامه لتسجيل الدخول مباشرة.')
+                messages.success(request, f'🎉 تم ربط حساب Google بنجاح ({email})! أصبح بإمكانك تسجيل الدخول به إلى جانب حساباتك الأخرى.')
                 return redirect('/profile/')
 
             # ── الحالة الثانية: تسجيل الدخول والربط التلقائي (Login & Auto-Link) ──
@@ -338,9 +346,10 @@ class GoogleCallbackView(View):
             if not user and email:
                 user = User.objects.filter(email__iexact=email).first()
                 if user:
-                    UserSocialAuth.objects.update_or_create(
+                    UserSocialAuth.objects.get_or_create(
                         user=user,
-                        defaults={'google_id': google_id, 'google_email': email}
+                        google_id=google_id,
+                        defaults={'google_email': email}
                     )
 
             # ج) فحص وجود حساب باسم مستخدم مطابق لاسم الإيميل
@@ -351,9 +360,10 @@ class GoogleCallbackView(View):
                     if not user.email:
                         user.email = email
                         user.save(update_fields=['email'])
-                    UserSocialAuth.objects.update_or_create(
+                    UserSocialAuth.objects.get_or_create(
                         user=user,
-                        defaults={'google_id': google_id, 'google_email': email}
+                        google_id=google_id,
+                        defaults={'google_email': email}
                     )
 
             # د) إذا لم يوجد مستخدم مسبق، إنشاء مستخدم + شركة جديدة
@@ -418,47 +428,57 @@ class GoogleCallbackView(View):
 
 class GoogleUnlinkView(View):
     """
-    إلغاء ربط حساب Google الحالي
+    إلغاء ربط حساب Google محدد (يدعم الحسابات المتعددة)
     """
     def post(self, request):
         if not request.user.is_authenticated:
             return redirect('/login/')
 
         user = request.user
-        # الأمان وحماية الجلسة: منع إلغاء الربط إذا كان المستخدم لا يملك كلمة مرور حتى لا يُقفل حسابه!
-        if not user.has_usable_password():
+        social_id = request.POST.get('social_id')
+
+        # العثور على الحساب المطلوب حذفه الخاص بهذا المستخدم حصراً
+        if social_id:
+            social = user.social_auths.filter(id=social_id).first()
+        else:
+            social = user.social_auths.first()
+
+        if not social:
+            messages.info(request, 'الحساب المحدد غير مربوط أو تم حذفه مسبقاً.')
+            return redirect('/profile/')
+
+        # الأمان: إذا كان هذا هو آخر حساب Google للمستخدم وليس لديه كلمة مرور
+        remaining_count = user.social_auths.count()
+        if remaining_count <= 1 and not user.has_usable_password():
             messages.error(
                 request,
-                '⚠️ لا يمكنك إلغاء ربط حساب Google لأنك لا تملك كلمة مرور مسجلة لحسابك! يرجى تعيين كلمة مرور لحسابك أولاً حتى لا تفقد إمكانية الدخول.'
+                '⚠️ لا يمكنك إلغاء ربط آخر حساب Google لأنك لا تملك كلمة مرور مسجلة لحسابك! يرجى تعيين كلمة مرور في الأسفل أولاً حتى لا تفقد إمكانية الدخول.'
             )
             return redirect('/profile/')
 
-        social = getattr(user, 'social_auth', None)
-        if social:
-            social.delete()
-            messages.success(request, '✅ تم إلغاء ربط حساب Google بنجاح. يمكنك الآن تسجيل الدخول باسم المستخدم وكلمة المرور.')
-        else:
-            messages.info(request, 'حسابك غير مربوط بحساب Google.')
-
+        deleted_email = social.google_email or social.google_id
+        social.delete()
+        messages.success(request, f'✅ تم إلغاء ربط حساب Google ({deleted_email}) بنجاح.')
         return redirect('/profile/')
 
 
 class UserProfileView(View):
     """
-    شاشة الملف الشخصي وإعدادات الحساب وربط Google
+    شاشة الملف الشخصي وإعدادات الحساب وربط Google المتعدد
     """
     def get(self, request):
         if not request.user.is_authenticated:
             return redirect('/login/?next=/profile/')
 
         user = request.user
-        social = getattr(user, 'social_auth', None)
+        social_auths = user.social_auths.all().order_by('-linked_at')
         membership = TenantUser.objects.filter(user=user).order_by('-joined_at').first()
         tenant = membership.tenant if membership else Tenant.objects.filter(owner=user).first()
 
         context = {
             'profile_user': user,
-            'social': social,
+            'social_auths': social_auths,
+            'social_count': social_auths.count(),
             'tenant': tenant,
             'membership': membership,
             'has_password': user.has_usable_password(),
