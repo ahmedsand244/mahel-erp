@@ -314,6 +314,12 @@
         <div class="mt-auto pt-4 px-3 border-t border-apple-border w-full space-y-1">
             <ul class="flex flex-col gap-1 w-full">
                 <li class="w-full">
+                    <a class="flex items-center gap-3.5 xl:gap-4 px-4 xl:px-5 py-2.5 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-2xl w-full transition-all text-xs xl:text-sm font-bold {% if '/profile/' in request.path %}active text-primary{% endif %}" href="/profile/">
+                        <span class="material-symbols-outlined text-lg text-primary">manage_accounts</span>
+                        <span>إعدادات الحساب و Google</span>
+                    </a>
+                </li>
+                <li class="w-full">
                     <a class="flex items-center gap-3.5 xl:gap-4 px-4 xl:px-5 py-2.5 text-red-400 hover:bg-red-500/10 rounded-2xl w-full transition-all text-xs xl:text-sm font-bold" href="{% url 'logout' %}">
                         <span class="material-symbols-outlined text-lg">logout</span>
                         <span>تسجيل الخروج</span>
@@ -781,13 +787,18 @@
 
                 <!-- User Account Info & Logout -->
                 <div class="flex items-center gap-3 border-r border-apple-border pr-5">
-                    <div class="w-9 h-9 rounded-full bg-primary/10 border border-primary/20 text-primary font-bold flex items-center justify-center text-xs">
-                        AD
-                    </div>
-                    <div class="flex flex-col text-right">
-                        <span class="text-xs font-bold text-apple-text">مسؤول النظام</span>
-                        <span class="text-[10px] text-primary font-medium">الوصول الكامل</span>
-                    </div>
+                    <a href="/profile/" class="flex items-center gap-2.5 hover:opacity-80 transition-opacity" title="الملف الشخصي وإعدادات الحساب">
+                        <div class="w-9 h-9 rounded-full bg-primary/10 border border-primary/20 text-primary font-bold flex items-center justify-center text-xs">
+                            {{ request.user.first_name|default:request.user.username|slice:":2"|upper }}
+                        </div>
+                        <div class="flex flex-col text-right">
+                            <span class="text-xs font-bold text-apple-text">{{ request.user.first_name|default:request.user.username }}</span>
+                            <span class="text-[10px] text-primary font-medium flex items-center gap-1">
+                                <span>إعدادات الحساب</span>
+                                <span class="material-symbols-outlined text-[12px]">settings</span>
+                            </span>
+                        </div>
+                    </a>
                     <a href="{% url 'logout' %}" class="p-2 rounded-xl text-red-400 hover:bg-red-500/10 transition-colors mr-1" title="تسجيل الخروج">
                         <span class="material-symbols-outlined text-lg">logout</span>
                     </a>

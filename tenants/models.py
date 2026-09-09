@@ -69,3 +69,25 @@ class TenantUser(models.Model):
 
     def __str__(self):
         return f"{self.user.username} @ {self.tenant.slug} ({self.role})"
+
+
+class UserSocialAuth(models.Model):
+    """
+    ربط المستخدم بحساب Google OAuth 2.0.
+    يدعم:
+    1. ربط الحسابات الحالية من الإعدادات.
+    2. الربط التلقائي عبر البريد الإلكتروني عند تسجيل الدخول.
+    3. منع ربط نفس حساب Google بأكثر من مستخدم محلي.
+    """
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='social_auth', verbose_name="المستخدم")
+    google_id = models.CharField(max_length=255, unique=True, null=True, blank=True, verbose_name="Google Sub/ID")
+    google_email = models.EmailField(null=True, blank=True, verbose_name="البريد الإلكتروني لحساب Google")
+    linked_at = models.DateTimeField(auto_now_add=True, verbose_name="تاريخ الربط")
+
+    class Meta:
+        verbose_name = "ربط حساب اجتماعي"
+        verbose_name_plural = "ربط الحسابات الاجتماعية"
+
+    def __str__(self):
+        return f"{self.user.username} 🔗 Google ({self.google_email or self.google_id})"
+

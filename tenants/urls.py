@@ -6,6 +6,8 @@ from tenants.views import (
     TenantLogoutView,
     GoogleLoginView,
     GoogleCallbackView,
+    GoogleUnlinkView,
+    UserProfileView,
     TenantHomeView,
     SuperAdminView,
 )
@@ -21,6 +23,10 @@ urlpatterns = [
     path('login/google/', GoogleLoginView.as_view(), name='google_login'),
     path('login/google/callback/', GoogleCallbackView.as_view(), name='google_callback'),
     path('logout/',   TenantLogoutView.as_view(),  name='logout'),
+
+    # الملف الشخصي وإعدادات الحساب وربط Google
+    path('profile/', UserProfileView.as_view(), name='profile'),
+    path('profile/google/unlink/', GoogleUnlinkView.as_view(), name='google_unlink'),
 
     # Superadmin
     path('superadmin/', SuperAdminView.as_view(), name='superadmin'),
