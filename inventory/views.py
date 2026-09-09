@@ -408,7 +408,7 @@ class ExportProductsExcelView(View):
             ws.title = "منتجات المخزن"
             ws.views.sheetView[0].rightToLeft = True
 
-            headers = ['اسم المنتج', 'رمز SKU / الباركود', 'التصنيف', 'سعر الشراء (ج.م)', 'سعر البيع (ج.م)', 'الكمية بالمخزن', 'الحد الأدنى']
+            headers = ['اسم المنتج', 'رمز SKU', 'الباركود', 'التصنيف', 'سعر الشراء (ج.م)', 'سعر البيع (ج.م)', 'الكمية بالمخزن', 'الحد الأدنى']
             ws.append(headers)
 
             header_font = Font(name='Cairo', size=11, bold=True, color="FFFFFF")
@@ -426,7 +426,8 @@ class ExportProductsExcelView(View):
             for row_idx, p in enumerate(products, start=2):
                 ws.append([
                     p.name,
-                    p.barcode or p.sku or '',
+                    p.sku or '',
+                    p.barcode or '',
                     p.category or 'عام',
                     float(p.purchase_price),
                     float(p.selling_price),
@@ -436,7 +437,7 @@ class ExportProductsExcelView(View):
                 for col_idx in range(1, len(headers) + 1):
                     cell = ws.cell(row=row_idx, column=col_idx)
                     cell.border = thin_border
-                    if col_idx in [4, 5, 6, 7]:
+                    if col_idx in [5, 6, 7, 8]:
                         cell.alignment = Alignment(horizontal="right", vertical="center")
 
             response = HttpResponse(
@@ -450,11 +451,12 @@ class ExportProductsExcelView(View):
             response = HttpResponse(content_type='text/csv; charset=utf-8-sig')
             response['Content-Disposition'] = 'attachment; filename="inventory_products.csv"'
             writer = csv.writer(response)
-            writer.writerow(['اسم المنتج', 'رمز SKU / الباركود', 'التصنيف', 'سعر الشراء (ج.م)', 'سعر البيع (ج.م)', 'الكمية بالمخزن', 'الحد الأدنى'])
+            writer.writerow(['اسم المنتج', 'رمز SKU', 'الباركود', 'التصنيف', 'سعر الشراء (ج.م)', 'سعر البيع (ج.م)', 'الكمية بالمخزن', 'الحد الأدنى'])
             for p in products:
                 writer.writerow([
                     p.name,
-                    p.barcode or p.sku or '',
+                    p.sku or '',
+                    p.barcode or '',
                     p.category or 'عام',
                     float(p.purchase_price),
                     float(p.selling_price),
@@ -476,7 +478,7 @@ class DownloadSampleProductsExcelView(View):
         ws.title = "نموذج استيراد المنتجات"
         ws.views.sheetView[0].rightToLeft = True
 
-        headers = ['اسم المنتج', 'الباركوود', 'التصنيف', 'سعر الشراء (ج.م)', 'سعر البيع (ج.م)', 'الكمية بالمخزن', 'الحد الأدنى']
+        headers = ['اسم المنتج', 'رمز SKU (الرمز المرجعي)', 'الباركود', 'التصنيف', 'سعر الشراء (ج.م)', 'سعر البيع (ج.م)', 'الكمية بالمخزن', 'الحد الأدنى']
         ws.append(headers)
 
         header_font = Font(name='Cairo', size=11, bold=True, color="FFFFFF")
@@ -488,9 +490,9 @@ class DownloadSampleProductsExcelView(View):
             cell.alignment = Alignment(horizontal="center", vertical="center")
 
         sample_rows = [
-            ['موتور مياه 1 حصان إيطالي', '62910001', 'مواتير', 3500, 4200, 10, 2],
-            ['زيت شل 16 لتر هيدروليك', '62910002', 'زيوت وفلاتر', 1800, 2100, 15, 3],
-            ['سير كبولة متعدد المقاسات', '62910003', 'سيور وسلاسل', 250, 320, 30, 5],
+            ['شداد 6 مسمار', 'SKU-0001', '622100000010', 'قطع غيار', 100, 130, 4, 2],
+            ['أولسيه 41.25×25', 'SKU-0006', '622100000065', 'قطع غيار', 15, 25, 25, 5],
+            ['موتور مياه 1 حصان', 'SKU-0007', '622100000072', 'مواتير', 30, 100, 2, 1],
         ]
         for row in sample_rows:
             ws.append(row)
@@ -502,8 +504,9 @@ class DownloadSampleProductsExcelView(View):
 
 
 class ImportProductsExcelView(View):
-    """استيراد ملف Excel أو CSV وتحديث/إضافة المنتجات دفعة واحدة"""
+    """استيراد ملف Excel وتحديث/إضافة المنتجات بذكاء مع التعرف التلقائي على الأعمدة"""
     def post(self, request, *args, **kwargs):
+        import uuid
         excel_file = request.FILES.get('excel_file')
         if not excel_file:
             messages.error(request, "يرجى اختيار ملف Excel لاستيراد المنتجات.")
@@ -523,52 +526,143 @@ class ImportProductsExcelView(View):
                     messages.warning(request, "الملف المرفوع فارغ أو لا يحتوي على صفوف بيانات!")
                     return redirect('inventory:inventory_list')
 
-                # Skip header row (row 0)
+                # قراءة وترسيم عناوين الأعمدة ديناميكياً لتفادي أي لخبطة بالترتيب
+                header_row = [str(cell).strip() if cell is not None else '' for cell in rows[0]]
+                col_map = {
+                    'name': None,
+                    'sku': None,
+                    'barcode': None,
+                    'category': None,
+                    'purchase_price': None,
+                    'selling_price': None,
+                    'stock_quantity': None,
+                    'min_stock_threshold': None,
+                }
+
+                for idx, h in enumerate(header_row):
+                    hl = h.lower()
+                    if col_map['name'] is None and any(k in hl for k in ['اسم المنتج', 'المنتج', 'اسم', 'name']):
+                        col_map['name'] = idx
+                    elif col_map['sku'] is None and any(k in hl for k in ['sku', 'المرجعي', 'كود الصنف', 'رمز']):
+                        col_map['sku'] = idx
+                    elif col_map['barcode'] is None and any(k in hl for k in ['باركوود', 'باركود', 'بار كود', 'barcode']):
+                        col_map['barcode'] = idx
+                    elif col_map['category'] is None and any(k in hl for k in ['تصنيف', 'فئة', 'category']):
+                        col_map['category'] = idx
+                    elif col_map['purchase_price'] is None and any(k in hl for k in ['شراء', 'تكلفة', 'cost', 'purchase']):
+                        col_map['purchase_price'] = idx
+                    elif col_map['selling_price'] is None and any(k in hl for k in ['بيع', 'selling', 'price']):
+                        col_map['selling_price'] = idx
+                    elif col_map['stock_quantity'] is None and any(k in hl for k in ['كمية', 'كميه', 'المخزن', 'مخزون', 'stock', 'qty', 'quantity']):
+                        col_map['stock_quantity'] = idx
+                    elif col_map['min_stock_threshold'] is None and any(k in hl for k in ['أدنى', 'ادنى', 'تنبيه', 'min', 'threshold']):
+                        col_map['min_stock_threshold'] = idx
+
+                # ضبط احتياطي في حال عدم تطابق العناوين النصية
+                total_cols = len(header_row)
+                if col_map['name'] is None:
+                    col_map['name'] = 0
+
+                if col_map['sku'] is None and col_map['barcode'] is None:
+                    if total_cols >= 8:
+                        col_map['sku'] = 1
+                        col_map['barcode'] = 2
+                        col_map['category'] = 3
+                        col_map['purchase_price'] = 4
+                        col_map['selling_price'] = 5
+                        col_map['stock_quantity'] = 6
+                        col_map['min_stock_threshold'] = 7
+                    else:
+                        col_map['barcode'] = 1
+                        col_map['category'] = 2
+                        col_map['purchase_price'] = 3
+                        col_map['selling_price'] = 4
+                        col_map['stock_quantity'] = 5
+                        col_map['min_stock_threshold'] = 6
+
+                def get_clean_str(row_data, col_idx):
+                    if col_idx is None or col_idx >= len(row_data):
+                        return ''
+                    val = row_data[col_idx]
+                    if val is None:
+                        return ''
+                    s = str(val).strip()
+                    return '' if s in ['None', 'none', '-', ''] else s
+
+                def get_clean_decimal(row_data, col_idx, default='0.00'):
+                    if col_idx is None or col_idx >= len(row_data):
+                        return Decimal(default)
+                    val = row_data[col_idx]
+                    if val is None:
+                        return Decimal(default)
+                    s = str(val).strip().replace(',', '')
+                    arabic_digits = '٠١٢٣٤٥٦٧٨٩'
+                    for i, d in enumerate(arabic_digits):
+                        s = s.replace(d, str(i))
+                    try:
+                        return Decimal(s)
+                    except Exception:
+                        return Decimal(default)
+
+                def get_clean_int(row_data, col_idx, default=0):
+                    if col_idx is None or col_idx >= len(row_data):
+                        return default
+                    val = row_data[col_idx]
+                    if val is None:
+                        return default
+                    s = str(val).strip().replace(',', '')
+                    arabic_digits = '٠١٢٣٤٥٦٧٨٩'
+                    for i, d in enumerate(arabic_digits):
+                        s = s.replace(d, str(i))
+                    try:
+                        return int(float(s))
+                    except Exception:
+                        return default
+
+                tenant = getattr(request, 'tenant', None)
+
+                # قراءة الصفوف وتحديث أو إنشاء المنتجات
                 for row in rows[1:]:
-                    if not row or not row[0]:
+                    if not row or not any(row):
                         continue
 
-                    name = str(row[0]).strip()
-                    barcode = str(row[1]).strip() if len(row) > 1 and row[1] is not None else None
-                    if barcode in ['None', '', '-']:
+                    name = get_clean_str(row, col_map['name'])
+                    if not name:
+                        continue
+
+                    sku = get_clean_str(row, col_map['sku'])
+                    barcode = get_clean_str(row, col_map['barcode'])
+                    if not barcode:
                         barcode = None
 
-                    category = str(row[2]).strip() if len(row) > 2 and row[2] else 'قطع غيار عامة'
-                    
-                    try:
-                        purchase_price = Decimal(str(row[3])) if len(row) > 3 and row[3] is not None else Decimal('0.00')
-                    except Exception:
-                        purchase_price = Decimal('0.00')
+                    category = get_clean_str(row, col_map['category']) or 'قطع غيار عامة'
+                    purchase_price = get_clean_decimal(row, col_map['purchase_price'], default='0.00')
+                    selling_price = get_clean_decimal(row, col_map['selling_price'], default='0.00')
+                    stock_qty = get_clean_int(row, col_map['stock_quantity'], default=0)
+                    min_stock = get_clean_int(row, col_map['min_stock_threshold'], default=5)
 
-                    try:
-                        selling_price = Decimal(str(row[4])) if len(row) > 4 and row[4] is not None else Decimal('0.00')
-                    except Exception:
-                        selling_price = Decimal('0.00')
-
-                    try:
-                        stock_qty = int(float(row[5])) if len(row) > 5 and row[5] is not None else 0
-                    except Exception:
-                        stock_qty = 0
-
-                    try:
-                        min_stock = int(float(row[6])) if len(row) > 6 and row[6] is not None else 5
-                    except Exception:
-                        min_stock = 5
+                    if not sku:
+                        sku = barcode or f"SKU-{uuid.uuid4().hex[:6].upper()}"
 
                     prod, created = Product.objects.get_or_create(
                         name=name,
                         defaults={
+                            'sku': sku,
                             'barcode': barcode,
                             'category': category,
                             'purchase_price': purchase_price,
                             'selling_price': selling_price,
                             'stock_quantity': stock_qty,
                             'min_stock_threshold': min_stock,
+                            'tenant': tenant,
                         }
                     )
 
                     if not created:
-                        if barcode: prod.barcode = barcode
+                        if sku:
+                            prod.sku = sku
+                        if barcode:
+                            prod.barcode = barcode
                         prod.category = category
                         prod.purchase_price = purchase_price
                         prod.selling_price = selling_price
@@ -581,7 +675,7 @@ class ImportProductsExcelView(View):
 
             messages.success(
                 request,
-                f"🎉 تم بنجاح استيراد ({imported_count}) منتج جديد، وتحديث بيانات ({updated_count}) منتج سابق في المخزن!"
+                f"🎉 تم بنجاح استيراد ({imported_count}) منتج جديد، وتحديث بيانات ({updated_count}) منتج سابق في المخزن بدقة تامة!"
             )
         except Exception as e:
             messages.error(request, f"حدث خطأ أثناء قراءة ملف Excel: {str(e)}")
