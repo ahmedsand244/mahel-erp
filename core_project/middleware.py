@@ -26,6 +26,7 @@ class EnforceLoginMiddleware:
             path == '/' or
             path.startswith('/desktop/') or
             path.startswith('/login/') or
+            path.startswith('/forgot-password/') or
             path.startswith('/logout/') or
             path.startswith('/register/') or
             path.startswith('/superadmin/') or

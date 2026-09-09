@@ -144,6 +144,50 @@ class TenantLogoutView(View):
         return redirect('/login/')
 
 
+class ForgotPasswordView(View):
+    """
+    معالجة نسيان كلمة المرور:
+    - فحص اسم المستخدم أو البريد الإلكتروني
+    - توجيه المستخدم لحساب Google المربوط إن وجد (تسجيل دخول فوري)
+    - أو إعطاء تعليمات الاسترجاع والتواصل
+    """
+    def post(self, request):
+        from django.db.models import Q
+        identifier = request.POST.get('identifier', '').strip()
+
+        if not identifier:
+            messages.error(request, 'يرجى إدخال اسم المستخدم أو البريد الإلكتروني المسجل.')
+            return redirect('/login/')
+
+        user = User.objects.filter(Q(username__iexact=identifier) | Q(email__iexact=identifier)).first()
+
+        if not user:
+            messages.error(request, f'لم يتم العثور على أي حساب مسجل بالبيانات: "{identifier}". تأكد من صحة الاسم أو الإيميل.')
+            return redirect('/login/')
+
+        social = getattr(user, 'social_auth', None)
+        if social:
+            messages.info(
+                request,
+                f'💡 حسابك ({user.username}) مربوط بحساب Google ({social.google_email or "الموثق"}). يمكنك الدخول فوراً بضغطة زر عبر "المتابعة باستخدام حساب Google" في الأعلى دون الحاجة لكلمة المرور!'
+            )
+            return redirect('/login/')
+
+        if user.email:
+            messages.info(
+                request,
+                f'تم التعرف على حسابك ({user.username}) وبريدك ({user.email}). إذا كان هذا البريد تابعاً لـ Google، يمكنك الدخول به مباشرة بزر Google أعلاه، أو تواصل مع إدارة النظام لإعادة التعيين.'
+            )
+        else:
+            messages.info(
+                request,
+                f'تم التعرف على حسابك ({user.username})، ولكن لا يوجد بريد مسجل به. يرجى التواصل مع مسؤول النظام لتعيين كلمة مرور جديدة لك.'
+            )
+
+        return redirect('/login/')
+
+
+
 class GoogleLoginView(View):
     """
     بدء مصادقة Google OAuth 2.0 الحقيقية.

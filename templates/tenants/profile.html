@@ -181,10 +181,10 @@
                     {% if has_password %}
                     <div>
                         <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">كلمة المرور الحالية:</label>
-                        <input type="password" name="old_password" required class="apple-input text-sm w-full font-mono">
+                        <input type="password" name="old_password" required class="apple-input text-sm w-full font-mono bg-slate-50 dark:bg-slate-900/80 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white focus:border-blue-500">
                     </div>
                     {% else %}
-                    <div class="p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl text-xs text-blue-500">
+                    <div class="p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl text-xs text-blue-600 dark:text-blue-400 font-semibold">
                         أنت مسجل عبر Google وليس لديك كلمة مرور محلية. تعيين كلمة مرور سيمكنك من الدخول باسم المستخدم وكلمة المرور في حال لم يتوفر لديك اتصال بـ Google.
                     </div>
                     {% endif %}
@@ -192,18 +192,18 @@
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">كلمة المرور الجديدة:</label>
-                            <input type="password" name="new_password" required minlength="6" class="apple-input text-sm w-full font-mono" placeholder="6 أحرف على الأقل">
+                            <input type="password" name="new_password" required minlength="6" class="apple-input text-sm w-full font-mono bg-slate-50 dark:bg-slate-900/80 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white focus:border-blue-500" placeholder="6 أحرف على الأقل">
                         </div>
 
                         <div>
                             <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">تأكيد كلمة المرور الجديدة:</label>
-                            <input type="password" name="confirm_password" required minlength="6" class="apple-input text-sm w-full font-mono">
+                            <input type="password" name="confirm_password" required minlength="6" class="apple-input text-sm w-full font-mono bg-slate-50 dark:bg-slate-900/80 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white focus:border-blue-500">
                         </div>
                     </div>
 
-                    <div class="pt-2">
-                        <button type="submit" class="px-6 py-2.5 rounded-xl font-extrabold text-xs sm:text-sm bg-brand-600 hover:bg-brand-500 text-white shadow-lg shadow-brand-500/25 active:scale-95 transition-all">
-                            {% if has_password %}حفظ كلمة المرور الجديدة{% else %}تعيين كلمة المرور الآن{% endif %}
+                    <div class="pt-3">
+                        <button type="submit" class="px-7 py-3.5 rounded-xl font-black text-sm bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/30 active:scale-95 transition-all cursor-pointer">
+                            {% if has_password %}💾 حفظ كلمة المرور الجديدة{% else %}🔑 تعيين كلمة المرور الآن{% endif %}
                         </button>
                     </div>
                 </form>
