@@ -538,33 +538,131 @@ class SuperAdminView(View):
     def get(self, request):
         if not request.user.is_superuser:
             return redirect('/login/')
-        tenants = Tenant.objects.all().order_by('-created_at')
+
+        tenants = Tenant.objects.all().select_related('owner').order_by('-created_at')
         total_tenants = tenants.count()
         active_tenants = tenants.filter(is_active=True).count()
+        suspended_tenants = tenants.filter(is_active=False).count()
         trial_tenants = tenants.filter(plan='trial').count()
+        pro_tenants = tenants.filter(plan='pro').count()
+        basic_tenants = tenants.filter(plan='basic').count()
+
+        now = timezone.now()
+        expiring_soon_tenants = tenants.filter(
+            is_active=True,
+            trial_ends_at__isnull=False,
+            trial_ends_at__lte=now + timedelta(days=7),
+            trial_ends_at__gte=now
+        ).count()
+
+        # حساب الأيام المتبقية وحالة كل شركة للعرض المباشر
+        tenants_data = []
+        for t in tenants:
+            days_left = None
+            if t.trial_ends_at:
+                delta = t.trial_ends_at - now
+                days_left = delta.days
+            tenants_data.append({
+                'obj': t,
+                'days_left': days_left,
+                'is_expired': t.is_subscription_expired,
+            })
+
         return render(request, 'tenants/superadmin.html', {
             'tenants': tenants,
+            'tenants_data': tenants_data,
             'total_tenants': total_tenants,
             'active_tenants': active_tenants,
+            'suspended_tenants': suspended_tenants,
             'trial_tenants': trial_tenants,
+            'pro_tenants': pro_tenants,
+            'basic_tenants': basic_tenants,
+            'expiring_soon_tenants': expiring_soon_tenants,
         })
 
     def post(self, request):
         if not request.user.is_superuser:
             return redirect('/login/')
-        action    = request.POST.get('action')
+
+        action = request.POST.get('action')
         tenant_id = request.POST.get('tenant_id')
+
+        # ── إنشاء شركة جديدة يدوياً من لوحة Superadmin ──
+        if action == 'create_tenant':
+            name = request.POST.get('name', '').strip()
+            slug_input = request.POST.get('slug', '').strip() or name
+            username = request.POST.get('username', '').strip()
+            password = request.POST.get('password', '').strip()
+            plan = request.POST.get('plan', 'trial')
+            phone = request.POST.get('phone', '').strip()
+            try:
+                days = int(request.POST.get('days', 30))
+            except (ValueError, TypeError):
+                days = 30
+
+            if not name or not username:
+                messages.error(request, 'يرجى إدخال اسم الشركة واسم المستخدم على الأقل.')
+                return redirect('/superadmin/')
+
+            base_slug = make_slug(slug_input)
+            slug = base_slug
+            counter = 1
+            while Tenant.objects.filter(slug=slug).exists():
+                slug = f"{base_slug}-{counter}"
+                counter += 1
+
+            # فحص أو إنشاء المستخدم
+            user = User.objects.filter(username=username).first()
+            if not user:
+                if not password:
+                    password = User.objects.make_random_password()
+                user = User.objects.create_user(username=username, password=password)
+            elif password:
+                user.set_password(password)
+                user.save()
+
+            trial_ends_at = timezone.now() + timedelta(days=days)
+            new_tenant = Tenant.objects.create(
+                name=name,
+                slug=slug,
+                owner=user,
+                plan=plan,
+                trial_ends_at=trial_ends_at,
+                is_active=True,
+                phone=phone
+            )
+            TenantUser.objects.get_or_create(tenant=new_tenant, user=user, defaults={'role': 'admin'})
+            messages.success(request, f'🎉 تم إنشاء شركة "{name}" بنجاح وتفعيل اشتراكها لمدة {days} يوماً (الرابط: /t/{slug}/).')
+            return redirect('/superadmin/')
+
+        # بقية الإجراءات تتطلب معرف الشركة
         try:
             tenant = Tenant.objects.get(id=tenant_id)
+            now = timezone.now()
+
             if action == 'toggle_active':
                 tenant.is_active = not tenant.is_active
                 tenant.save()
-                status = 'مفعّل' if tenant.is_active else 'موقوف'
-                messages.success(request, f'تم تغيير حالة "{tenant.name}" إلى {status}.')
+                status = 'مفعّلة ✅' if tenant.is_active else 'موقوفة ⛔'
+                messages.success(request, f'تم تغيير حالة شركة "{tenant.name}" إلى {status}.')
+
             elif action == 'upgrade_pro':
                 tenant.plan = 'pro'
+                tenant.is_active = True
                 tenant.save()
-                messages.success(request, f'تم ترقية "{tenant.name}" إلى الباقة الاحترافية.')
+                messages.success(request, f'🚀 تم ترقية شركة "{tenant.name}" إلى الباقة الاحترافية بنجاح.')
+
+            elif action == 'quick_extend':
+                try:
+                    days = int(request.POST.get('days', 30))
+                except (ValueError, TypeError):
+                    days = 30
+                base_date = tenant.trial_ends_at if tenant.trial_ends_at and tenant.trial_ends_at > now else now
+                tenant.trial_ends_at = base_date + timedelta(days=days)
+                tenant.is_active = True
+                tenant.save()
+                messages.success(request, f'🎉 تم تمديد اشتراك "{tenant.name}" بمقدار {days} يوماً بنجاح حتى ({tenant.trial_ends_at.strftime("%Y-%m-%d")}).')
+
             elif action == 'update_subscription_date':
                 new_date = request.POST.get('expiry_date')
                 new_plan = request.POST.get('plan')
@@ -580,14 +678,24 @@ class SuperAdminView(View):
                 if new_plan and new_plan in ['trial', 'basic', 'pro']:
                     tenant.plan = new_plan
                 tenant.save()
-                messages.success(request, f'🎉 تم تحديث تمديد/تاريخ اشتراك شركة "{tenant.name}" إلى ({new_date or "بدون تغيير"}) بنجاح.')
+                messages.success(request, f'🎉 تم تحديث بيانات واشتراك شركة "{tenant.name}" بنجاح.')
+
+            elif action == 'impersonate':
+                # ضمان صلاحية الإدارة للسوبر يوزر على هذا المتجر
+                TenantUser.objects.get_or_create(tenant=tenant, user=request.user, defaults={'role': 'admin'})
+                request.session['tenant_id'] = tenant.id
+                messages.info(request, f'🔑 تم الدخول بصلاحية الإدارة الكاملة لمتجر "{tenant.name}".')
+                return redirect(f'/t/{tenant.slug}/dashboard/')
+
             elif action == 'delete_tenant':
                 name = tenant.name
                 owner = tenant.owner
                 tenant.delete()
-                if owner and not owner.is_superuser:
+                if owner and not owner.is_superuser and not owner.owned_tenants.exists():
                     owner.delete()
                 messages.success(request, f'🗑️ تم حذف شركة "{name}" وكافة بياناتها بنجاح.')
+
         except Tenant.DoesNotExist:
-            messages.error(request, 'الشركة غير موجودة.')
+            messages.error(request, 'الشركة المحددة غير موجودة.')
+
         return redirect('/superadmin/')

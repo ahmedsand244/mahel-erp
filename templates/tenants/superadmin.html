@@ -4,20 +4,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>لوحة تحكم المالك — النماء SuperAdmin</title>
-    <!-- Offline Fonts & Icons -->
+    <title>لوحة القيادة المركزية — النماء SuperAdmin</title>
+    
+    <!-- Offline Fonts & Material Icons -->
     <link href="{% static 'vendor/css/cairo-inter.css' %}" rel="stylesheet">
     <link href="{% static 'vendor/css/material-symbols.css' %}" rel="stylesheet">
-    <!-- Offline Tailwind CSS -->
+    
+    <!-- Offline Tailwind CSS & Alpine.js -->
     <script src="{% static 'vendor/js/tailwind.js' %}"></script>
+    <script defer src="{% static 'vendor/js/alpine.min.js' %}"></script>
+    
     <script>
         tailwind.config = {
+            darkMode: 'class',
             theme: {
                 extend: {
                     colors: {
                         brand: {
-                            500: '#2F81F7',
-                            600: '#1F6FEB',
+                            500: '#2563EB',
+                            600: '#1D4ED8',
+                            700: '#1E40AF',
                         }
                     },
                     fontFamily: { cairo: ['Cairo', 'sans-serif'] }
@@ -28,204 +34,667 @@
     <style>
         body { font-family: 'Cairo', sans-serif; background: #F8FAFC; color: #0F172A; min-height: 100vh; }
         .glass-card { background: #FFFFFF; border: 1px solid #E2E8F0; box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.05); }
+        [x-cloak] { display: none !important; }
     </style>
 </head>
-<body class="antialiased pb-12">
+<body class="antialiased pb-16" x-data="{
+    searchQuery: '',
+    filterTab: 'all',
+    showCreateModal: false,
+    selectedTenant: null,
+    
+    matchTenant(name, slug, owner, status, plan, isExpiring) {
+        const q = this.searchQuery.trim().toLowerCase();
+        const matchesQuery = !q || name.toLowerCase().includes(q) || slug.toLowerCase().includes(q) || owner.toLowerCase().includes(q);
+        
+        if (!matchesQuery) return false;
+        
+        if (this.filterTab === 'all') return true;
+        if (this.filterTab === 'active') return status === 'true';
+        if (this.filterTab === 'suspended') return status === 'false';
+        if (this.filterTab === 'trial') return plan === 'trial';
+        if (this.filterTab === 'pro') return plan === 'pro';
+        if (this.filterTab === 'expiring') return isExpiring === 'true';
+        
+        return true;
+    }
+}">
 
-    <!-- Header Bar -->
-    <header class="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-0 sm:h-20 flex flex-col sm:flex-row items-center justify-between gap-2.5">
-            <!-- Mobile Row 1: Logo + Title + Access Badge -->
-            <div class="flex items-center justify-between w-full sm:w-auto gap-2">
-                <div class="flex items-center gap-2.5">
-                    <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-gradient-to-tr from-brand-600 to-blue-400 flex items-center justify-center text-white font-black text-lg sm:text-xl shadow-md shadow-brand-500/20 shrink-0">
+    <!-- ─────────────────────────────────────────────────────────────
+         Top Navigation Bar
+         ───────────────────────────────────────────────────────────── -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm backdrop-blur-md bg-white/95">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-col sm:flex-row items-center justify-between gap-3">
+            
+            <!-- Brand & Access Badge -->
+            <div class="flex items-center justify-between w-full sm:w-auto gap-3">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-sky-400 flex items-center justify-center text-white font-black text-xl shadow-md shadow-blue-500/25 shrink-0 select-none">
                         ن
                     </div>
                     <div>
-                        <h1 class="text-sm sm:text-lg font-extrabold text-slate-900 leading-tight">لوحة تحكم المالك</h1>
-                        <span class="text-[10px] sm:text-xs text-slate-500 font-bold block">SuperAdmin Panel</span>
+                        <div class="flex items-center gap-2">
+                            <h1 class="text-base sm:text-lg font-black text-slate-900 leading-tight">إدارة المنظومة المركزية</h1>
+                            <span class="px-2 py-0.5 rounded-full bg-rose-50 border border-rose-200 text-rose-600 text-[10px] font-black shrink-0 flex items-center gap-1">
+                                <span class="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></span>
+                                SuperAdmin
+                            </span>
+                        </div>
+                        <span class="text-[11px] text-slate-500 font-bold block">التحكم في كافة الشركات والاشتراكات</span>
                     </div>
                 </div>
-                <span class="px-2.5 py-1 rounded-full bg-rose-50 border border-rose-200 text-rose-600 text-[10px] sm:text-xs font-black shrink-0">
-                    🔐 وصول كامل
-                </span>
+
+                <!-- Mobile Create Button Quick -->
+                <button type="button" 
+                        @click="showCreateModal = true"
+                        class="sm:hidden px-3 py-1.5 rounded-xl text-xs font-black bg-blue-600 text-white flex items-center gap-1 shadow-sm">
+                    <span class="material-symbols-outlined text-sm">add</span>
+                    <span>شركة</span>
+                </button>
             </div>
 
-            <!-- Mobile Row 2: Action Buttons -->
-            <div class="flex items-center justify-end gap-2 w-full sm:w-auto border-t sm:border-0 pt-2 sm:pt-0 border-slate-100">
-                <a href="/" class="px-3 py-1.5 rounded-xl text-xs font-extrabold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 transition-all flex items-center gap-1">
-                    <span class="material-symbols-outlined text-sm">home</span>
+            <!-- Header Actions -->
+            <div class="flex items-center justify-end gap-2.5 w-full sm:w-auto border-t sm:border-0 pt-2.5 sm:pt-0 border-slate-100">
+                <!-- Create New Tenant CTA Button -->
+                <button type="button" 
+                        @click="showCreateModal = true"
+                        class="hidden sm:inline-flex px-4 py-2 rounded-2xl text-xs font-black bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-md shadow-blue-500/20 transition-all active:scale-95 items-center gap-1.5 cursor-pointer">
+                    <span class="material-symbols-outlined text-base">add_business</span>
+                    <span>➕ إنشاء شركة جديدة</span>
+                </button>
+
+                <a href="/" class="px-3.5 py-2 rounded-2xl text-xs font-black text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 transition-all flex items-center gap-1">
+                    <span class="material-symbols-outlined text-base">home</span>
                     <span>الموقع الرئيسي</span>
                 </a>
-                <a href="/logout/" class="px-3 py-1.5 rounded-xl text-xs font-extrabold bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 transition-all flex items-center gap-1">
-                    <span class="material-symbols-outlined text-sm">logout</span>
-                    <span>تسجيل الخروج</span>
+
+                <a href="/logout/" class="px-3.5 py-2 rounded-2xl text-xs font-black bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 transition-all flex items-center gap-1">
+                    <span class="material-symbols-outlined text-base">logout</span>
+                    <span>خروج</span>
                 </a>
             </div>
         </div>
     </header>
 
-    <!-- Main Container -->
+    <!-- ─────────────────────────────────────────────────────────────
+         Main Content Canvas
+         ───────────────────────────────────────────────────────────── -->
     <main class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-6 sm:pt-8 space-y-6 sm:space-y-8">
 
-        <!-- Stats Cards Grid -->
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
-            <div class="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-6 text-right space-y-1 sm:space-y-2 border-r-4 border-r-brand-500">
-                <span class="text-[11px] sm:text-xs text-slate-500 font-extrabold block">إجمالي الشركات</span>
-                <span class="text-2xl sm:text-4xl font-black text-slate-900 font-mono">{{ total_tenants }}</span>
+        <!-- ════════════════════════════════════════════════════════════
+             1. Stats KPI Cards Grid
+             ════════════════════════════════════════════════════════════ -->
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+            
+            <!-- 1. Total Tenants -->
+            <div class="glass-card rounded-3xl p-4 sm:p-5 text-right space-y-1 border-r-4 border-r-blue-600">
+                <div class="flex items-center justify-between">
+                    <span class="text-[11px] sm:text-xs text-slate-500 font-extrabold">إجمالي الشركات</span>
+                    <span class="material-symbols-outlined text-blue-600 text-xl">domain</span>
+                </div>
+                <div class="text-2xl sm:text-3xl font-black text-slate-900 font-mono">{{ total_tenants }}</div>
+                <span class="text-[10px] text-slate-400 font-bold block">مسجلة بالنظام</span>
             </div>
 
-            <div class="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-6 text-right space-y-1 sm:space-y-2 border-r-4 border-r-emerald-500">
-                <span class="text-[11px] sm:text-xs text-slate-500 font-extrabold block">الشركات المفعّلة</span>
-                <span class="text-2xl sm:text-4xl font-black text-emerald-600 font-mono">{{ active_tenants }}</span>
+            <!-- 2. Active Tenants -->
+            <div class="glass-card rounded-3xl p-4 sm:p-5 text-right space-y-1 border-r-4 border-r-emerald-500">
+                <div class="flex items-center justify-between">
+                    <span class="text-[11px] sm:text-xs text-slate-500 font-extrabold">الشركات المفعّلة</span>
+                    <span class="material-symbols-outlined text-emerald-600 text-xl">check_circle</span>
+                </div>
+                <div class="text-2xl sm:text-3xl font-black text-emerald-600 font-mono">{{ active_tenants }}</div>
+                <span class="text-[10px] text-emerald-600/80 font-bold block">تعمل ونشطة</span>
             </div>
 
-            <div class="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-6 text-right space-y-1 sm:space-y-2 border-r-4 border-r-amber-500">
-                <span class="text-[11px] sm:text-xs text-slate-500 font-extrabold block">فترة التجربة (14 يوم)</span>
-                <span class="text-2xl sm:text-4xl font-black text-amber-600 font-mono">{{ trial_tenants }}</span>
+            <!-- 3. Suspended Tenants (Fixed: Accurate Count) -->
+            <div class="glass-card rounded-3xl p-4 sm:p-5 text-right space-y-1 border-r-4 border-r-rose-500">
+                <div class="flex items-center justify-between">
+                    <span class="text-[11px] sm:text-xs text-slate-500 font-extrabold">الشركات الموقوفة</span>
+                    <span class="material-symbols-outlined text-rose-600 text-xl">block</span>
+                </div>
+                <div class="text-2xl sm:text-3xl font-black text-rose-600 font-mono">{{ suspended_tenants }}</div>
+                <span class="text-[10px] text-rose-500 font-bold block">موقوفة عن الخدمة</span>
             </div>
 
-            <div class="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-6 text-right space-y-1 sm:space-y-2 border-r-4 border-r-rose-500">
-                <span class="text-[11px] sm:text-xs text-slate-500 font-extrabold block">الشركات الموقوفة</span>
-                <span class="text-2xl sm:text-4xl font-black text-rose-600 font-mono">{{ total_tenants|add:"-"|add:active_tenants }}</span>
+            <!-- 4. Trial Accounts -->
+            <div class="glass-card rounded-3xl p-4 sm:p-5 text-right space-y-1 border-r-4 border-r-amber-500">
+                <div class="flex items-center justify-between">
+                    <span class="text-[11px] sm:text-xs text-slate-500 font-extrabold">فترة التجربة (Trial)</span>
+                    <span class="material-symbols-outlined text-amber-600 text-xl">hourglass_top</span>
+                </div>
+                <div class="text-2xl sm:text-3xl font-black text-amber-600 font-mono">{{ trial_tenants }}</div>
+                <span class="text-[10px] text-amber-600/80 font-bold block">14 يوم مجانية</span>
             </div>
+
+            <!-- 5. Pro & Basic Paid Plans -->
+            <div class="glass-card rounded-3xl p-4 sm:p-5 text-right space-y-1 border-r-4 border-r-indigo-600 col-span-2 sm:col-span-1">
+                <div class="flex items-center justify-between">
+                    <span class="text-[11px] sm:text-xs text-slate-500 font-extrabold">الاشتراكات المدفوعة</span>
+                    <span class="material-symbols-outlined text-indigo-600 text-xl">workspace_premium</span>
+                </div>
+                <div class="text-2xl sm:text-3xl font-black text-indigo-600 font-mono">{{ pro_tenants|add:basic_tenants }}</div>
+                <span class="text-[10px] text-indigo-600 font-bold block">{{ pro_tenants }} Pro • {{ basic_tenants }} Basic</span>
+            </div>
+
         </div>
 
+        <!-- Expiring Soon Alert Banner (If Any) -->
+        {% if expiring_soon_tenants > 0 %}
+        <div class="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between gap-3 text-xs sm:text-sm text-amber-800">
+            <div class="flex items-center gap-2 font-black">
+                <span class="material-symbols-outlined text-amber-600 text-xl">warning</span>
+                <span>تنبيه اشتراكات: يوجد <strong>{{ expiring_soon_tenants }}</strong> شركات تنتهي فترة اشتراكها خلال أقل من 7 أيام!</span>
+            </div>
+            <button type="button" @click="filterTab = 'expiring'" class="px-3 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-black text-xs transition-all shrink-0">
+                عرض الشركات المنتهية قريباً
+            </button>
+        </div>
+        {% endif %}
+
+        <!-- Django Flash Messages -->
         {% if messages %}
             <div class="space-y-2">
                 {% for message in messages %}
-                    <div class="p-3.5 sm:p-4 rounded-2xl text-xs font-extrabold flex items-center gap-2 {% if message.tags == 'error' %}bg-rose-50 border border-rose-200 text-rose-600{% else %}bg-emerald-50 border border-emerald-200 text-emerald-600{% endif %}">
-                        <span class="material-symbols-outlined text-base">info</span>
+                    <div class="p-4 rounded-2xl text-xs sm:text-sm font-black flex items-center gap-2.5 shadow-sm {% if message.tags == 'error' %}bg-rose-50 border border-rose-200 text-rose-700{% else %}bg-emerald-50 border border-emerald-200 text-emerald-700{% endif %}">
+                        <span class="material-symbols-outlined text-lg">{% if message.tags == 'error' %}error{% else %}verified{% endif %}</span>
                         <span>{{ message }}</span>
                     </div>
                 {% endfor %}
             </div>
         {% endif %}
 
-        <!-- Tenants Table -->
-        <div class="glass-card rounded-2xl sm:rounded-3xl overflow-hidden border border-slate-200">
-            <div class="p-4 sm:p-6 border-b border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 bg-slate-50/50">
-                <div class="flex items-center gap-2">
-                    <span class="material-symbols-outlined text-brand-600 text-xl sm:text-2xl">business</span>
-                    <h2 class="text-sm sm:text-lg font-black text-slate-900">جميع الشركات المسجّلة بالنظام</h2>
+        <!-- ════════════════════════════════════════════════════════════
+             2. Search Bar & Interactive Filter Tabs
+             ════════════════════════════════════════════════════════════ -->
+        <div class="glass-card rounded-3xl p-4 sm:p-5 space-y-4">
+            <div class="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+                
+                <!-- Live Search Box -->
+                <div class="relative flex-1 max-w-md">
+                    <input type="text" 
+                           x-model="searchQuery"
+                           placeholder="بحث باسم الشركة، الرابط (Slug)، أو اسم المالك..."
+                           class="w-full px-4 py-2.5 sm:py-3 rounded-2xl text-xs sm:text-sm font-bold bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-blue-600 focus:bg-white focus:outline-none transition-all pr-10">
+                    <span class="material-symbols-outlined absolute right-3 top-2.5 sm:top-3 text-slate-400 text-lg pointer-events-none">search</span>
+                    <button type="button" 
+                            x-show="searchQuery" 
+                            @click="searchQuery = ''"
+                            class="absolute left-3 top-2.5 sm:top-3 text-slate-400 hover:text-slate-600">
+                        <span class="material-symbols-outlined text-base">close</span>
+                    </button>
                 </div>
-                <span class="text-[10px] sm:text-xs font-bold text-slate-500">يمكنك الإيقاف والتفعيل والترقية فوراً</span>
+
+                <!-- Filter Pills -->
+                <div class="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 text-xs font-black select-none">
+                    <button type="button" 
+                            @click="filterTab = 'all'"
+                            :class="filterTab === 'all' ? 'bg-blue-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'"
+                            class="px-3.5 py-2 rounded-2xl transition-all whitespace-nowrap cursor-pointer">
+                        الكل ({{ total_tenants }})
+                    </button>
+
+                    <button type="button" 
+                            @click="filterTab = 'active'"
+                            :class="filterTab === 'active' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'"
+                            class="px-3.5 py-2 rounded-2xl transition-all whitespace-nowrap cursor-pointer">
+                        مفعّلة ({{ active_tenants }})
+                    </button>
+
+                    <button type="button" 
+                            @click="filterTab = 'suspended'"
+                            :class="filterTab === 'suspended' ? 'bg-rose-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'"
+                            class="px-3.5 py-2 rounded-2xl transition-all whitespace-nowrap cursor-pointer">
+                        موقوفة ({{ suspended_tenants }})
+                    </button>
+
+                    <button type="button" 
+                            @click="filterTab = 'trial'"
+                            :class="filterTab === 'trial' ? 'bg-amber-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'"
+                            class="px-3.5 py-2 rounded-2xl transition-all whitespace-nowrap cursor-pointer">
+                        تجربة ({{ trial_tenants }})
+                    </button>
+
+                    <button type="button" 
+                            @click="filterTab = 'pro'"
+                            :class="filterTab === 'pro' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'"
+                            class="px-3.5 py-2 rounded-2xl transition-all whitespace-nowrap cursor-pointer">
+                        احترافية Pro ({{ pro_tenants }})
+                    </button>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- ════════════════════════════════════════════════════════════
+             3. Tenants Directory (Desktop Table + Mobile Cards)
+             ════════════════════════════════════════════════════════════ -->
+        <div class="glass-card rounded-3xl overflow-hidden border border-slate-200 shadow-sm">
+            <div class="p-4 sm:p-5 border-b border-slate-200 flex items-center justify-between bg-slate-50/70">
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-blue-600 text-xl sm:text-2xl">apartment</span>
+                    <h2 class="text-sm sm:text-base font-black text-slate-900">سجل الشركات والعملاء</h2>
+                </div>
+                <span class="text-xs font-bold text-slate-500">
+                    إجمالي النتائج: {{ total_tenants }} شركة
+                </span>
             </div>
 
-            <div class="overflow-x-auto">
-                <table class="w-full text-right text-xs sm:text-sm min-w-[700px]">
+            <!-- Desktop View Table (hidden on small mobile) -->
+            <div class="overflow-x-auto hidden md:block">
+                <table class="w-full text-right text-xs sm:text-sm">
                     <thead>
-                        <tr class="bg-slate-100/70 border-b border-slate-200 text-[11px] sm:text-xs font-extrabold text-slate-600">
-                            <th class="py-3 sm:py-4 px-4 sm:px-6 whitespace-nowrap">اسم الشركة</th>
-                            <th class="py-3 sm:py-4 px-4 sm:px-6 whitespace-nowrap">الرابط المخصص</th>
-                            <th class="py-3 sm:py-4 px-4 sm:px-6 whitespace-nowrap">الباقة الحالية</th>
-                            <th class="py-3 sm:py-4 px-4 sm:px-6 whitespace-nowrap">انتهاء التجديد / التجربة</th>
-                            <th class="py-3 sm:py-4 px-4 sm:px-6 whitespace-nowrap">حالة الاشتراك</th>
-                            <th class="py-3 sm:py-4 px-4 sm:px-6 whitespace-nowrap">المالك</th>
-                            <th class="py-3 sm:py-4 px-4 sm:px-6 whitespace-nowrap">التسجيل</th>
-                            <th class="py-3 sm:py-4 px-4 sm:px-6 whitespace-nowrap text-left">تحديد تاريخ الترقية والتجديد</th>
+                        <tr class="bg-slate-100/80 border-b border-slate-200 text-[11px] sm:text-xs font-black text-slate-600">
+                            <th class="py-3.5 px-4 whitespace-nowrap">الشركة / المتجر</th>
+                            <th class="py-3.5 px-3 whitespace-nowrap">الرابط المباشر</th>
+                            <th class="py-3.5 px-3 whitespace-nowrap">الباقة</th>
+                            <th class="py-3.5 px-3 whitespace-nowrap">تاريخ الانتهاء</th>
+                            <th class="py-3.5 px-3 whitespace-nowrap">الحالة</th>
+                            <th class="py-3.5 px-3 whitespace-nowrap">المالك</th>
+                            <th class="py-3.5 px-3 whitespace-nowrap">تمديد سريع</th>
+                            <th class="py-3.5 px-4 whitespace-nowrap text-left">إجراءات التحكم</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-200 font-semibold">
-                        {% for tenant in tenants %}
-                            <tr class="hover:bg-slate-50 transition-colors">
-                                <td class="py-3.5 sm:py-4 px-4 sm:px-6 font-black text-slate-900 whitespace-nowrap">{{ tenant.name }}</td>
-                                <td class="py-3.5 sm:py-4 px-4 sm:px-6 whitespace-nowrap">
-                                    <a href="/t/{{ tenant.slug }}/" target="_blank" class="font-mono text-[11px] sm:text-xs font-bold text-brand-600 hover:underline bg-brand-50 px-2.5 py-1 rounded-lg border border-brand-200 inline-block" dir="ltr">
-                                        /t/{{ tenant.slug }}/
+                        {% for item in tenants_data %}
+                        {% with tenant=item.obj %}
+                        <tr class="hover:bg-slate-50/80 transition-colors"
+                            x-show="matchTenant('{{ tenant.name|escapejs }}', '{{ tenant.slug|escapejs }}', '{{ tenant.owner.username|escapejs }}', '{{ tenant.is_active|lower }}', '{{ tenant.plan }}', '{% if item.days_left is not None and item.days_left <= 7 and item.days_left >= 0 %}true{% else %}false{% endif %}')">
+                            
+                            <!-- Company Name -->
+                            <td class="py-4 px-4 whitespace-nowrap">
+                                <div class="font-black text-slate-900 text-sm flex items-center gap-2">
+                                    <span>{{ tenant.name }}</span>
+                                    {% if tenant.phone %}
+                                    <a href="https://wa.me/20{{ tenant.phone|cut:' ' }}?text=مرحباً، بخصوص حسابكم في نظام النماء ERP" 
+                                       target="_blank" 
+                                       title="مراسلة واتساب: {{ tenant.phone }}"
+                                       class="text-emerald-600 hover:text-emerald-700 p-0.5">
+                                        <span class="material-symbols-outlined text-base">chat</span>
                                     </a>
-                                </td>
-                                <td class="py-3.5 sm:py-4 px-4 sm:px-6 whitespace-nowrap">
-                                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full text-[11px] sm:text-xs font-extrabold 
-                                        {% if tenant.plan == 'trial' %}bg-amber-50 text-amber-700 border border-amber-200
-                                        {% elif tenant.plan == 'basic' %}bg-blue-50 text-blue-700 border border-blue-200
-                                        {% else %}bg-emerald-50 text-emerald-700 border border-emerald-200{% endif %}">
-                                        {% if tenant.plan == 'trial' %}⏳ تجربة
-                                        {% elif tenant.plan == 'basic' %}⚡ أساسية
-                                        {% else %}🚀 احترافية Pro{% endif %}
+                                    {% endif %}
+                                </div>
+                                <span class="text-[11px] text-slate-400 font-normal">سُجل بتاريخ: {{ tenant.created_at|date:"Y/m/d" }}</span>
+                            </td>
+
+                            <!-- Slug Link -->
+                            <td class="py-4 px-3 whitespace-nowrap">
+                                <a href="/t/{{ tenant.slug }}/" target="_blank" class="font-mono text-[11px] font-bold text-blue-600 hover:underline bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-200 inline-flex items-center gap-1" dir="ltr">
+                                    <span>/t/{{ tenant.slug }}/</span>
+                                    <span class="material-symbols-outlined text-[12px]">open_in_new</span>
+                                </a>
+                            </td>
+
+                            <!-- Plan Badge -->
+                            <td class="py-4 px-3 whitespace-nowrap">
+                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-black
+                                    {% if tenant.plan == 'trial' %}bg-amber-50 text-amber-700 border border-amber-200
+                                    {% elif tenant.plan == 'basic' %}bg-sky-50 text-sky-700 border border-sky-200
+                                    {% else %}bg-indigo-50 text-indigo-700 border border-indigo-200{% endif %}">
+                                    {% if tenant.plan == 'trial' %}⏳ تجربة 14 يوم
+                                    {% elif tenant.plan == 'basic' %}⚡ أساسية
+                                    {% else %}🚀 Pro احترافية{% endif %}
+                                </span>
+                            </td>
+
+                            <!-- Expiry & Remaining Days -->
+                            <td class="py-4 px-3 whitespace-nowrap">
+                                <div class="space-y-0.5">
+                                    <span class="font-mono text-xs font-bold text-slate-800 block">
+                                        {{ tenant.trial_ends_at|date:"Y/m/d"|default:"غير محدد" }}
                                     </span>
-                                </td>
-                                <td class="py-3.5 sm:py-4 px-4 sm:px-6 whitespace-nowrap">
-                                    <div class="space-y-0.5">
-                                        <span class="font-mono text-xs font-bold text-slate-800 block">
-                                            {{ tenant.trial_ends_at|date:"Y/m/d"|default:"غير محدد" }}
-                                        </span>
-                                    </div>
-                                </td>
-                                <td class="py-3.5 sm:py-4 px-4 sm:px-6 whitespace-nowrap">
-                                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full text-[11px] sm:text-xs font-extrabold 
-                                        {% if tenant.is_active %}bg-emerald-50 text-emerald-700 border border-emerald-200
-                                        {% else %}bg-rose-50 text-rose-700 border border-rose-200{% endif %}">
-                                        {% if tenant.is_active %}✅ مفعّلة{% else %}⛔ موقوفة{% endif %}
-                                    </span>
-                                </td>
-                                <td class="py-3.5 sm:py-4 px-4 sm:px-6 text-slate-600 text-xs font-bold whitespace-nowrap">{{ tenant.owner.username }}</td>
-                                <td class="py-3.5 sm:py-4 px-4 sm:px-6 text-slate-500 font-mono text-[11px] sm:text-xs whitespace-nowrap">{{ tenant.created_at|date:"Y/m/d" }}</td>
-                                <td class="py-3.5 sm:py-4 px-4 sm:px-6 text-left whitespace-nowrap">
-                                    <div class="flex items-center justify-end gap-1.5 flex-wrap">
-                                        <!-- Inline Subscription Date & Plan Upgrade Form -->
-                                        <form method="post" class="flex items-center gap-1 bg-slate-100 p-1.5 rounded-xl border border-slate-200 shadow-sm">
-                                            {% csrf_token %}
-                                            <input type="hidden" name="tenant_id" value="{{ tenant.id }}">
-                                            <input type="hidden" name="action" value="update_subscription_date">
-                                            
-                                            <select name="plan" title="نوع الباقة" class="text-[11px] font-bold py-1 px-1.5 rounded-lg border border-slate-300 bg-white text-slate-800 focus:outline-none">
-                                                <option value="trial" {% if tenant.plan == 'trial' %}selected{% endif %}>تجربة</option>
-                                                <option value="basic" {% if tenant.plan == 'basic' %}selected{% endif %}>أساسية</option>
-                                                <option value="pro" {% if tenant.plan == 'pro' %}selected{% endif %}>Pro احترافية</option>
-                                            </select>
+                                    {% if item.days_left is not None %}
+                                        {% if item.days_left < 0 %}
+                                            <span class="text-[10px] font-black text-rose-600 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">
+                                                منتهي منذ {{ item.days_left|stringformat:"+d"|slice:"1:" }} يوم ⛔
+                                            </span>
+                                        {% elif item.days_left <= 7 %}
+                                            <span class="text-[10px] font-black text-amber-600 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 animate-pulse">
+                                                متبقي {{ item.days_left }} يوم فقط ⚠️
+                                            </span>
+                                        {% else %}
+                                            <span class="text-[10px] font-bold text-emerald-600">
+                                                متبقي {{ item.days_left }} يوم
+                                            </span>
+                                        {% endif %}
+                                    {% endif %}
+                                </div>
+                            </td>
 
-                                            <input type="date" name="expiry_date" value="{{ tenant.trial_ends_at|date:'Y-m-d' }}" 
-                                                   title="تاريخ انتهاء الاشتراك / التجديد"
-                                                   class="text-[11px] font-mono font-bold py-1 px-1.5 rounded-lg border border-slate-300 bg-white text-slate-800 focus:outline-none">
+                            <!-- Active / Suspended Status -->
+                            <td class="py-4 px-3 whitespace-nowrap">
+                                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black
+                                    {% if tenant.is_active %}bg-emerald-50 text-emerald-700 border border-emerald-200
+                                    {% else %}bg-rose-50 text-rose-700 border border-rose-200{% endif %}">
+                                    <span class="w-1.5 h-1.5 rounded-full {% if tenant.is_active %}bg-emerald-500{% else %}bg-rose-500{% endif %}"></span>
+                                    <span>{% if tenant.is_active %}مفعّلة{% else %}موقوفة{% endif %}</span>
+                                </span>
+                            </td>
 
-                                            <button type="submit" title="حفظ وتحديد التاريخ" 
-                                                    class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[11px] font-extrabold transition-all flex items-center gap-0.5 shadow-sm">
-                                                <span class="material-symbols-outlined text-xs">event_available</span>
-                                                <span>حفظ والتحديث</span>
-                                            </button>
-                                        </form>
+                            <!-- Owner -->
+                            <td class="py-4 px-3 whitespace-nowrap">
+                                <div class="font-bold text-slate-800 text-xs">{{ tenant.owner.username }}</div>
+                                <span class="text-[10px] text-slate-400 font-mono">{{ tenant.owner.email|default:"بدون إيميل" }}</span>
+                            </td>
 
-                                        <a href="/t/{{ tenant.slug }}/" target="_blank" class="px-2.5 py-1.5 rounded-xl text-[11px] sm:text-xs font-extrabold bg-brand-50 text-brand-600 hover:bg-brand-100 border border-brand-200 transition-all flex items-center gap-1">
-                                            <span class="material-symbols-outlined text-sm">open_in_new</span>
-                                            <span>دخول</span>
-                                        </a>
+                            <!-- Quick Extend Buttons -->
+                            <td class="py-4 px-3 whitespace-nowrap">
+                                <div class="flex items-center gap-1">
+                                    <form method="post" class="inline">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="tenant_id" value="{{ tenant.id }}">
+                                        <input type="hidden" name="action" value="quick_extend">
+                                        <input type="hidden" name="days" value="30">
+                                        <button type="submit" title="تمديد شهر كامل (30 يوم)" class="px-2 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-lg text-[10px] font-black transition-all cursor-pointer">
+                                            + شهر
+                                        </button>
+                                    </form>
 
-                                        <form method="post" class="inline">
-                                            {% csrf_token %}
-                                            <input type="hidden" name="tenant_id" value="{{ tenant.id }}">
-                                            <input type="hidden" name="action" value="toggle_active">
-                                            <button type="submit" class="px-2.5 py-1.5 rounded-xl text-[11px] sm:text-xs font-extrabold border transition-all {% if tenant.is_active %}bg-rose-50 text-rose-600 border-rose-200 hover:bg-rose-100{% else %}bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100{% endif %}">
-                                                {% if tenant.is_active %}إيقاف{% else %}تفعيل{% endif %}
-                                            </button>
-                                        </form>
+                                    <form method="post" class="inline">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="tenant_id" value="{{ tenant.id }}">
+                                        <input type="hidden" name="action" value="quick_extend">
+                                        <input type="hidden" name="days" value="90">
+                                        <button type="submit" title="تمديد 3 أشهر (90 يوم)" class="px-2 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg text-[10px] font-black transition-all cursor-pointer">
+                                            + 3 أشهر
+                                        </button>
+                                    </form>
 
-                                        <form method="post" class="inline" onsubmit="return confirm('⚠️ هل أنت متأكد من حذف شركة ({{ tenant.name|escapejs }}) وكافة بياناتها نهائياً؟ هذا الإجراء لا يمكن التراجع عنه!');">
-                                            {% csrf_token %}
-                                            <input type="hidden" name="tenant_id" value="{{ tenant.id }}">
-                                            <input type="hidden" name="action" value="delete_tenant">
-                                            <button type="submit" class="px-2.5 py-1.5 rounded-xl text-[11px] sm:text-xs font-extrabold bg-red-600 hover:bg-red-700 text-white shadow-sm transition-all flex items-center gap-1">
-                                                <span class="material-symbols-outlined text-xs">delete</span>
-                                                <span>حذف</span>
-                                            </button>
-                                        </form>
-                                    </div>
-                                </td>
-                            </tr>
+                                    <form method="post" class="inline">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="tenant_id" value="{{ tenant.id }}">
+                                        <input type="hidden" name="action" value="quick_extend">
+                                        <input type="hidden" name="days" value="365">
+                                        <button type="submit" title="تمديد سنة كاملة (365 يوم)" class="px-2 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-lg text-[10px] font-black transition-all cursor-pointer">
+                                            + سنة
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+
+                            <!-- Actions -->
+                            <td class="py-4 px-4 text-left whitespace-nowrap">
+                                <div class="flex items-center justify-end gap-1.5">
+                                    
+                                    <!-- Impersonate / Direct Login as Store Admin -->
+                                    <form method="post" class="inline">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="tenant_id" value="{{ tenant.id }}">
+                                        <input type="hidden" name="action" value="impersonate">
+                                        <button type="submit" 
+                                                title="تسجيل الدخول كمدير لهذا المتجر مباشرة"
+                                                class="px-2.5 py-1.5 rounded-xl text-xs font-black bg-blue-600 hover:bg-blue-700 text-white shadow-sm transition-all flex items-center gap-1 cursor-pointer active:scale-95">
+                                            <span class="material-symbols-outlined text-sm">login</span>
+                                            <span>دخول للمتجر</span>
+                                        </button>
+                                    </form>
+
+                                    <!-- Date & Plan Inline Form -->
+                                    <form method="post" class="inline-flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="tenant_id" value="{{ tenant.id }}">
+                                        <input type="hidden" name="action" value="update_subscription_date">
+                                        
+                                        <select name="plan" class="text-[11px] font-black py-1 px-1.5 rounded-lg border border-slate-300 bg-white text-slate-800">
+                                            <option value="trial" {% if tenant.plan == 'trial' %}selected{% endif %}>تجربة</option>
+                                            <option value="basic" {% if tenant.plan == 'basic' %}selected{% endif %}>أساسية</option>
+                                            <option value="pro" {% if tenant.plan == 'pro' %}selected{% endif %}>Pro</option>
+                                        </select>
+
+                                        <input type="date" name="expiry_date" value="{{ tenant.trial_ends_at|date:'Y-m-d' }}" 
+                                               class="text-[11px] font-mono font-bold py-1 px-1.5 rounded-lg border border-slate-300 bg-white text-slate-800">
+
+                                        <button type="submit" title="حفظ التعديل" class="px-2 py-1 bg-slate-800 hover:bg-black text-white rounded-lg text-[10px] font-black transition-all">
+                                            تحديث
+                                        </button>
+                                    </form>
+
+                                    <!-- Toggle Active / Suspended -->
+                                    <form method="post" class="inline">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="tenant_id" value="{{ tenant.id }}">
+                                        <input type="hidden" name="action" value="toggle_active">
+                                        <button type="submit" 
+                                                title="{% if tenant.is_active %}إيقاف الشركة عن العمل{% else %}تفعيل الشركة{% endif %}"
+                                                class="px-2.5 py-1.5 rounded-xl text-xs font-black border transition-all cursor-pointer {% if tenant.is_active %}bg-rose-50 text-rose-600 border-rose-200 hover:bg-rose-100{% else %}bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100{% endif %}">
+                                            {% if tenant.is_active %}إيقاف ⛔{% else %}تفعيل ✅{% endif %}
+                                        </button>
+                                    </form>
+
+                                    <!-- Delete Tenant -->
+                                    <form method="post" class="inline" onsubmit="return confirm('⚠️ هل أنت متأكد تماماً من حذف شركة ({{ tenant.name|escapejs }}) وكافة بياناتها؟ لا يمكن التراجع!');">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="tenant_id" value="{{ tenant.id }}">
+                                        <input type="hidden" name="action" value="delete_tenant">
+                                        <button type="submit" title="حذف الشركة نهائياً" class="p-1.5 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-all cursor-pointer">
+                                            <span class="material-symbols-outlined text-base">delete</span>
+                                        </button>
+                                    </form>
+
+                                </div>
+                            </td>
+
+                        </tr>
+                        {% endwith %}
                         {% empty %}
-                            <tr>
-                                <td colspan="8" class="py-12 text-center text-slate-400 text-xs font-bold">
-                                    <span class="material-symbols-outlined text-3xl text-slate-300 block mb-2">business_center</span>
-                                    لا توجد شركات مسجلة في النظام بعد
-                                </td>
-                            </tr>
+                        <tr>
+                            <td colspan="8" class="py-12 text-center text-slate-400 text-xs font-bold">
+                                لا توجد شركات مسجلة في النظام بعد
+                            </td>
+                        </tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
+
+            <!-- Mobile View: Clean Responsive Cards (Visible only on mobile screens) -->
+            <div class="block md:hidden divide-y divide-slate-100">
+                {% for item in tenants_data %}
+                {% with tenant=item.obj %}
+                <div class="p-4 space-y-3"
+                     x-show="matchTenant('{{ tenant.name|escapejs }}', '{{ tenant.slug|escapejs }}', '{{ tenant.owner.username|escapejs }}', '{{ tenant.is_active|lower }}', '{{ tenant.plan }}', '{% if item.days_left is not None and item.days_left <= 7 and item.days_left >= 0 %}true{% else %}false{% endif %}')">
+                    
+                    <!-- Row 1: Name + Status Pill -->
+                    <div class="flex items-start justify-between gap-2">
+                        <div>
+                            <h3 class="font-black text-slate-900 text-sm sm:text-base">{{ tenant.name }}</h3>
+                            <a href="/t/{{ tenant.slug }}/" target="_blank" class="font-mono text-xs text-blue-600 font-bold block" dir="ltr">
+                                /t/{{ tenant.slug }}/
+                            </a>
+                        </div>
+                        <span class="px-2.5 py-1 rounded-full text-xs font-black shrink-0
+                            {% if tenant.is_active %}bg-emerald-50 text-emerald-700 border border-emerald-200
+                            {% else %}bg-rose-50 text-rose-700 border border-rose-200{% endif %}">
+                            {% if tenant.is_active %}مفعّلة ✅{% else %}موقوفة ⛔{% endif %}
+                        </span>
+                    </div>
+
+                    <!-- Row 2: Badges & Info -->
+                    <div class="flex flex-wrap items-center gap-2 text-xs">
+                        <span class="px-2 py-0.5 rounded-md font-bold
+                            {% if tenant.plan == 'trial' %}bg-amber-50 text-amber-700 border border-amber-200
+                            {% elif tenant.plan == 'basic' %}bg-sky-50 text-sky-700 border border-sky-200
+                            {% else %}bg-indigo-50 text-indigo-700 border border-indigo-200{% endif %}">
+                            خطة: {{ tenant.get_plan_display }}
+                        </span>
+
+                        <span class="text-slate-500 font-mono">
+                            انتهاء: {{ tenant.trial_ends_at|date:"Y/m/d"|default:"غير محدد" }}
+                        </span>
+
+                        {% if item.days_left is not None %}
+                            {% if item.days_left < 0 %}
+                            <span class="text-rose-600 font-black">منتهي منذ {{ item.days_left|stringformat:"+d"|slice:"1:" }} يوم</span>
+                            {% else %}
+                            <span class="text-emerald-600 font-bold">متبقي {{ item.days_left }} يوم</span>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+
+                    <!-- Row 3: Quick Extend Mobile -->
+                    <div class="flex items-center gap-1.5 pt-1">
+                        <span class="text-[11px] font-bold text-slate-500">تمديد سريع:</span>
+                        <form method="post" class="inline">
+                            {% csrf_token %}
+                            <input type="hidden" name="tenant_id" value="{{ tenant.id }}">
+                            <input type="hidden" name="action" value="quick_extend">
+                            <input type="hidden" name="days" value="30">
+                            <button type="submit" class="px-2.5 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg text-xs font-black">+ شهر</button>
+                        </form>
+                        <form method="post" class="inline">
+                            {% csrf_token %}
+                            <input type="hidden" name="tenant_id" value="{{ tenant.id }}">
+                            <input type="hidden" name="action" value="quick_extend">
+                            <input type="hidden" name="days" value="90">
+                            <button type="submit" class="px-2.5 py-1 bg-blue-50 text-blue-700 border border-blue-200 rounded-lg text-xs font-black">+ 3 أشهر</button>
+                        </form>
+                    </div>
+
+                    <!-- Row 4: Primary Action Buttons -->
+                    <div class="flex items-center gap-2 pt-2 border-t border-slate-100">
+                        <form method="post" class="flex-1">
+                            {% csrf_token %}
+                            <input type="hidden" name="tenant_id" value="{{ tenant.id }}">
+                            <input type="hidden" name="action" value="impersonate">
+                            <button type="submit" class="w-full py-2 rounded-xl text-xs font-black bg-blue-600 text-white flex items-center justify-center gap-1">
+                                <span class="material-symbols-outlined text-sm">login</span>
+                                <span>دخول المتجر</span>
+                            </button>
+                        </form>
+
+                        <form method="post" class="shrink-0">
+                            {% csrf_token %}
+                            <input type="hidden" name="tenant_id" value="{{ tenant.id }}">
+                            <input type="hidden" name="action" value="toggle_active">
+                            <button type="submit" class="px-3 py-2 rounded-xl text-xs font-black border {% if tenant.is_active %}bg-rose-50 text-rose-600 border-rose-200{% else %}bg-emerald-50 text-emerald-600 border-emerald-200{% endif %}">
+                                {% if tenant.is_active %}إيقاف{% else %}تفعيل{% endif %}
+                            </button>
+                        </form>
+
+                        <form method="post" class="shrink-0" onsubmit="return confirm('حذف شركة {{ tenant.name }} نهائياً؟');">
+                            {% csrf_token %}
+                            <input type="hidden" name="tenant_id" value="{{ tenant.id }}">
+                            <input type="hidden" name="action" value="delete_tenant">
+                            <button type="submit" class="p-2 rounded-xl text-rose-600 bg-rose-50 border border-rose-200">
+                                <span class="material-symbols-outlined text-base">delete</span>
+                            </button>
+                        </form>
+                    </div>
+
+                </div>
+                {% endwith %}
+                {% endfor %}
+            </div>
+
         </div>
 
     </main>
+
+    <!-- ─────────────────────────────────────────────────────────────
+         Modal: إنشاء شركة جديدة يدوياً من SuperAdmin
+         ───────────────────────────────────────────────────────────── -->
+    <div x-cloak 
+         class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4"
+         x-show="showCreateModal" 
+         style="display: none;"
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="opacity-0 scale-95"
+         x-transition:enter-end="opacity-100 scale-100"
+         x-transition:leave="transition ease-in duration-150"
+         x-transition:leave-start="opacity-100 scale-100"
+         x-transition:leave-end="opacity-0 scale-95">
+
+        <div class="glass-card max-w-lg w-full rounded-3xl p-6 sm:p-7 space-y-5 text-right shadow-2xl relative" 
+             @click.away="showCreateModal = false">
+
+            <!-- Modal Header -->
+            <div class="flex items-center justify-between border-b border-slate-200 pb-3">
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-blue-600 text-2xl">add_business</span>
+                    <h3 class="text-base sm:text-lg font-black text-slate-900">إنشاء شركة / عميل جديد</h3>
+                </div>
+                <button type="button" 
+                        @click="showCreateModal = false" 
+                        class="text-slate-400 hover:text-slate-700 p-1 rounded-full hover:bg-slate-100 transition-colors">
+                    <span class="material-symbols-outlined text-xl">close</span>
+                </button>
+            </div>
+
+            <!-- Create Tenant Form -->
+            <form method="post" action="/superadmin/" class="space-y-4 text-xs sm:text-sm">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="create_tenant">
+
+                <div>
+                    <label class="block font-black text-slate-700 mb-1">اسم الشركة / المحل *</label>
+                    <input type="text" name="name" required placeholder="مثال: محلات النور لقطع الغيار"
+                           class="w-full px-4 py-2.5 rounded-xl border border-slate-300 font-bold text-slate-900 focus:border-blue-600 focus:outline-none">
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-black text-slate-700 mb-1">معرف الرابط (Slug إنجليزي)</label>
+                        <input type="text" name="slug" placeholder="اتركه فارغاً لإنشائه تلقائياً"
+                               class="w-full px-4 py-2.5 rounded-xl border border-slate-300 font-mono text-slate-900 focus:border-blue-600 focus:outline-none" dir="ltr">
+                    </div>
+
+                    <div>
+                        <label class="block font-black text-slate-700 mb-1">هاتف التواصل / واتساب</label>
+                        <input type="text" name="phone" placeholder="01011079572"
+                               class="w-full px-4 py-2.5 rounded-xl border border-slate-300 font-mono text-slate-900 focus:border-blue-600 focus:outline-none">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-black text-slate-700 mb-1">اسم المستخدم للمالك *</label>
+                        <input type="text" name="username" required placeholder="مثال: elnoor_user"
+                               class="w-full px-4 py-2.5 rounded-xl border border-slate-300 font-mono font-bold text-slate-900 focus:border-blue-600 focus:outline-none" dir="ltr">
+                    </div>
+
+                    <div>
+                        <label class="block font-black text-slate-700 mb-1">كلمة المرور الابتدائية</label>
+                        <input type="password" name="password" placeholder="اتركه فارغاً لتوليد كلمة عشوائية"
+                               class="w-full px-4 py-2.5 rounded-xl border border-slate-300 font-mono text-slate-900 focus:border-blue-600 focus:outline-none">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-black text-slate-700 mb-1">نوع الباقة</label>
+                        <select name="plan" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 font-bold text-slate-800 focus:border-blue-600 focus:outline-none">
+                            <option value="trial">فترة تجربة (Trial)</option>
+                            <option value="basic">الباقة الأساسية (Basic)</option>
+                            <option value="pro" selected>الباقة الاحترافية (Pro)</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block font-black text-slate-700 mb-1">مدة الاشتراك (بالأيام)</label>
+                        <select name="days" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 font-bold text-slate-800 focus:border-blue-600 focus:outline-none">
+                            <option value="14">14 يوم (تجربة)</option>
+                            <option value="30" selected>30 يوم (شهر)</option>
+                            <option value="90">90 يوم (3 أشهر)</option>
+                            <option value="180">180 يوم (6 أشهر)</option>
+                            <option value="365">365 يوم (سنة كاملة)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="pt-3 flex items-center justify-end gap-2 border-t border-slate-200">
+                    <button type="button" 
+                            @click="showCreateModal = false"
+                            class="px-4 py-2.5 rounded-xl text-slate-600 font-bold hover:bg-slate-100 transition-all">
+                        إلغاء
+                    </button>
+                    <button type="submit" 
+                            class="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black shadow-md shadow-blue-600/20 transition-all cursor-pointer">
+                        إنشاء وتفعيل الشركة الآن 🚀
+                    </button>
+                </div>
+            </form>
+
+        </div>
+    </div>
 
 </body>
 </html>
