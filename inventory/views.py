@@ -228,7 +228,7 @@ class PurchaseOrderListView(ListView):
         context['critical_stock_count'] = Product.objects.filter(stock_quantity__lte=F('min_stock_threshold')).count()
         context['low_stock_products'] = Product.objects.filter(
             stock_quantity__lte=F('min_stock_threshold')
-        ).select_related('default_supplier', 'category').order_by('stock_quantity', 'name')
+        ).select_related('default_supplier').order_by('stock_quantity', 'name')
         return context
 
 
