@@ -167,8 +167,33 @@
         </form>
     </div>
 
-    <!-- Sales Invoices Data Table Container (Encapsulated to Prevent Mobile Overflow) -->
-    <div class="apple-table-container shadow-apple-md border border-apple-border max-w-full">
+    <!-- Tab Switcher (POS Invoices vs Maintenance Invoices) -->
+    <div class="flex items-center gap-3 border-b border-apple-border pb-3">
+        <button type="button" @click="activeTab = 'pos'"
+                :class="activeTab === 'pos' ? 'bg-primary text-white shadow-apple-sm' : 'bg-apple-surface-subtle text-apple-secondary hover:text-apple-text border border-apple-border'"
+                class="px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-extrabold flex items-center gap-2 transition-all">
+            <span class="material-symbols-outlined text-[18px]">point_of_sale</span>
+            <span>فواتير مبيعات المحل</span>
+            <span class="px-2 py-0.5 rounded-full text-[11px] font-bold font-mono"
+                  :class="activeTab === 'pos' ? 'bg-white/20 text-white' : 'bg-apple-border text-apple-secondary'">
+                {{ total_invoices_count }}
+            </span>
+        </button>
+
+        <button type="button" @click="activeTab = 'maintenance'"
+                :class="activeTab === 'maintenance' ? 'bg-amber-600 text-white shadow-apple-sm' : 'bg-apple-surface-subtle text-apple-secondary hover:text-apple-text border border-apple-border'"
+                class="px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-extrabold flex items-center gap-2 transition-all">
+            <span class="material-symbols-outlined text-[18px]">build_circle</span>
+            <span>فواتير وتذاكر الصيانة والورشة</span>
+            <span class="px-2 py-0.5 rounded-full text-[11px] font-bold font-mono"
+                  :class="activeTab === 'maintenance' ? 'bg-white/20 text-white' : 'bg-apple-border text-apple-secondary'">
+                {{ maintenance_tickets_count }}
+            </span>
+        </button>
+    </div>
+
+    <!-- 1. Sales Invoices Data Table Container (POS) -->
+    <div x-show="activeTab === 'pos'" class="apple-table-container shadow-apple-md border border-apple-border max-w-full">
         <table class="apple-table min-w-[750px]">
             <thead>
                 <tr>
@@ -273,7 +298,116 @@
         </table>
     </div>
 
-    <!-- Modal: View & Share Invoice -->
+    <!-- 2. Maintenance Invoices Data Table Container -->
+    <div x-show="activeTab === 'maintenance'" style="display: none;" class="apple-table-container shadow-apple-md border border-apple-border max-w-full">
+        <table class="apple-table min-w-[750px]">
+            <thead>
+                <tr>
+                    <th class="p-4">رقم التذكرة</th>
+                    <th class="p-4">التاريخ</th>
+                    <th class="p-4">العميل</th>
+                    <th class="p-4">الجهاز / الموتور</th>
+                    <th class="p-4 text-center">الحالة</th>
+                    <th class="p-4 text-left">أجرة اليد</th>
+                    <th class="p-4 text-left">قطع الغيار</th>
+                    <th class="p-4 text-left">إجمالي الفاتورة</th>
+                    <th class="p-4 text-center">الإجراءات</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-apple-border text-sm">
+                {% for ticket in maintenance_tickets %}
+                <tr class="hover:bg-apple-surface-subtle transition-colors group">
+                    <!-- رقم التذكرة -->
+                    <td class="p-4 font-bold font-mono text-amber-500 text-base whitespace-nowrap">
+                        <div class="flex items-center gap-1.5">
+                            <span class="material-symbols-outlined text-amber-500 text-base">build</span>
+                            #{{ ticket.ticket_number }}
+                        </div>
+                    </td>
+
+                    <!-- التاريخ -->
+                    <td class="p-4 font-mono text-xs text-apple-secondary whitespace-nowrap">
+                        {{ ticket.created_at|date:"Y-m-d — H:i" }}
+                    </td>
+
+                    <!-- العميل -->
+                    <td class="p-4">
+                        {% if ticket.customer %}
+                        <div class="font-bold text-apple-text text-xs sm:text-sm">{{ ticket.customer.name }}</div>
+                        {% if ticket.customer.phone %}
+                        <div class="font-mono text-[11px] text-apple-secondary">{{ ticket.customer.phone }}</div>
+                        {% endif %}
+                        {% else %}
+                        <span class="text-xs text-apple-secondary italic bg-apple-surface-subtle px-2.5 py-1 rounded-full border border-apple-border whitespace-nowrap">عميل نقدي / ورشة</span>
+                        {% endif %}
+                    </td>
+
+                    <!-- الجهاز -->
+                    <td class="p-4 font-bold text-apple-text text-xs sm:text-sm">
+                        {{ ticket.device_name }}
+                    </td>
+
+                    <!-- الحالة -->
+                    <td class="p-4 text-center whitespace-nowrap">
+                        {% if ticket.status == 'delivered' %}
+                        <span class="status-pill-green px-3 py-1 text-xs font-bold inline-flex items-center gap-1.5">
+                            <span class="w-1.5 h-1.5 rounded-full bg-current"></span>
+                            تم التسليم للعميل
+                        </span>
+                        {% elif ticket.status == 'ready' %}
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                            <span class="w-1.5 h-1.5 rounded-full bg-blue-400"></span>
+                            جاهز للتسليم
+                        </span>
+                        {% elif ticket.status == 'in_progress' %}
+                        <span class="status-pill-yellow px-3 py-1 text-xs font-bold inline-flex items-center gap-1.5">
+                            <span class="w-1.5 h-1.5 rounded-full bg-current animate-spin"></span>
+                            قيد الصيانة
+                        </span>
+                        {% else %}
+                        <span class="px-3 py-1 text-xs font-bold inline-flex items-center gap-1.5 bg-apple-surface-subtle text-apple-secondary rounded-full border border-apple-border">
+                            <span class="w-1.5 h-1.5 rounded-full bg-current"></span>
+                            {{ ticket.get_status_display }}
+                        </span>
+                        {% endif %}
+                    </td>
+
+                    <!-- أجرة اليد -->
+                    <td class="p-4 text-left font-mono font-bold text-xs text-apple-text whitespace-nowrap">
+                        {{ ticket.labor_fees|floatformat:2 }} ج.م
+                    </td>
+
+                    <!-- قطع الغيار -->
+                    <td class="p-4 text-left font-mono font-bold text-xs text-apple-secondary whitespace-nowrap">
+                        {{ ticket.parts_sell|floatformat:2 }} ج.م
+                    </td>
+
+                    <!-- الإجمالي -->
+                    <td class="p-4 text-left font-mono font-extrabold text-amber-500 text-base whitespace-nowrap">
+                        {{ ticket.labor_fees|add:ticket.parts_sell|floatformat:2 }} ج.م
+                    </td>
+
+                    <!-- الإجراءات -->
+                    <td class="p-4 text-center whitespace-nowrap">
+                        <button @click="openTicketModal({{ ticket.id }})"
+                            class="bg-apple-surface-subtle hover:bg-amber-500/10 text-apple-text hover:text-amber-500 border border-apple-border hover:border-amber-500/30 px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 active:scale-95 shadow-apple-sm mx-auto">
+                            <span class="material-symbols-outlined text-[18px]">receipt_long</span>
+                            فاتورة الصيانة
+                        </button>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="9" class="p-12 text-center text-apple-secondary italic text-sm">
+                        لا توجد فواتير أو تذاكر صيانة مسجلة حتى الآن.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Modal: View & Share POS Invoice -->
     <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-4"
         x-show="showModal" style="display: none;" @click.away="showModal = false"
         x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95"
@@ -368,7 +502,7 @@
                 <!-- Financial Totals Summary -->
                 <div class="p-4 rounded-2xl bg-primary/10 border border-primary/20 flex justify-between items-center">
                     <div class="space-y-1">
-                        <div class="text-xs font-bold text-apple-secondary">المبلغ الإجمالي المطلق للفاتورة</div>
+                        <div class="text-xs font-bold text-apple-secondary">المبلغ الإجمالي للفاتورة</div>
                         <div class="text-[11px] text-primary font-bold">شامل كافة الأصناف والقطع</div>
                     </div>
                     <div class="text-2xl sm:text-3xl font-extrabold font-mono text-primary"
@@ -398,6 +532,137 @@
         </div>
     </div>
 
+    <!-- Modal: View Maintenance Ticket Invoice -->
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-4"
+        x-show="showTicketModal" style="display: none;" @click.away="showTicketModal = false"
+        x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95"
+        x-transition:enter-end="opacity-100 scale-100" x-transition:leave="transition ease-in duration-150"
+        x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95">
+
+        <div id="ticketInvoicePrintArea" class="bg-apple-surface border border-apple-border rounded-3xl p-6 sm:p-8 max-w-2xl w-full space-y-6 text-right shadow-apple-lg max-h-[90vh] overflow-y-auto relative"
+            @click.stop>
+
+            <!-- Loading Spinner State -->
+            <div x-show="isLoadingTicket" class="py-16 text-center space-y-3">
+                <span class="material-symbols-outlined text-4xl text-amber-500 animate-spin">build</span>
+                <p class="text-xs text-apple-secondary font-bold">جاري تحميل وتجهيز فاتورة الصيانة...</p>
+            </div>
+
+            <!-- Ticket Invoice Content Body -->
+            <div x-show="!isLoadingTicket && selectedTicket" class="space-y-6">
+
+                <!-- Ticket Header -->
+                <div class="flex justify-between items-start border-b border-apple-border pb-5">
+                    <div class="space-y-1">
+                        <h2 class="text-xl sm:text-2xl font-extrabold text-amber-500 tracking-tight flex items-center gap-2">
+                            <span class="material-symbols-outlined text-2xl">construction</span>
+                            فاتورة صيانة ورشة النماء
+                        </h2>
+                        <p class="text-xs text-apple-secondary">معدات زراعية • مواقير • إصلاح محركات • تركيب قطع غيار</p>
+                    </div>
+                    <div class="text-left space-y-1">
+                        <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-500/10 text-amber-500 border border-amber-500/20">
+                            تذكرة رقم: <span class="font-mono" x-text="selectedTicket ? '#' + selectedTicket.ticket_number : ''"></span>
+                        </div>
+                        <div class="text-[11px] text-apple-secondary font-mono" x-text="selectedTicket ? selectedTicket.created_at : ''"></div>
+                    </div>
+                </div>
+
+                <!-- Ticket Info & Customer Card -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div class="bg-apple-surface-subtle border border-apple-border rounded-2xl p-4 space-y-1.5">
+                        <div class="text-xs font-bold text-apple-secondary">بيانات العميل:</div>
+                        <div class="text-sm font-bold text-apple-text" x-text="selectedTicket && selectedTicket.customer ? selectedTicket.customer.name : 'عميل نقدي / ورشة'"></div>
+                        <div class="text-xs font-mono text-apple-secondary" x-text="selectedTicket && selectedTicket.customer && selectedTicket.customer.phone ? selectedTicket.customer.phone : '—'"></div>
+                    </div>
+                    <div class="bg-apple-surface-subtle border border-apple-border rounded-2xl p-4 space-y-1.5">
+                        <div class="text-xs font-bold text-apple-secondary">الجهاز وحالة الصيانة:</div>
+                        <div class="text-sm font-bold text-apple-text" x-text="selectedTicket ? selectedTicket.device_name : ''"></div>
+                        <div>
+                            <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30"
+                                  x-text="selectedTicket ? selectedTicket.status_display : ''"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Financial Breakdown Section -->
+                <div class="space-y-3">
+                    <h3 class="text-xs font-bold text-apple-secondary">تفاصيل الحساب وقطع الغيار والمصنعية:</h3>
+
+                    <!-- Labor Fees Card -->
+                    <div class="p-3.5 rounded-2xl bg-apple-surface-subtle border border-apple-border flex justify-between items-center text-xs sm:text-sm">
+                        <div class="flex items-center gap-2 font-bold text-apple-text">
+                            <span class="material-symbols-outlined text-amber-500 text-lg">engineering</span>
+                            أجرة اليد ومصنعية الإصلاح:
+                        </div>
+                        <div class="font-mono font-extrabold text-apple-text text-sm sm:text-base"
+                             x-text="selectedTicket ? parseFloat(selectedTicket.labor_fees).toFixed(2) + ' ج.م' : '0.00 ج.م'"></div>
+                    </div>
+
+                    <!-- Consumed Parts Table -->
+                    <div class="rounded-2xl border border-apple-border overflow-hidden bg-apple-surface shadow-apple-sm">
+                        <div class="bg-apple-surface-subtle px-3 py-2 border-b border-apple-border text-xs font-bold text-apple-secondary flex items-center gap-1.5">
+                            <span class="material-symbols-outlined text-[16px]">settings</span>
+                            قطع الغيار المستهلكة في الصيانة
+                        </div>
+                        <table class="w-full text-right text-xs table-fixed">
+                            <thead class="bg-apple-surface-subtle/50 border-b border-apple-border text-apple-secondary font-bold text-[11px]">
+                                <tr>
+                                    <th class="py-2 px-2 text-right">اسم القطعة / الصنف</th>
+                                    <th class="py-2 px-1.5 w-12 text-center">الكمية</th>
+                                    <th class="py-2 px-2 w-24 text-left">سعر البيع</th>
+                                    <th class="py-2 px-2 w-24 text-left">الإجمالي</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-apple-border text-xs">
+                                <template x-for="part in (selectedTicket ? selectedTicket.parts : [])" :key="part.product_sku + part.product_name">
+                                    <tr class="hover:bg-apple-surface-subtle/60 transition-colors">
+                                        <td class="py-2 px-2 font-bold text-apple-text break-words leading-tight" x-text="part.product_name"></td>
+                                        <td class="py-2 px-1.5 text-center font-mono font-bold text-amber-500" x-text="part.quantity"></td>
+                                        <td class="py-2 px-2 text-left font-mono text-[11px] text-apple-secondary whitespace-nowrap" x-text="parseFloat(part.sell_price).toFixed(2) + ' ج.م'"></td>
+                                        <td class="py-2 px-2 text-left font-mono font-bold text-apple-text text-[11px] whitespace-nowrap" x-text="parseFloat(part.total_price).toFixed(2) + ' ج.م'"></td>
+                                    </tr>
+                                </template>
+                                <template x-if="selectedTicket && (!selectedTicket.parts || selectedTicket.parts.length === 0)">
+                                    <tr>
+                                        <td colspan="4" class="py-4 text-center text-apple-secondary italic text-xs">
+                                            لم يتم تسجيل قطع غيار مستهلكة (أجرة صيانة يد فقط).
+                                        </td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Grand Total -->
+                <div class="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex justify-between items-center">
+                    <div class="space-y-1">
+                        <div class="text-xs font-bold text-apple-secondary">إجمالي حساب الصيانة المستحق</div>
+                        <div class="text-[11px] text-amber-500 font-bold">مصنعية اليد + تكلفة قطع الغيار</div>
+                    </div>
+                    <div class="text-2xl sm:text-3xl font-extrabold font-mono text-amber-500"
+                        x-text="selectedTicket ? parseFloat(selectedTicket.total_amount).toFixed(2) + ' ج.م' : ''"></div>
+                </div>
+
+                <!-- Actions Footer -->
+                <div class="flex flex-wrap gap-3 pt-3 border-t border-apple-border print:hidden">
+                    <button @click="printTicketInvoice()"
+                        class="flex-1 bg-amber-600 hover:bg-amber-500 text-white py-3 rounded-2xl font-bold shadow-apple-sm text-xs sm:text-sm flex items-center justify-center gap-2 apple-button active:scale-95">
+                        <span class="material-symbols-outlined text-[18px]">print</span>
+                        طباعة إيصال الصيانة 🖨️
+                    </button>
+                    <button @click="showTicketModal = false"
+                        class="px-6 bg-apple-surface-subtle border border-apple-border py-3 rounded-2xl text-apple-secondary hover:text-apple-text text-xs sm:text-sm font-bold active:scale-95">
+                        إغلاق
+                    </button>
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+
 </div>
 {% endblock %}
 
@@ -405,10 +670,15 @@
 <script>
     function salesInvoicesApp() {
         return {
+            activeTab: 'pos',
             showModal: false,
             isLoading: false,
             selectedInvoice: null,
             isSyncingToCloud: false,
+
+            showTicketModal: false,
+            isLoadingTicket: false,
+            selectedTicket: null,
             
             syncToCloud() {
                 if (this.isSyncingToCloud) return;
@@ -455,6 +725,47 @@
                         alert('حدث خطأ في شبكة الاتصال');
                         this.showModal = false;
                     });
+            },
+
+            openTicketModal(ticketId) {
+                this.showTicketModal = true;
+                this.isLoadingTicket = true;
+                this.selectedTicket = null;
+
+                fetch('/pos/invoices/ticket/' + ticketId + '/json/')
+                    .then(res => res.json())
+                    .then(data => {
+                        this.isLoadingTicket = false;
+                        if (data.success) {
+                            this.selectedTicket = data.ticket;
+                        } else {
+                            alert('خطأ: ' + (data.error || 'تعذر تحميل بيانات تذكرة الصيانة'));
+                            this.showTicketModal = false;
+                        }
+                    })
+                    .catch(err => {
+                        this.isLoadingTicket = false;
+                        alert('حدث خطأ في شبكة الاتصال');
+                        this.showTicketModal = false;
+                    });
+            },
+
+            printTicketInvoice() {
+                const printContents = document.getElementById('ticketInvoicePrintArea').innerHTML;
+                const originalContents = document.body.innerHTML;
+                const win = window.open('', '', 'height=700,width=800');
+                win.document.write('<html><head><title>فاتورة تذكرة صيانة</title>');
+                win.document.write('<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Alexandria:wght@300;400;600;700;800&display=swap">');
+                win.document.write('<style>body{font-family:"Alexandria",sans-serif;direction:rtl;padding:24px;color:#111;} table{width:100%;border-collapse:collapse;margin:15px 0;} th,td{border:1px solid #ddd;padding:8px;text-align:right;} th{background:#f4f4f4;} .print\\:hidden{display:none!important;}</style>');
+                win.document.write('</head><body>');
+                win.document.write(printContents);
+                win.document.write('</body></html>');
+                win.document.close();
+                win.focus();
+                setTimeout(() => {
+                    win.print();
+                    win.close();
+                }, 500);
             }
         };
     }

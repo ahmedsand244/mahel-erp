@@ -226,7 +226,35 @@ class PurchaseOrderListView(ListView):
         context['sent_count'] = PurchaseOrder.objects.filter(status='sent').count()
         context['received_count'] = PurchaseOrder.objects.filter(status='received').count()
         context['critical_stock_count'] = Product.objects.filter(stock_quantity__lte=F('min_stock_threshold')).count()
+        context['low_stock_products'] = Product.objects.filter(
+            stock_quantity__lte=F('min_stock_threshold')
+        ).select_related('default_supplier', 'category').order_by('stock_quantity', 'name')
         return context
+
+
+class QuickUpdateMinStockView(View):
+    """تحديث الحد الأدنى للتنبيه لمنتج معين فورياً وبسرعة من شاشة النواقص"""
+    def post(self, request, *args, **kwargs):
+        product_id = request.POST.get('product_id')
+        new_min = request.POST.get('min_stock_threshold')
+        try:
+            prod = get_object_or_404(Product, id=product_id)
+            if new_min is not None and str(new_min).strip().isdigit():
+                prod.min_stock_threshold = max(0, int(new_min))
+                prod.save(update_fields=['min_stock_threshold'])
+                msg = f'✅ تم تحديث الحد الأدنى لمنتج "{prod.name}" إلى {prod.min_stock_threshold} بنجاح.'
+            else:
+                raise ValueError("قيمة الحد الأدنى غير صحيحة")
+
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                return JsonResponse({'success': True, 'min_stock_threshold': prod.min_stock_threshold, 'message': msg})
+            messages.success(request, msg)
+        except Exception as e:
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'error': str(e)}, status=400)
+            messages.error(request, f'خطأ أثناء تحديث الحد الأدنى: {str(e)}')
+
+        return redirect(request.META.get('HTTP_REFERER', 'inventory:purchase_order_list'))
 
 
 class PurchaseOrderBuilderView(View):

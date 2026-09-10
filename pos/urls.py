@@ -5,6 +5,7 @@ from .views import (
     AddCustomerAjaxView,
     SalesInvoicesListView,
     OrderInvoiceDetailJsonView,
+    TicketInvoiceDetailJsonView,
     PublicInvoiceDetailView,
     ExportInvoicesExcelView,
     SyncLocalToCloudView
@@ -18,6 +19,7 @@ urlpatterns = [
     path('add-customer-ajax/', AddCustomerAjaxView.as_view(), name='add_customer_ajax'),
     path('invoices/', SalesInvoicesListView.as_view(), name='invoices_list'),
     path('invoices/<int:pk>/json/', OrderInvoiceDetailJsonView.as_view(), name='invoice_detail_json'),
+    path('invoices/ticket/<int:pk>/json/', TicketInvoiceDetailJsonView.as_view(), name='ticket_invoice_detail_json'),
     path('invoices/<int:pk>/public/', PublicInvoiceDetailView.as_view(), name='public_invoice_detail'),
     path('invoices/export-excel/', ExportInvoicesExcelView.as_view(), name='export_invoices_excel'),
     path('sync-local-to-cloud/', SyncLocalToCloudView.as_view(), name='sync_local_to_cloud'),

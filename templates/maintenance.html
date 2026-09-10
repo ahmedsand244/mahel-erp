@@ -98,17 +98,64 @@
             <form method="post" action="{% url 'maintenance:kanban' %}" class="space-y-4 text-sm">
                 {% csrf_token %}
                 
-                <!-- Customer Searchable Custom Dropdown -->
-                <div class="space-y-1.5">
-                    <label class="block text-xs font-bold text-on-surface-variant">العميل:</label>
-                    <input type="hidden" name="customer_id" :value="selectedCustomerId" required>
-                    
-                    <div class="relative w-full" @click.away="isCustomerDropdownOpen = false">
+                <!-- Customer Selection / Quick Customer / Add Customer -->
+                <div class="space-y-2">
+                    <div class="flex items-center justify-between">
+                        <label class="block text-xs font-bold text-on-surface-variant">العميل:</label>
+                        <div class="flex items-center gap-1.5">
+                            <!-- Quick Cash Customer Button -->
+                            <button type="button" 
+                                    @click="selectQuickCustomer()"
+                                    :class="selectedCustomerId === 'quick' ? 'bg-primary text-white border-primary' : 'bg-primary/10 text-primary border-primary/20 hover:bg-primary/20'"
+                                    class="px-2.5 py-1 rounded-lg text-[11px] font-black border transition-all flex items-center gap-1 cursor-pointer active:scale-95 shadow-sm"
+                                    title="اختيار عميل نقدي سريع فوراً بدون تسجيل">
+                                <span class="material-symbols-outlined text-[14px]">bolt</span>
+                                <span>عميل سريع ⚡</span>
+                            </button>
+
+                            <!-- Add New Customer Toggle Button -->
+                            <button type="button" 
+                                    @click="toggleNewCustomer()"
+                                    :class="showNewCustomerInputs ? 'bg-blue-600 text-white border-blue-600' : 'bg-blue-500/10 text-blue-500 border-blue-500/20 hover:bg-blue-500/20'"
+                                    class="px-2.5 py-1 rounded-lg text-[11px] font-black border transition-all flex items-center gap-1 cursor-pointer active:scale-95 shadow-sm"
+                                    title="إضافة عميل جديد بالاسم ورقم الهاتف">
+                                <span class="material-symbols-outlined text-[14px]" x-text="showNewCustomerInputs ? 'close' : 'person_add'"></span>
+                                <span x-text="showNewCustomerInputs ? 'إلغاء' : '+ عميل جديد'"></span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <input type="hidden" name="customer_id" :value="selectedCustomerId">
+                    <input type="hidden" name="is_quick_customer" :value="selectedCustomerId === 'quick' ? 'true' : 'false'">
+
+                    <!-- 1. Form Inputs for Creating New Customer (Shown when toggled) -->
+                    <div x-show="showNewCustomerInputs" 
+                         x-transition
+                         class="p-3 bg-blue-500/10 border border-blue-500/30 rounded-2xl space-y-2 text-right">
+                        <div class="text-[11px] font-bold text-blue-500 flex items-center gap-1">
+                            <span class="material-symbols-outlined text-sm">person_add</span>
+                            <span>بيانات العميل الجديد:</span>
+                        </div>
+                        <input type="text" 
+                               name="new_customer_name" 
+                               x-model="newCustomerName"
+                               :required="showNewCustomerInputs"
+                               placeholder="اسم العميل الجديد (مطلوب)..." 
+                               class="w-full bg-surface-container-high border border-white/10 rounded-xl px-3 py-2 text-xs text-on-surface focus:border-primary focus:outline-none">
+                        <input type="tel" 
+                               name="new_customer_phone" 
+                               x-model="newCustomerPhone"
+                               placeholder="رقم هاتف العميل (اختياري)..." 
+                               class="w-full bg-surface-container-high border border-white/10 rounded-xl px-3 py-2 text-xs font-mono text-on-surface focus:border-primary focus:outline-none">
+                    </div>
+
+                    <!-- 2. Customer Searchable Custom Dropdown (Hidden when typing new customer) -->
+                    <div x-show="!showNewCustomerInputs" class="relative w-full" @click.away="isCustomerDropdownOpen = false">
                         <!-- Trigger Button -->
                         <div class="w-full bg-surface-container-high border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-on-surface flex justify-between items-center cursor-pointer hover:border-primary/50 transition-all select-none min-h-[42px]"
                              @click="isCustomerDropdownOpen = !isCustomerDropdownOpen">
                             <div class="flex items-center gap-2 truncate flex-1 min-w-0">
-                                <template x-if="selectedCustomerId">
+                                <template x-if="selectedCustomerId && selectedCustomerId !== 'quick'">
                                     <button type="button" @click.stop="selectedCustomerId = ''; customerSearchQuery = '';" class="text-on-surface-variant hover:text-error transition-colors p-0.5 rounded-full hover:bg-white/10 shrink-0">
                                         <span class="material-symbols-outlined text-sm">close</span>
                                     </button>
@@ -147,10 +194,17 @@
 
                             <!-- Options List -->
                             <div class="overflow-y-auto divide-y divide-white/5 max-h-40">
+                                <!-- Option Quick Customer at top of list -->
+                                <div class="p-2.5 text-xs hover:bg-primary/20 cursor-pointer flex justify-between items-center transition-colors font-bold text-amber-500 bg-amber-500/5"
+                                     @click="selectQuickCustomer(); isCustomerDropdownOpen = false;">
+                                    <span>⚡ عميل نقدي سريع (افتراضي)</span>
+                                    <span class="text-[10px] opacity-75">بدون تسجيل</span>
+                                </div>
+
                                 <template x-for="cust in getFilteredCustomers()" :key="cust.id">
                                     <div class="p-2.5 text-xs hover:bg-primary/20 cursor-pointer flex justify-between items-center transition-colors group"
                                          :class="selectedCustomerId == cust.id ? 'bg-primary/20 text-primary font-bold' : 'text-on-surface'"
-                                         @click="selectedCustomerId = cust.id; isCustomerDropdownOpen = false; customerSearchQuery = '';">
+                                         @click="selectedCustomerId = cust.id; isCustomerDropdownOpen = false; customerSearchQuery = ''; showNewCustomerInputs = false;">
                                         <div class="flex flex-col text-right">
                                             <span class="font-bold group-hover:text-primary transition-colors" x-text="cust.name"></span>
                                         </div>
@@ -299,6 +353,28 @@ function maintenanceApp() {
         customerSearchQuery: '',
         isCustomerDropdownOpen: false,
 
+        showNewCustomerInputs: false,
+        newCustomerName: '',
+        newCustomerPhone: '',
+
+        selectQuickCustomer() {
+            this.selectedCustomerId = 'quick';
+            this.showNewCustomerInputs = false;
+            this.newCustomerName = '';
+            this.newCustomerPhone = '';
+            this.customerSearchQuery = '';
+        },
+
+        toggleNewCustomer() {
+            this.showNewCustomerInputs = !this.showNewCustomerInputs;
+            if (this.showNewCustomerInputs) {
+                this.selectedCustomerId = 'new';
+                this.isCustomerDropdownOpen = false;
+            } else {
+                this.selectedCustomerId = '';
+            }
+        },
+
         selectedProductId: '',
         productSearchQuery: '',
         isProductDropdownOpen: false,
@@ -316,6 +392,8 @@ function maintenanceApp() {
         ],
 
         getSelectedCustomerLabel() {
+            if (this.selectedCustomerId === 'quick') return '⚡ عميل نقدي سريع';
+            if (this.selectedCustomerId === 'new') return this.newCustomerName ? `عميل جديد: ${this.newCustomerName}` : '➕ كتابة بيانات عميل جديد';
             if (!this.selectedCustomerId) return 'اختر العميل...';
             const c = this.customers.find(x => x.id == this.selectedCustomerId);
             return c ? c.name : 'اختر العميل...';

@@ -26,15 +26,31 @@ class MaintenanceKanbanView(ListView):
 
     def post(self, request, *args, **kwargs):
         customer_id = request.POST.get('customer_id')
-        device_name = request.POST.get('device_name')
+        new_customer_name = request.POST.get('new_customer_name', '').strip()
+        new_customer_phone = request.POST.get('new_customer_phone', '').strip()
+        device_name = request.POST.get('device_name', '').strip()
         labor_fees = request.POST.get('labor_fees') or '0.00'
 
-        if not customer_id or not device_name:
-            messages.error(request, "يرجى تحديد العميل وإدخال اسم المعدة بشكل صحيح.")
+        customer = None
+        # 1. حالة العميل النقدي السريع
+        if customer_id == 'quick' or request.POST.get('is_quick_customer') == 'true':
+            customer, _ = Customer.objects.get_or_create(name='عميل نقدي / ورشة', defaults={'phone': ''})
+        # 2. حالة إضافة عميل جديد من المودال
+        elif new_customer_name:
+            customer = Customer.objects.create(name=new_customer_name, phone=new_customer_phone)
+        # 3. العميل المحدد من القائمة
+        elif customer_id:
+            customer = Customer.objects.filter(id=customer_id).first()
+
+        if not customer:
+            messages.error(request, "يرجى تحديد العميل أو اختيار 'عميل نقدي سريع' أو إدخال بيانات عميل جديد.")
+            return redirect('maintenance:kanban')
+
+        if not device_name:
+            messages.error(request, "يرجى إدخال اسم المعدة أو الموتور بشكل صحيح.")
             return redirect('maintenance:kanban')
 
         try:
-            customer = get_object_or_404(Customer, id=customer_id)
             import random
             import time
             ticket_number = f"MNT-{int(time.time())}-{random.randint(10, 99)}"
@@ -45,7 +61,7 @@ class MaintenanceKanbanView(ListView):
                 device_name=device_name,
                 labor_fees=Decimal(str(labor_fees))
             )
-            messages.success(request, f"تم فتح تذكرة الصيانة #{t.ticket_number} للمعدة '{device_name}' بنجاح!")
+            messages.success(request, f"🎉 تم فتح تذكرة الصيانة #{t.ticket_number} للعميل '{customer.name}' للمعدة '{device_name}' بنجاح!")
         except Exception as e:
             messages.error(request, f"خطأ أثناء فتح تذكرة الصيانة: {str(e)}")
 

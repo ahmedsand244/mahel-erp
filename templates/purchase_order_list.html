@@ -28,6 +28,139 @@
         </div>
     </header>
 
+    <!-- ─────────────────────────────────────────────────────────────
+         Low Stock & Critical Inventory Section (النواقص وتعديل الحد الأدنى)
+         ───────────────────────────────────────────────────────────── -->
+    <div id="low-stock" class="glass-card p-5 sm:p-7 rounded-2xl lg:rounded-3xl border border-amber-500/25 bg-gradient-to-b from-amber-500/5 to-transparent space-y-5"
+         x-data="{ 
+             lowStockSearch: '',
+             matchesSearch(name, sku) {
+                 if (!this.lowStockSearch) return true;
+                 const q = this.lowStockSearch.toLowerCase().trim();
+                 return name.toLowerCase().includes(q) || sku.toLowerCase().includes(q);
+             }
+         }">
+        
+        <!-- Section Header -->
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-apple-border pb-4">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-500 shrink-0">
+                    <span class="material-symbols-outlined text-2xl animate-pulse">notification_important</span>
+                </div>
+                <div>
+                    <h2 class="text-base sm:text-lg font-black text-apple-text flex items-center gap-2">
+                        <span>قائمة النواقص والبضائع التي قاربت على النفاد</span>
+                        <span class="px-2.5 py-0.5 rounded-full text-xs bg-red-500/15 text-red-500 border border-red-500/25 font-mono font-bold">
+                            {{ low_stock_products|length }} صنف حرج
+                        </span>
+                    </h2>
+                    <p class="text-xs text-apple-secondary mt-0.5">
+                        يمكنك هنا تعديل الحد الأدنى للتنبيه فوراً لكل منتج، أو تجهيز طلب شراء بالمطلوب بنقرة زر
+                    </p>
+                </div>
+            </div>
+
+            <!-- Search & Actions -->
+            <div class="flex items-center gap-2 w-full sm:w-auto">
+                <div class="relative flex-1 sm:w-56">
+                    <input type="text" 
+                           x-model="lowStockSearch" 
+                           placeholder="بحث بالنواقص..." 
+                           class="w-full bg-apple-surface-subtle border border-apple-border rounded-xl py-1.5 px-3 pr-8 text-xs text-apple-text focus:outline-none focus:border-amber-500">
+                    <span class="material-symbols-outlined absolute right-2.5 top-1/2 -translate-y-1/2 text-apple-secondary text-sm pointer-events-none">search</span>
+                </div>
+                <a href="{% url 'inventory:purchase_order_create' %}?auto_pull=true" 
+                   class="bg-error hover:bg-error/90 text-white font-bold px-3.5 py-2 rounded-xl text-xs flex items-center gap-1.5 shadow-sm transition-all active:scale-95 shrink-0 whitespace-nowrap">
+                    <span class="material-symbols-outlined text-sm">local_shipping</span>
+                    <span>سحب كل النواقص لطلب 🚚</span>
+                </a>
+            </div>
+        </div>
+
+        {% if low_stock_products %}
+        <!-- Grid of Low Stock Items with Min-Threshold Quick Editor -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+            {% for item in low_stock_products %}
+            <div class="p-4 rounded-2xl border transition-all flex flex-col justify-between gap-3 shadow-apple-sm
+                {% if item.stock_quantity <= 0 %}
+                    bg-error/10 border-error/30 hover:border-error/50
+                {% else %}
+                    bg-apple-surface border-apple-border hover:border-amber-500/40
+                {% endif %}"
+                x-show="matchesSearch('{{ item.name|escapejs }}', '{{ item.sku|escapejs }}')">
+                
+                <!-- Product Header Info -->
+                <div class="flex items-start justify-between gap-2.5">
+                    <div class="flex items-center gap-2.5 min-w-0">
+                        {% if item.image %}
+                            <img src="{{ item.image.url }}" class="w-11 h-11 rounded-xl object-cover border border-apple-border shrink-0">
+                        {% else %}
+                            <div class="w-11 h-11 rounded-xl bg-apple-surface-subtle border border-apple-border flex items-center justify-center text-apple-secondary shrink-0">
+                                <span class="material-symbols-outlined text-xl">inventory_2</span>
+                            </div>
+                        {% endif %}
+                        <div class="min-w-0">
+                            <h4 class="font-black text-xs sm:text-sm text-apple-text truncate" title="{{ item.name }}">{{ item.name }}</h4>
+                            <span class="text-[11px] font-mono text-apple-secondary block truncate">{{ item.sku }}</span>
+                        </div>
+                    </div>
+
+                    <!-- Stock Status Badge -->
+                    {% if item.stock_quantity <= 0 %}
+                        <span class="px-2 py-0.5 rounded-lg text-[10px] font-black bg-error text-white whitespace-nowrap shrink-0 shadow-sm">
+                            نفذت (0) ⛔
+                        </span>
+                    {% else %}
+                        <span class="px-2 py-0.5 rounded-lg text-[10px] font-black bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30 whitespace-nowrap shrink-0">
+                            منخفض ({{ item.stock_quantity }}) ⚠️
+                        </span>
+                    {% endif %}
+                </div>
+
+                <!-- Quantities & Threshold Quick-Update Form -->
+                <div class="pt-2 border-t border-apple-border flex flex-col gap-2">
+                    <div class="flex items-center justify-between text-xs">
+                        <span class="text-apple-secondary">الرصيد المتاح حالياً:</span>
+                        <span class="font-mono font-black {% if item.stock_quantity <= 0 %}text-error{% else %}text-amber-500{% endif %}">
+                            {{ item.stock_quantity }} قطعة
+                        </span>
+                    </div>
+
+                    <!-- مكان تغيير الحد الأدنى فوراً (Requested feature) -->
+                    <form method="post" action="{% url 'inventory:quick_update_min_stock' %}" class="flex items-center gap-1.5 bg-apple-surface-subtle p-1.5 rounded-xl border border-apple-border">
+                        {% csrf_token %}
+                        <input type="hidden" name="product_id" value="{{ item.id }}">
+                        
+                        <span class="text-[11px] font-bold text-apple-secondary shrink-0 pr-1">الحد الأدنى:</span>
+                        <input type="number" 
+                               name="min_stock_threshold" 
+                               value="{{ item.min_stock_threshold }}" 
+                               min="0"
+                               title="اكتب الحد الأدنى الجديد واضغط حفظ"
+                               class="w-16 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg py-1 px-1.5 text-center font-mono font-black text-xs text-apple-text focus:outline-none focus:border-amber-500">
+
+                        <button type="submit" 
+                                title="حفظ وتحديث الحد الأدنى لهذا المنتج"
+                                class="flex-1 py-1 px-2.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-black text-[11px] transition-all flex items-center justify-center gap-1 shadow-sm active:scale-95 cursor-pointer">
+                            <span class="material-symbols-outlined text-xs">save</span>
+                            <span>حفظ</span>
+                        </button>
+                    </form>
+                </div>
+
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="p-8 text-center text-xs text-apple-secondary space-y-2">
+            <span class="material-symbols-outlined text-3xl text-emerald-500 block">verified</span>
+            <p class="font-bold text-slate-700 dark:text-slate-200">ممتاز! لا توجد أصناف ناقصة أو واصلة للحد الأدنى حالياً 👍</p>
+            <p class="text-[11px]">جميع البضائع في مخزنك فوق حد الأمان والتنبيه.</p>
+        </div>
+        {% endif %}
+
+    </div>
+
     <!-- Quick Stats Cards (Responsive 1 col mobile, 2 col tablet, 4 col desktop) -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         <!-- Critical Stock Stats -->

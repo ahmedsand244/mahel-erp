@@ -1,8 +1,8 @@
 import json
+from decimal import Decimal
 from django.views.generic import TemplateView, View
 from django.http import JsonResponse
-from django.db.models import Sum, F, Q
-from decimal import Decimal
+from django.db.models import Sum, F, Q, Count, ExpressionWrapper, DecimalField
 
 from pos.models import Order
 from maintenance.models import MaintenanceTicket
@@ -22,19 +22,23 @@ class DashboardView(TemplateView):
         context.update(pnl)
 
         total_income = pnl['gross_sales'] + pnl['parts_sell'] + pnl['labor_fees']
-        total_costs_all = pnl['cogs'] + pnl['parts_cost'] + pnl['total_expenses']
+        cogs_total = pnl['cogs'] + pnl['parts_cost']
+        store_expenses = pnl['total_expenses']
+        total_costs_all = cogs_total + store_expenses
 
         context['total_income'] = total_income
         context['total_costs_all'] = total_costs_all
+        context['cogs_total'] = cogs_total
+        context['store_expenses'] = store_expenses
 
-        # 2. Inventory Valuation
-        products = Product.objects.all()
-        inventory_cost_val = Decimal('0.00')
-        for p in products:
-            inventory_cost_val += (p.purchase_price * Decimal(p.stock_quantity))
-        
-        context['inventory_cost_val'] = inventory_cost_val
-        context['products_count'] = products.count()
+        # 2. Inventory Valuation (Instant SQL Aggregation - Ultra Fast)
+        from django.db.models import ExpressionWrapper
+        inv_agg = Product.objects.aggregate(
+            val=Sum(ExpressionWrapper(F('purchase_price') * F('stock_quantity'), output_field=DecimalField(max_digits=16, decimal_places=2))),
+            count=Count('id')
+        )
+        context['inventory_cost_val'] = inv_agg['val'] or Decimal('0.00')
+        context['products_count'] = inv_agg['count'] or 0
 
         # 3. Dynamic deduplicated low stock products
         low_stock_products = Product.objects.filter(

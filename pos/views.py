@@ -157,9 +157,11 @@ class AddCustomerAjaxView(View):
             return JsonResponse({'success': False, 'error': f"خطأ أثناء إضافة العميل: {str(e)}"}, status=400)
 
 
+from maintenance.models import MaintenanceTicket
+
 class SalesInvoicesListView(ListView):
     """
-    صفحة عرض جميع فواتير المبيعات الصادرة
+    صفحة عرض جميع فواتير المبيعات الصادرة وتذاكر الصيانة
     """
     model = Order
     template_name = "sales_invoices.html"
@@ -206,6 +208,26 @@ class SalesInvoicesListView(ListView):
         total_cogs = all_orders.aggregate(Sum('cost_of_goods_sold'))['cost_of_goods_sold__sum'] or Decimal('0.00')
         total_profit = total_sales_amount - total_cogs
 
+        # Maintenance Tickets Invoices Integration
+        tickets_qs = MaintenanceTicket.objects.select_related('customer').prefetch_related('parts_consumed__product').order_by('-created_at')
+        search_query = self.request.GET.get('q', '').strip()
+        if search_query:
+            tickets_qs = tickets_qs.filter(
+                Q(ticket_number__icontains=search_query) |
+                Q(customer__name__icontains=search_query) |
+                Q(device_name__icontains=search_query)
+            ).distinct()
+
+        start_date = self.request.GET.get('start_date', '').strip()
+        end_date = self.request.GET.get('end_date', '').strip()
+        if start_date:
+            tickets_qs = tickets_qs.filter(created_at__date__gte=start_date)
+        if end_date:
+            tickets_qs = tickets_qs.filter(created_at__date__lte=end_date)
+
+        context['maintenance_tickets'] = tickets_qs[:100]
+        context['maintenance_tickets_count'] = tickets_qs.count()
+
         context['total_invoices_count'] = total_invoices_count
         context['total_sales_amount'] = total_sales_amount
         context['cash_visa_amount'] = cash_sales_amount + visa_sales_amount
@@ -218,6 +240,50 @@ class SalesInvoicesListView(ListView):
         context['end_date_str'] = self.request.GET.get('end_date', '')
 
         return context
+
+
+class TicketInvoiceDetailJsonView(View):
+    """
+    إرجاع تفاصيل فاتورة تذكرة الصيانة مع قطع الغيار والمصنعيات كـ JSON لمعاينتها وطباعتها
+    """
+    def get(self, request, pk, *args, **kwargs):
+        try:
+            ticket = MaintenanceTicket.objects.select_related('customer').prefetch_related('parts_consumed__product').get(pk=pk)
+            parts_list = []
+            for item in ticket.parts_consumed.all():
+                parts_list.append({
+                    'product_name': item.product.name if item.product else 'صنف محذوف',
+                    'product_sku': item.product.sku if item.product else '—',
+                    'quantity': item.quantity,
+                    'sell_price': str(item.sell_price),
+                    'total_price': str(item.sell_price * item.quantity),
+                })
+
+            total_bill = ticket.labor_fees + ticket.parts_sell
+
+            return JsonResponse({
+                'success': True,
+                'ticket': {
+                    'id': ticket.id,
+                    'ticket_number': ticket.ticket_number,
+                    'device_name': ticket.device_name,
+                    'status': ticket.status,
+                    'status_display': ticket.get_status_display(),
+                    'created_at': ticket.created_at.strftime('%Y-%m-%d %H:%M'),
+                    'labor_fees': str(ticket.labor_fees),
+                    'parts_sell': str(ticket.parts_sell),
+                    'total_amount': str(total_bill),
+                    'customer': {
+                        'name': ticket.customer.name if ticket.customer else 'عميل نقدي / ورشة',
+                        'phone': ticket.customer.phone if ticket.customer and ticket.customer.phone else '',
+                    },
+                    'parts': parts_list
+                }
+            })
+        except MaintenanceTicket.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'تذكرة الصيانة غير موجودة'}, status=404)
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
 
 class OrderInvoiceDetailJsonView(View):
