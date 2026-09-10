@@ -3,152 +3,158 @@
 {% block title %}{% if order %}تعديل طلب البضاعة {{ order.order_number }}{% else %}محرر طلبات البضاعة والنواقص{% endif %} - النماء ERP{% endblock %}
 
 {% block content %}
-<div x-data="purchaseOrderApp()" x-init="initData()" class="space-y-8 pb-12">
+<div x-data="purchaseOrderApp()" x-init="initData()" class="space-y-6 sm:space-y-8 pb-12 w-full max-w-full overflow-hidden" dir="rtl">
+    
     <!-- Header Card -->
-    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-surface-container-low/70 backdrop-blur-2xl p-6 rounded-3xl border border-white/10 shadow-2xl relative overflow-hidden">
-        <div class="absolute -right-16 -top-16 w-32 h-32 bg-primary/10 rounded-full blur-3xl pointer-events-none"></div>
-        
-        <div class="space-y-1 relative z-10">
-            <div class="flex items-center gap-3">
-                <a href="{% url 'inventory:purchase_order_list' %}" class="p-2.5 bg-white/5 hover:bg-white/10 text-on-surface rounded-2xl transition-all border border-white/10 hover:scale-105 active:scale-95 shadow-sm">
-                    <span class="material-symbols-outlined">arrow_forward</span>
-                </a>
-                <div>
-                    <h1 class="text-2xl font-black text-on-surface tracking-tight flex items-center gap-2">
-                        {% if order %}
-                            تعديل طلب البضاعة <span class="font-mono text-primary bg-primary/10 px-3 py-1 rounded-xl border border-primary/20">{{ order.order_number }}</span>
-                        {% else %}
-                            تجميع وتحضير طلب بضاعة جديد
-                        {% endif %}
-                    </h1>
-                    <p class="text-xs sm:text-sm text-on-surface-variant font-medium mt-0.5">حدد الأصناف الناقصة، قم بتوزيع الموردين، ودون التوصيات قبل حفظ الطلبية</p>
+    <header class="glass-card p-5 sm:p-7 rounded-3xl border border-apple-border shadow-apple-md relative overflow-hidden bg-apple-surface">
+        <div class="absolute -left-16 -top-16 w-48 h-48 bg-primary/10 rounded-full blur-3xl pointer-events-none"></div>
+
+        <div class="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div class="space-y-1">
+                <div class="flex items-center gap-3">
+                    <a href="{% url 'inventory:purchase_order_list' %}" class="p-2.5 bg-apple-surface-subtle hover:bg-primary/10 text-apple-text hover:text-primary rounded-2xl transition-all border border-apple-border shadow-apple-sm" title="العودة لقائمة الطلبيات">
+                        <span class="material-symbols-outlined text-xl">arrow_forward</span>
+                    </a>
+                    <div>
+                        <h1 class="text-xl sm:text-2xl lg:text-3xl font-black text-apple-text tracking-tight flex items-center gap-2 flex-wrap">
+                            {% if order %}
+                                <span>تعديل طلب البضاعة</span>
+                                <span class="font-mono text-primary bg-primary/10 px-3 py-1 rounded-2xl border border-primary/20 text-base sm:text-lg">{{ order.order_number }}</span>
+                            {% else %}
+                                <span>تجميع وتحضير طلب بضاعة جديد</span>
+                            {% endif %}
+                        </h1>
+                        <p class="text-xs sm:text-sm text-apple-secondary font-medium mt-0.5">
+                            حدد الأصناف الناقصة، وزع الموردين، وحدد الكميات والتوصيات قبل اعتماد الطلبية
+                        </p>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Quick 1-Click Pull Action -->
-        <button type="button" @click="pullLowStockItems()" 
-                class="relative group bg-gradient-to-r from-amber-500 via-amber-600 to-amber-700 hover:from-amber-600 hover:to-amber-800 text-slate-950 font-black px-6 py-3.5 rounded-2xl flex items-center justify-center gap-2.5 shadow-xl shadow-amber-500/20 transition-all hover:scale-[1.02] active:scale-95 overflow-hidden">
-            <span class="material-symbols-outlined text-xl animate-bounce">bolt</span>
-            <span class="text-sm">سحب أصناف المخزون الحرج والنواقص تلقائياً ({{ low_stock_products|length }})</span>
-        </button>
-    </div>
+            <!-- Quick 1-Click Pull Action -->
+            <button type="button" @click="pullLowStockItems()" 
+                    class="w-full md:w-auto bg-amber-500 hover:bg-amber-600 text-white font-black px-5 py-3 rounded-2xl flex items-center justify-center gap-2 shadow-apple-sm transition-all active:scale-95 text-xs sm:text-sm cursor-pointer">
+                <span class="material-symbols-outlined text-lg">bolt</span>
+                <span>سحب أصناف المخزون الحرج والنواقص ({{ low_stock_products|length }})</span>
+            </button>
+        </div>
+    </header>
 
     <!-- Main Builder Grid -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-start">
         
-        <!-- Left 2 Columns: Add Toolbar & Items Table -->
-        <div class="lg:col-span-2 space-y-6">
+        <!-- Left 8 Columns on Desktop / Full on Mobile: Add Toolbar & Items List -->
+        <div class="lg:col-span-8 space-y-6 w-full min-w-0">
             
             <!-- Add Product Toolbar Card -->
-            <div class="glass-card p-6 rounded-3xl border border-white/10 space-y-5 bg-surface-container/60 shadow-xl relative z-30">
-                <div class="flex items-center justify-between border-b border-white/10 pb-3">
-                    <h3 class="text-base font-bold text-on-surface flex items-center gap-2">
-                        <span class="material-symbols-outlined text-primary">add_shopping_cart</span>
-                        إضافة صنف إلى الطلبية
+            <div class="glass-card p-5 sm:p-6 rounded-3xl border border-apple-border space-y-4 bg-apple-surface shadow-apple-md">
+                <div class="flex items-center justify-between border-b border-apple-border pb-3">
+                    <h3 class="text-sm sm:text-base font-black text-apple-text flex items-center gap-2">
+                        <span class="material-symbols-outlined text-primary text-xl">add_shopping_cart</span>
+                        <span>إضافة صنف إلى قائمة الطلبية</span>
                     </h3>
-                    <span class="text-xs text-on-surface-variant/80 font-medium">يمكنك اختيار صنف مسجل أو كتابة اسم خارجي</span>
+                    <span class="text-xs text-apple-secondary font-medium hidden sm:inline">صنف مسجل أو اسم خارجي</span>
                 </div>
                 
-                <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-3.5 items-end">
                     <!-- Product Custom Searchable Dropdown -->
-                    <div class="md:col-span-6 space-y-1.5">
-                        <label class="text-xs font-bold text-on-surface-variant">اختر صنف من المخزن:</label>
-                        <div class="relative w-full" @click.away="isProductDropdownOpen = false">
-                            <!-- Dropdown Trigger Button -->
-                            <div class="w-full bg-surface-container-high/90 border border-white/10 rounded-2xl px-4 py-3 text-sm text-on-surface flex justify-between items-center cursor-pointer hover:border-primary/50 transition-all select-none min-h-[46px] shadow-inner"
-                                 @click="isProductDropdownOpen = !isProductDropdownOpen">
-                                <div class="flex items-center gap-2 truncate flex-1 min-w-0">
-                                    <template x-if="selectedProductId">
-                                        <button type="button" @click.stop="clearSelectedProduct()" class="text-on-surface-variant hover:text-error transition-colors p-0.5 rounded-full hover:bg-white/10 shrink-0">
-                                            <span class="material-symbols-outlined text-base">close</span>
-                                        </button>
-                                    </template>
-                                    <span class="truncate font-semibold text-xs sm:text-sm text-right"
-                                          :class="selectedProductId ? 'text-primary font-bold' : 'text-on-surface-variant'"
-                                          x-text="getSelectedProductLabel()">
-                                    </span>
+                    <div class="md:col-span-6 space-y-1.5 relative" @click.away="isProductDropdownOpen = false">
+                        <label class="text-xs font-bold text-apple-secondary">اختر صنف من المخزن:</label>
+                        
+                        <!-- Dropdown Trigger Button -->
+                        <div class="w-full bg-apple-surface-subtle border border-apple-border rounded-2xl px-3.5 py-2.5 text-xs sm:text-sm text-apple-text flex justify-between items-center cursor-pointer hover:border-primary/50 transition-all select-none min-h-[44px] shadow-sm"
+                             @click="isProductDropdownOpen = !isProductDropdownOpen">
+                            <div class="flex items-center gap-2 truncate flex-1 min-w-0">
+                                <template x-if="selectedProductId">
+                                    <button type="button" @click.stop="clearSelectedProduct()" class="text-apple-secondary hover:text-red-500 transition-colors p-0.5 rounded-full hover:bg-apple-surface shrink-0">
+                                        <span class="material-symbols-outlined text-base">close</span>
+                                    </button>
+                                </template>
+                                <span class="truncate font-semibold text-xs sm:text-sm text-right"
+                                      :class="selectedProductId ? 'text-primary font-bold' : 'text-apple-secondary'"
+                                      x-text="getSelectedProductLabel()">
+                                </span>
+                            </div>
+                            <span class="material-symbols-outlined text-apple-secondary text-lg shrink-0 mr-1.5 transition-transform duration-200"
+                                  :class="isProductDropdownOpen ? 'rotate-180' : ''">expand_more</span>
+                        </div>
+
+                        <!-- Dropdown Menu Panel -->
+                        <div x-cloak x-show="isProductDropdownOpen"
+                             x-transition:enter="transition ease-out duration-150"
+                             x-transition:enter-start="opacity-0 scale-95 -translate-y-2"
+                             x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+                             x-transition:leave="transition ease-in duration-100"
+                             x-transition:leave-start="opacity-100 scale-100 translate-y-0"
+                             x-transition:leave-end="opacity-0 scale-95 -translate-y-2"
+                             class="absolute z-50 right-0 left-0 mt-1.5 bg-apple-surface border border-apple-border rounded-2xl shadow-apple-lg overflow-hidden flex flex-col max-h-80 w-full backdrop-blur-xl">
+
+                            <!-- Live Search Input & Low Stock Toggle Filter -->
+                            <div class="p-2.5 border-b border-apple-border bg-apple-surface-subtle sticky top-0 z-10 space-y-2">
+                                <div class="relative w-full">
+                                    <input type="text"
+                                           x-model="productSearchQuery"
+                                           placeholder="ابحث باسم المنتج أو الكود..."
+                                           class="w-full bg-apple-surface border border-apple-border rounded-xl pr-9 pl-3 py-2 text-xs text-right focus:outline-none focus:border-primary text-apple-text font-medium placeholder:text-apple-secondary"
+                                           @keydown.escape="isProductDropdownOpen = false">
+                                    <span class="material-symbols-outlined absolute right-2.5 top-1/2 -translate-y-1/2 text-apple-secondary text-base pointer-events-none">search</span>
                                 </div>
-                                <span class="material-symbols-outlined text-on-surface-variant text-lg shrink-0 mr-1.5 transition-transform duration-200"
-                                      :class="isProductDropdownOpen ? 'rotate-180' : ''">expand_more</span>
+                                <div class="flex justify-between items-center px-1">
+                                    <button type="button" 
+                                            @click="onlyLowStockFilter = !onlyLowStockFilter" 
+                                            class="text-[11px] font-bold px-2.5 py-1 rounded-xl border transition-all flex items-center gap-1"
+                                            :class="onlyLowStockFilter ? 'bg-amber-500/20 text-amber-500 border-amber-500/40' : 'bg-apple-surface text-apple-secondary border-apple-border hover:text-apple-text'">
+                                        <span class="material-symbols-outlined text-xs">warning</span>
+                                        <span>عرض النواقص فقط</span>
+                                    </button>
+                                    <span class="text-[10px] text-apple-secondary font-mono" x-text="getFilteredProducts().length + ' منتج'"></span>
+                                </div>
                             </div>
 
-                            <!-- Dropdown Menu Panel -->
-                            <div x-cloak x-show="isProductDropdownOpen"
-                                 x-transition:enter="transition ease-out duration-150"
-                                 x-transition:enter-start="opacity-0 scale-95 -translate-y-2"
-                                 x-transition:enter-end="opacity-100 scale-100 translate-y-0"
-                                 x-transition:leave="transition ease-in duration-100"
-                                 x-transition:leave-start="opacity-100 scale-100 translate-y-0"
-                                 x-transition:leave-end="opacity-0 scale-95 -translate-y-2"
-                                 class="absolute z-50 right-0 left-0 mt-2 bg-surface-container-high border border-white/15 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-80 w-full max-w-full backdrop-blur-2xl">
-
-                                <!-- Live Search Input & Low Stock Toggle Filter -->
-                                <div class="p-2.5 border-b border-white/10 bg-white/5 sticky top-0 z-10 space-y-2">
-                                    <div class="relative w-full">
-                                        <input type="text"
-                                               x-model="productSearchQuery"
-                                               placeholder="ابحث باسم المنتج، الكود أو النوع..."
-                                               class="w-full bg-surface-container border border-white/10 rounded-xl pr-9 pl-3 py-2 text-xs text-right focus:outline-none focus:border-primary text-on-surface font-medium placeholder:text-on-surface-variant/50"
-                                               @keydown.escape="isProductDropdownOpen = false">
-                                        <span class="material-symbols-outlined absolute right-2.5 top-1/2 -translate-y-1/2 text-on-surface-variant text-base pointer-events-none">search</span>
-                                    </div>
-                                    <div class="flex justify-between items-center px-1">
-                                        <button type="button" 
-                                                @click="onlyLowStockFilter = !onlyLowStockFilter" 
-                                                class="text-[11px] font-bold px-2.5 py-1 rounded-lg border transition-all flex items-center gap-1"
-                                                :class="onlyLowStockFilter ? 'bg-amber-500/20 text-amber-400 border-amber-500/40' : 'bg-white/5 text-on-surface-variant border-white/10 hover:bg-white/10'">
-                                            <span class="material-symbols-outlined text-xs">warning</span>
-                                            <span>عرض النواقص فقط</span>
-                                        </button>
-                                        <span class="text-[10px] text-on-surface-variant/70 font-mono" x-text="getFilteredProducts().length + ' نتائج'"></span>
-                                    </div>
+                            <!-- Options List -->
+                            <div class="overflow-y-auto divide-y divide-apple-border max-h-56">
+                                <div class="p-3 text-xs text-apple-secondary hover:bg-apple-surface-subtle cursor-pointer font-medium text-right"
+                                     @click="selectProduct('')">
+                                    -- اختر صنفاً أو اكتب اسم خارجي --
                                 </div>
-
-                                <!-- Options List -->
-                                <div class="overflow-y-auto divide-y divide-white/5 max-h-60">
-                                    <div class="p-3 text-xs text-on-surface-variant hover:bg-white/5 cursor-pointer font-medium text-right"
-                                         @click="selectProduct('')">
-                                        -- اختر صنفاً أو أضف اسم خارجي --
-                                    </div>
-                                    
-                                    <template x-for="prod in getFilteredProducts()" :key="prod.id">
-                                        <div class="p-3 text-xs hover:bg-primary/15 cursor-pointer flex justify-between items-center transition-colors group"
-                                             :class="selectedProductId == prod.id ? 'bg-primary/20 text-primary font-bold' : 'text-on-surface'"
-                                             @click="selectProduct(prod.id)">
-                                            <div class="flex flex-col text-right">
-                                                <span class="font-bold group-hover:text-primary transition-colors" x-text="prod.name"></span>
-                                                <span class="text-[10px] text-on-surface-variant/80">
-                                                    السعر التقديري: <span class="font-mono font-bold text-tertiary" x-text="prod.unit_cost"></span> ج.م
-                                                </span>
-                                            </div>
-                                            <span class="px-2.5 py-1 rounded-lg text-[10px] font-bold shrink-0 ml-2 shadow-sm"
-                                                  :class="prod.stock_quantity <= prod.min_stock_threshold ? 'bg-error/20 text-error border border-error/30 animate-pulse' : 'bg-white/10 text-on-surface-variant border border-white/5'"
-                                                  x-text="'الرصيد: ' + prod.stock_quantity + ' / الأدنى: ' + prod.min_stock_threshold">
+                                
+                                <template x-for="prod in getFilteredProducts()" :key="prod.id">
+                                    <div class="p-3 text-xs hover:bg-primary/10 cursor-pointer flex justify-between items-center transition-colors group"
+                                         :class="selectedProductId == prod.id ? 'bg-primary/15 text-primary font-bold' : 'text-apple-text'"
+                                         @click="selectProduct(prod.id)">
+                                        <div class="flex flex-col text-right min-w-0 pr-1">
+                                            <span class="font-bold truncate" x-text="prod.name"></span>
+                                            <span class="text-[10px] text-apple-secondary">
+                                                سعر الشراء: <span class="font-mono font-bold text-apple-text" x-text="prod.unit_cost"></span> ج.م
                                             </span>
                                         </div>
-                                    </template>
+                                        <span class="px-2.5 py-1 rounded-lg text-[10px] font-bold shrink-0 shadow-sm font-mono"
+                                              :class="prod.stock_quantity <= prod.min_stock_threshold ? 'bg-red-500/15 text-red-500 border border-red-500/30' : 'bg-apple-surface-subtle text-apple-secondary border border-apple-border'"
+                                              x-text="'الرصيد: ' + prod.stock_quantity + ' / أدنى: ' + prod.min_stock_threshold">
+                                        </span>
+                                    </div>
+                                </template>
 
-                                    <template x-if="getFilteredProducts().length === 0">
-                                        <div class="p-6 text-center text-xs text-on-surface-variant/70 flex flex-col items-center gap-2">
-                                            <span class="material-symbols-outlined text-2xl">search_off</span>
-                                            <span>لا توجد أصناف مطابقة للبحث</span>
-                                        </div>
-                                    </template>
-                                </div>
+                                <template x-if="getFilteredProducts().length === 0">
+                                    <div class="p-6 text-center text-xs text-apple-secondary flex flex-col items-center gap-2">
+                                        <span class="material-symbols-outlined text-2xl text-apple-secondary">search_off</span>
+                                        <span>لا توجد أصناف مطابقة للبحث</span>
+                                    </div>
+                                </template>
                             </div>
                         </div>
                     </div>
 
                     <!-- Custom Name if not in inventory -->
                     <div class="md:col-span-4 space-y-1.5" x-show="!selectedProductId">
-                        <label class="text-xs font-bold text-on-surface-variant">أو اسم صنف خارجي غير مسجل:</label>
-                        <input type="text" x-model="customItemName" placeholder="أدخل اسم البضاعة المطلوبة..." class="w-full bg-surface-container-high/90 border border-white/10 rounded-2xl px-4 py-3 text-sm text-on-surface focus:outline-none focus:border-primary shadow-inner">
+                        <label class="text-xs font-bold text-apple-secondary">أو اسم صنف خارجي غير مسجل:</label>
+                        <input type="text" x-model="customItemName" placeholder="أدخل اسم البضاعة المطلوبة..." 
+                               class="w-full bg-apple-surface-subtle border border-apple-border rounded-2xl px-3.5 py-2.5 text-xs sm:text-sm text-apple-text focus:outline-none focus:border-primary shadow-sm">
                     </div>
 
                     <!-- Add Button -->
                     <div class="md:col-span-2" :class="selectedProductId ? 'md:col-span-6' : 'md:col-span-2'">
-                        <button type="button" @click="addItem()" class="w-full bg-primary hover:bg-primary/90 text-on-primary font-bold py-3 rounded-2xl flex items-center justify-center gap-1.5 shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-95">
+                        <button type="button" @click="addItem()" class="w-full bg-primary hover:bg-primary/95 text-white font-bold py-2.5 sm:py-3 rounded-2xl flex items-center justify-center gap-1.5 shadow-apple-sm transition-all active:scale-95 text-xs sm:text-sm cursor-pointer">
                             <span class="material-symbols-outlined text-lg">add</span>
                             <span>إضافة للقائمة</span>
                         </button>
@@ -156,121 +162,132 @@
                 </div>
             </div>
 
-            <!-- Items Table Card -->
-            <div class="glass-card rounded-3xl border border-white/10 shadow-2xl bg-surface-container-low/70 relative z-10">
-                <div class="p-5 border-b border-white/10 flex justify-between items-center bg-white/5">
+            <!-- Items Table Card (Responsive for Mobile & Desktop) -->
+            <div class="glass-card rounded-3xl border border-apple-border shadow-apple-md bg-apple-surface overflow-hidden">
+                <div class="p-4 sm:p-5 border-b border-apple-border flex justify-between items-center bg-apple-surface-subtle/50">
                     <div class="flex items-center gap-3">
-                        <h2 class="text-base font-bold text-on-surface flex items-center gap-2">
-                            <span class="material-symbols-outlined text-primary">format_list_bulleted</span>
-                            قائمة البضائع المطلوبة
+                        <h2 class="text-sm sm:text-base font-black text-apple-text flex items-center gap-2">
+                            <span class="material-symbols-outlined text-primary text-xl">format_list_bulleted</span>
+                            <span>قائمة البضائع المطلوبة</span>
                         </h2>
-                        <span class="bg-primary/20 text-primary border border-primary/30 text-xs font-bold px-3 py-1 rounded-full font-mono" x-text="items.length + ' صنف'"></span>
+                        <span class="bg-primary/10 text-primary border border-primary/20 text-xs font-bold px-3 py-1 rounded-full font-mono" x-text="items.length + ' صنف'"></span>
                     </div>
 
                     <template x-if="items.length > 0">
-                        <button type="button" @click="confirmClearAll()" class="text-xs text-error hover:bg-error/10 border border-error/20 px-3 py-1.5 rounded-xl transition-all flex items-center gap-1">
+                        <button type="button" @click="confirmClearAll()" class="text-xs text-red-500 hover:bg-red-500/10 border border-red-500/20 px-3 py-1.5 rounded-xl transition-all flex items-center gap-1">
                             <span class="material-symbols-outlined text-sm">delete_sweep</span>
-                            مسح القائمة بالكامل
+                            <span>تفريغ القائمة</span>
                         </button>
                     </template>
                 </div>
 
+                <!-- Desktop Table / Mobile Scroll Container -->
                 <div class="overflow-x-auto">
-                    <table class="w-full text-right text-sm border-collapse">
-                        <thead class="bg-surface-container-high/80 text-on-surface-variant text-xs uppercase border-b border-white/10">
+                    <table class="w-full text-right text-xs sm:text-sm min-w-[680px]">
+                        <thead class="bg-slate-100 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 text-xs uppercase border-b border-slate-200 dark:border-slate-700 font-bold">
                             <tr>
-                                <th class="px-5 py-3.5">الصنف / المنتج</th>
-                                <th class="px-4 py-3.5">الشركة / المورد</th>
-                                <th class="px-4 py-3.5 text-center">الرصيد الحرج</th>
-                                <th class="px-4 py-3.5 text-center w-36">الكمية المطلوبة</th>
-                                <th class="px-4 py-3.5 text-center w-32">السعر التقديري</th>
-                                <th class="px-4 py-3.5 text-center">الإجمالي</th>
-                                <th class="px-4 py-3.5 text-center">حذف</th>
+                                <th class="px-4 py-3.5">الصنف / المنتج</th>
+                                <th class="px-3 py-3.5 w-44">الشركة / المورد</th>
+                                <th class="px-3 py-3.5 text-center w-24">الرصيد الحرج</th>
+                                <th class="px-3 py-3.5 text-center w-36">الكمية المطلوبة</th>
+                                <th class="px-3 py-3.5 text-left w-28">السعر التقديري</th>
+                                <th class="px-3 py-3.5 text-left w-28">الإجمالي</th>
+                                <th class="px-3 py-3.5 text-center w-12">حذف</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-white/5">
+                        <tbody class="divide-y divide-apple-border text-xs sm:text-sm">
                             <template x-for="(item, index) in items" :key="index">
-                                <tr class="hover:bg-white/5 transition-all group">
+                                <tr class="hover:bg-apple-surface-subtle/60 transition-all group">
                                     <!-- Product Name -->
-                                    <td class="px-5 py-4 font-semibold text-on-surface">
+                                    <td class="px-4 py-3.5 font-bold text-apple-text">
                                         <div class="flex flex-col">
-                                            <span class="text-sm font-bold group-hover:text-primary transition-colors" x-text="item.name"></span>
+                                            <span class="text-xs sm:text-sm group-hover:text-primary transition-colors" x-text="item.name"></span>
                                             <template x-if="item.stock_quantity !== undefined">
-                                                <span class="text-[11px] mt-0.5" :class="item.stock_quantity <= item.min_stock_threshold ? 'text-error font-bold' : 'text-on-surface-variant/80'">
-                                                    المتاح بالمخزن: <span class="font-mono font-bold" x-text="item.stock_quantity"></span> قطعة
+                                                <span class="text-[11px] mt-0.5 font-mono" :class="item.stock_quantity <= item.min_stock_threshold ? 'text-red-500 font-bold' : 'text-apple-secondary'">
+                                                    المتاح بالمخزن: <span class="font-bold" x-text="item.stock_quantity"></span> قطعة
                                                 </span>
                                             </template>
                                         </div>
                                     </td>
 
-                                    <!-- Supplier Dropdown (Custom Glass Popover) -->
-                                    <td class="px-4 py-4">
-                                        <div class="relative min-w-[140px]" @click.away="item._isSupplierOpen = false">
+                                    <!-- Supplier Dropdown with Quick Add Button -->
+                                    <td class="px-3 py-3.5">
+                                        <div class="relative" @click.away="item._isSupplierOpen = false">
                                             <button type="button" 
                                                     @click="item._isSupplierOpen = !item._isSupplierOpen"
-                                                    class="w-full bg-surface-container border border-white/10 hover:border-primary/50 rounded-xl px-3 py-1.5 text-xs text-on-surface flex justify-between items-center transition-all">
+                                                    class="w-full bg-apple-surface-subtle border border-apple-border hover:border-primary/50 rounded-xl px-2.5 py-1.5 text-xs text-apple-text flex justify-between items-center transition-all shadow-sm">
                                                 <span class="truncate text-[11px] font-semibold text-right"
-                                                      :class="item.supplier_id ? 'text-primary font-bold' : 'text-on-surface-variant'"
-                                                      x-text="item.supplier_id && suppliersData[item.supplier_id] ? suppliersData[item.supplier_id].name : 'اختر المورد'">
+                                                      :class="item.supplier_id ? 'text-primary font-bold' : 'text-apple-secondary'"
+                                                      x-text="item.supplier_id && suppliersData[item.supplier_id] ? suppliersData[item.supplier_id].name : 'افتراضي / عدة شركات'">
                                                 </span>
-                                                <span class="material-symbols-outlined text-xs text-on-surface-variant shrink-0 mr-1">unfold_more</span>
+                                                <span class="material-symbols-outlined text-xs text-apple-secondary shrink-0 mr-1">unfold_more</span>
                                             </button>
 
                                             <div x-show="item._isSupplierOpen"
                                                  x-transition:enter="transition ease-out duration-100"
                                                  x-transition:enter-start="opacity-0 scale-95"
                                                  x-transition:enter-end="opacity-100 scale-100"
-                                                 class="absolute z-50 right-0 mt-1 w-52 bg-surface-container-high border border-white/15 rounded-xl shadow-2xl p-1 text-xs max-h-48 overflow-y-auto divide-y divide-white/5 backdrop-blur-2xl"
+                                                 class="absolute z-50 right-0 mt-1 w-56 bg-apple-surface border border-apple-border rounded-2xl shadow-apple-lg p-1 text-xs max-h-48 overflow-y-auto divide-y divide-apple-border backdrop-blur-xl"
                                                  style="display: none;">
-                                                <div class="p-2 hover:bg-white/5 cursor-pointer text-on-surface-variant text-[11px]"
+                                                
+                                                <!-- Quick Add Supplier Trigger in row -->
+                                                <div class="p-2 bg-primary/10 hover:bg-primary/20 text-primary font-bold text-[11px] flex items-center gap-1.5 cursor-pointer rounded-xl mb-1"
+                                                     @click="openAddSupplierModal(item); item._isSupplierOpen = false;">
+                                                    <span class="material-symbols-outlined text-sm">add_business</span>
+                                                    <span>+ إضافة شركة جديدة</span>
+                                                </div>
+
+                                                <div class="p-2 hover:bg-apple-surface-subtle cursor-pointer text-apple-secondary text-[11px] font-medium"
                                                      @click="item.supplier_id = ''; item._isSupplierOpen = false;">
                                                     افتراضي / عدة شركات
                                                 </div>
-                                                {% for s in suppliers %}
-                                                <div class="p-2 hover:bg-primary/20 hover:text-primary cursor-pointer font-medium text-[11px] text-on-surface text-right transition-colors"
-                                                     :class="item.supplier_id == '{{ s.id }}' ? 'bg-primary/20 text-primary font-bold' : ''"
-                                                     @click="item.supplier_id = '{{ s.id }}'; item._isSupplierOpen = false;">
-                                                    {{ s.name }}
-                                                </div>
-                                                {% endfor %}
+                                                
+                                                <template x-for="s in getSuppliersList()" :key="s.id">
+                                                    <div class="p-2 hover:bg-primary/15 hover:text-primary cursor-pointer font-medium text-[11px] text-apple-text text-right transition-colors"
+                                                         :class="item.supplier_id == s.id ? 'bg-primary/15 text-primary font-bold' : ''"
+                                                         @click="item.supplier_id = s.id; item._isSupplierOpen = false;">
+                                                        <span x-text="s.name"></span>
+                                                    </div>
+                                                </template>
                                             </div>
                                         </div>
                                     </td>
 
                                     <!-- Critical Stock Threshold -->
-                                    <td class="px-4 py-4 text-center text-xs">
+                                    <td class="px-3 py-3.5 text-center text-xs">
                                         <template x-if="item.min_stock_threshold">
-                                            <span class="px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-[11px] font-mono text-on-surface-variant" x-text="'الحد الأدنى: ' + item.min_stock_threshold"></span>
+                                            <span class="px-2 py-0.5 rounded-lg bg-apple-surface-subtle border border-apple-border text-[11px] font-mono text-apple-secondary" x-text="'أدنى: ' + item.min_stock_threshold"></span>
                                         </template>
                                         <template x-if="!item.min_stock_threshold">
-                                            <span class="text-on-surface-variant/40">-</span>
+                                            <span class="text-apple-secondary/40 font-mono">—</span>
                                         </template>
                                     </td>
 
-                                    <!-- Quantity Incrementor -->
-                                    <td class="px-4 py-4 text-center">
-                                        <div class="flex items-center justify-center gap-1.5 bg-surface-container/80 p-1 rounded-xl border border-white/10">
-                                            <button type="button" @click="item.quantity = Math.max(1, parseInt(item.quantity || 1) - 1)" class="w-7 h-7 bg-white/5 hover:bg-white/15 active:scale-90 rounded-lg text-on-surface font-bold text-xs flex items-center justify-center transition-all">-</button>
-                                            <input type="number" min="1" x-model.number="item.quantity" class="w-12 text-center bg-transparent border-0 text-xs font-black text-primary focus:outline-none font-mono">
-                                            <button type="button" @click="item.quantity = parseInt(item.quantity || 0) + 1" class="w-7 h-7 bg-white/5 hover:bg-white/15 active:scale-90 rounded-lg text-on-surface font-bold text-xs flex items-center justify-center transition-all">+</button>
+                                    <!-- Quantity Incrementor (Touch Friendly) -->
+                                    <td class="px-3 py-3.5 text-center">
+                                        <div class="inline-flex items-center justify-center gap-1 bg-apple-surface-subtle p-1 rounded-xl border border-apple-border shadow-sm">
+                                            <button type="button" @click="item.quantity = Math.max(1, parseInt(item.quantity || 1) - 1)" 
+                                                    class="w-7 h-7 bg-apple-surface hover:bg-apple-surface-subtle active:scale-90 rounded-lg text-apple-text font-black text-sm flex items-center justify-center transition-all border border-apple-border cursor-pointer">-</button>
+                                            <input type="number" min="1" x-model.number="item.quantity" class="w-12 text-center bg-transparent border-0 text-xs sm:text-sm font-black text-primary focus:outline-none font-mono">
+                                            <button type="button" @click="item.quantity = parseInt(item.quantity || 0) + 1" 
+                                                    class="w-7 h-7 bg-apple-surface hover:bg-apple-surface-subtle active:scale-90 rounded-lg text-apple-text font-black text-sm flex items-center justify-center transition-all border border-apple-border cursor-pointer">+</button>
                                         </div>
                                     </td>
 
                                     <!-- Unit Cost Input -->
-                                    <td class="px-4 py-4 text-center">
-                                        <div class="relative">
-                                            <input type="number" step="0.5" x-model.number="item.unit_cost" class="w-24 text-center bg-surface-container border border-white/10 rounded-xl px-2 py-1.5 text-xs font-mono font-bold text-tertiary focus:outline-none focus:border-primary shadow-inner">
-                                        </div>
+                                    <td class="px-3 py-3.5 text-left">
+                                        <input type="number" step="0.5" x-model.number="item.unit_cost" 
+                                               class="w-24 text-center bg-apple-surface-subtle border border-apple-border rounded-xl px-2 py-1.5 text-xs font-mono font-bold text-apple-text focus:outline-none focus:border-primary shadow-sm">
                                     </td>
 
                                     <!-- Item Subtotal -->
-                                    <td class="px-4 py-4 text-center font-mono font-bold text-tertiary text-sm">
-                                        <span x-text="(item.quantity * item.unit_cost).toFixed(2)"></span> <span class="text-[10px] text-on-surface-variant">ج.م</span>
+                                    <td class="px-3 py-3.5 text-left font-mono font-black text-primary text-xs sm:text-sm whitespace-nowrap">
+                                        <span x-text="(item.quantity * item.unit_cost).toFixed(2)"></span> <span class="text-[10px] text-apple-secondary font-normal">ج.م</span>
                                     </td>
 
                                     <!-- Delete Row Button -->
-                                    <td class="px-4 py-4 text-center">
-                                        <button type="button" @click="items.splice(index, 1)" class="p-1.5 text-error/70 hover:text-error hover:bg-error/10 rounded-xl transition-all">
+                                    <td class="px-3 py-3.5 text-center">
+                                        <button type="button" @click="items.splice(index, 1)" class="p-1.5 text-red-500/70 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all" title="حذف الصنف">
                                             <span class="material-symbols-outlined text-lg">delete</span>
                                         </button>
                                     </td>
@@ -280,18 +297,18 @@
                             <!-- Empty List Placeholder State -->
                             <template x-if="items.length === 0">
                                 <tr>
-                                    <td colspan="7" class="px-6 py-16 text-center text-on-surface-variant">
+                                    <td colspan="7" class="px-6 py-14 text-center text-apple-secondary">
                                         <div class="flex flex-col items-center justify-center gap-3">
-                                            <div class="w-16 h-16 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-on-surface-variant/40">
-                                                <span class="material-symbols-outlined text-4xl">remove_shopping_cart</span>
+                                            <div class="w-14 h-14 rounded-2xl bg-apple-surface-subtle border border-apple-border flex items-center justify-center text-apple-secondary">
+                                                <span class="material-symbols-outlined text-3xl">remove_shopping_cart</span>
                                             </div>
                                             <div>
-                                                <p class="text-base font-bold text-on-surface">قائمة طلب البضاعة فارغة حالياً</p>
-                                                <p class="text-xs text-on-surface-variant/70 mt-1 max-w-md mx-auto">قم باختيار صنف من المخزن أعلاه، أو اضغط زر "سحب أصناف المخزون الحرج والنواقص تلقائياً" لإدراج النواقص بنقرة واحدة.</p>
+                                                <p class="text-sm sm:text-base font-bold text-apple-text">قائمة طلب البضاعة فارغة حالياً</p>
+                                                <p class="text-xs text-apple-secondary mt-1 max-w-md mx-auto">اختر صنفاً من القائمة بالأعلى أو اضغط زر سحب النواقص لإدراج البضائع الحرجة تلقائياً.</p>
                                             </div>
-                                            <button type="button" @click="pullLowStockItems()" class="mt-2 text-xs bg-amber-500/20 text-amber-400 border border-amber-500/40 hover:bg-amber-500/30 px-4 py-2 rounded-xl font-bold transition-all flex items-center gap-1.5">
+                                            <button type="button" @click="pullLowStockItems()" class="mt-2 text-xs bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-xl font-bold transition-all flex items-center gap-1.5 shadow-sm active:scale-95 cursor-pointer">
                                                 <span class="material-symbols-outlined text-sm">bolt</span>
-                                                سحب الأصناف الحرجة الآن
+                                                <span>سحب الأصناف الحرجة الآن</span>
                                             </button>
                                         </div>
                                     </td>
@@ -303,35 +320,45 @@
             </div>
         </div>
 
-        <!-- Right Column: Supplier Config, Notes & Grand Summary Card -->
-        <div class="space-y-6">
+        <!-- Right 4 Columns: Supplier Config, Notes & Grand Summary Card -->
+        <div class="lg:col-span-4 space-y-6 w-full min-w-0">
             
             <!-- Order Configuration & Details Card -->
-            <div class="glass-card p-6 rounded-3xl border border-white/10 space-y-6 shadow-2xl bg-surface-container-low/70">
-                <h3 class="text-lg font-bold text-on-surface flex items-center gap-2 pb-3 border-b border-white/10">
-                    <span class="material-symbols-outlined text-primary">assignment</span>
-                    بيانات وإحصائيات الطلب
+            <div class="glass-card p-5 sm:p-6 rounded-3xl border border-apple-border space-y-5 shadow-apple-md bg-apple-surface">
+                <h3 class="text-sm sm:text-base font-black text-apple-text flex items-center gap-2 pb-3 border-b border-apple-border">
+                    <span class="material-symbols-outlined text-primary text-xl">assignment</span>
+                    <span>بيانات وإحصائيات الطلب</span>
                 </h3>
 
-                <!-- Primary Order Supplier (Custom Searchable Dropdown) -->
+                <!-- Primary Order Supplier with Quick Add Button -->
                 <div class="space-y-2">
-                    <label class="text-xs font-bold text-on-surface-variant">الشركة / المورد الرئيسي للطلب:</label>
+                    <div class="flex items-center justify-between">
+                        <label class="text-xs font-bold text-apple-secondary">الشركة / المورد الرئيسي للطلب:</label>
+                        <!-- Quick Add Supplier Trigger Button -->
+                        <button type="button" @click="openAddSupplierModal()" 
+                                class="text-xs font-bold text-primary hover:text-primary/80 flex items-center gap-1 transition-colors cursor-pointer"
+                                title="إضافة شركة موردة جديدة للنظام مباشرة">
+                            <span class="material-symbols-outlined text-sm">add_business</span>
+                            <span>+ إضافة شركة</span>
+                        </button>
+                    </div>
+
                     <div class="relative w-full" @click.away="isMainSupplierDropdownOpen = false">
                         <!-- Trigger Button -->
-                        <div class="w-full bg-surface-container-high/90 border border-white/10 rounded-2xl px-4 py-3 text-sm text-on-surface flex justify-between items-center cursor-pointer hover:border-primary/50 transition-all select-none min-h-[46px] shadow-inner"
+                        <div class="w-full bg-apple-surface-subtle border border-apple-border rounded-2xl px-3.5 py-2.5 text-xs sm:text-sm text-apple-text flex justify-between items-center cursor-pointer hover:border-primary/50 transition-all select-none min-h-[44px] shadow-sm"
                              @click="isMainSupplierDropdownOpen = !isMainSupplierDropdownOpen">
                             <div class="flex items-center gap-2 truncate flex-1 min-w-0">
                                 <template x-if="orderSupplierId">
-                                    <button type="button" @click.stop="clearMainSupplier()" class="text-on-surface-variant hover:text-error transition-colors p-0.5 rounded-full hover:bg-white/10 shrink-0">
+                                    <button type="button" @click.stop="clearMainSupplier()" class="text-apple-secondary hover:text-red-500 transition-colors p-0.5 rounded-full hover:bg-apple-surface shrink-0">
                                         <span class="material-symbols-outlined text-base">close</span>
                                     </button>
                                 </template>
                                 <span class="truncate font-semibold text-xs sm:text-sm text-right"
-                                      :class="orderSupplierId ? 'text-primary font-bold' : 'text-on-surface-variant'"
+                                      :class="orderSupplierId ? 'text-primary font-bold' : 'text-apple-secondary'"
                                       x-text="getMainSupplierLabel()">
                                 </span>
                             </div>
-                            <span class="material-symbols-outlined text-on-surface-variant text-lg shrink-0 mr-1.5 transition-transform duration-200"
+                            <span class="material-symbols-outlined text-apple-secondary text-lg shrink-0 mr-1.5 transition-transform duration-200"
                                   :class="isMainSupplierDropdownOpen ? 'rotate-180' : ''">expand_more</span>
                         </div>
 
@@ -343,75 +370,86 @@
                              x-transition:leave="transition ease-in duration-100"
                              x-transition:leave-start="opacity-100 scale-100 translate-y-0"
                              x-transition:leave-end="opacity-0 scale-95 -translate-y-2"
-                             class="absolute z-50 right-0 left-0 mt-2 bg-surface-container-high border border-white/15 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-64 w-full max-w-full backdrop-blur-2xl"
+                             class="absolute z-50 right-0 left-0 mt-1.5 bg-apple-surface border border-apple-border rounded-2xl shadow-apple-lg overflow-hidden flex flex-col max-h-72 w-full backdrop-blur-xl"
                              style="display: none;">
 
+                            <!-- Quick Add Supplier Option at Top of list -->
+                            <div class="p-2.5 bg-primary/10 hover:bg-primary/20 text-primary font-bold text-xs flex items-center gap-1.5 cursor-pointer border-b border-apple-border transition-colors"
+                                 @click="openAddSupplierModal(); isMainSupplierDropdownOpen = false;">
+                                <span class="material-symbols-outlined text-base">add_business</span>
+                                <span>+ إضافة شركة / مورد جديد الآن</span>
+                            </div>
+
                             <!-- Search Bar -->
-                            <div class="p-2.5 border-b border-white/10 bg-white/5 sticky top-0 z-10">
+                            <div class="p-2 border-b border-apple-border bg-apple-surface-subtle sticky top-0 z-10">
                                 <div class="relative w-full">
                                     <input type="text"
                                            x-model="mainSupplierSearchQuery"
                                            placeholder="ابحث باسم الشركة أو المورد..."
-                                           class="w-full bg-surface-container border border-white/10 rounded-xl pr-9 pl-3 py-2 text-xs text-right focus:outline-none focus:border-primary text-on-surface font-medium placeholder:text-on-surface-variant/50"
+                                           class="w-full bg-apple-surface border border-apple-border rounded-xl pr-8 pl-3 py-1.5 text-xs text-right focus:outline-none focus:border-primary text-apple-text font-medium placeholder:text-apple-secondary"
                                            @keydown.escape="isMainSupplierDropdownOpen = false">
-                                    <span class="material-symbols-outlined absolute right-2.5 top-1/2 -translate-y-1/2 text-on-surface-variant text-base pointer-events-none">search</span>
+                                    <span class="material-symbols-outlined absolute right-2.5 top-1/2 -translate-y-1/2 text-apple-secondary text-base pointer-events-none">search</span>
                                 </div>
                             </div>
 
                             <!-- Options List -->
-                            <div class="overflow-y-auto divide-y divide-white/5 max-h-48">
-                                <div class="p-3 text-xs text-on-surface-variant hover:bg-white/5 cursor-pointer font-medium text-right"
+                            <div class="overflow-y-auto divide-y divide-apple-border max-h-48">
+                                <div class="p-2.5 text-xs text-apple-secondary hover:bg-apple-surface-subtle cursor-pointer font-medium text-right"
                                      @click="selectMainSupplier('')">
                                     عدة شركات / تحديد منفصل لكل صنف
                                 </div>
                                 
                                 <template x-for="supp in getFilteredSuppliers()" :key="supp.id">
-                                    <div class="p-3 text-xs hover:bg-primary/15 cursor-pointer flex justify-between items-center transition-colors group"
-                                         :class="orderSupplierId == supp.id ? 'bg-primary/20 text-primary font-bold' : 'text-on-surface'"
+                                    <div class="p-2.5 text-xs hover:bg-primary/10 cursor-pointer flex justify-between items-center transition-colors group"
+                                         :class="orderSupplierId == supp.id ? 'bg-primary/15 text-primary font-bold' : 'text-apple-text'"
                                          @click="selectMainSupplier(supp.id)">
                                         <div class="flex flex-col text-right">
                                             <span class="font-bold group-hover:text-primary transition-colors" x-text="supp.name"></span>
                                             <template x-if="supp.company">
-                                                <span class="text-[10px] text-on-surface-variant/70" x-text="supp.company"></span>
+                                                <span class="text-[10px] text-apple-secondary" x-text="supp.company"></span>
                                             </template>
                                         </div>
                                     </div>
                                 </template>
 
                                 <template x-if="getFilteredSuppliers().length === 0">
-                                    <div class="p-4 text-center text-xs text-on-surface-variant/70">
-                                        لا توجد شركات مطابقة للبحث
+                                    <div class="p-4 text-center text-xs text-apple-secondary space-y-1">
+                                        <p>لا توجد شركات مطابقة للبحث</p>
+                                        <button type="button" @click="openAddSupplierModal(null, mainSupplierSearchQuery); isMainSupplierDropdownOpen = false;" class="text-primary font-bold text-[11px] underline">
+                                            إضافة "{{ mainSupplierSearchQuery }}" كشركة جديدة
+                                        </button>
                                     </div>
                                 </template>
                             </div>
                         </div>
                     </div>
-                    <p class="text-[11px] text-on-surface-variant/70">تحديد الشركة الموردة هنا يربط الطلبية بالكامل بهذه الشركة، أو يمكنك تركها وتحديد الشركة لكل صنف على حدة.</p>
+                    <p class="text-[11px] text-apple-secondary">تحديد المورد هنا يربط الطلبية كاملة بهذه الشركة، أو يمكنك تركه والتوزيع لكل صنف.</p>
                 </div>
 
                 <!-- Notes & Directives -->
                 <div class="space-y-2">
-                    <label class="text-xs font-bold text-on-surface-variant">ملاحظات وتوصيات التوريد للشحن:</label>
-                    <textarea x-model="orderNotes" rows="3" placeholder="أدخل أي ملاحظات (مثال: يرجى التوريد صباحاً، الدفع نقداً عند الاستلام)..." class="w-full bg-surface-container-high border border-white/10 rounded-2xl p-3.5 text-xs text-on-surface focus:outline-none focus:border-primary shadow-inner placeholder:text-on-surface-variant/40"></textarea>
+                    <label class="text-xs font-bold text-apple-secondary">ملاحظات وتوصيات التوريد للشحن:</label>
+                    <textarea x-model="orderNotes" rows="3" placeholder="أدخل أي ملاحظات (مثال: يرجى التوريد صباحاً، الدفع عند الاستلام)..." 
+                              class="w-full bg-apple-surface-subtle border border-apple-border rounded-2xl p-3 text-xs text-apple-text focus:outline-none focus:border-primary shadow-sm placeholder:text-apple-secondary"></textarea>
                 </div>
 
-                <!-- Breakdown per Supplier Preview (If multiple suppliers selected) -->
+                <!-- Breakdown per Supplier Preview -->
                 <template x-if="getSupplierBreakdown().length > 0">
-                    <div class="space-y-2 border-t border-white/10 pt-4">
-                        <label class="text-xs font-bold text-on-surface-variant flex items-center gap-1.5">
+                    <div class="space-y-2 border-t border-apple-border pt-3">
+                        <label class="text-xs font-bold text-apple-secondary flex items-center gap-1.5">
                             <span class="material-symbols-outlined text-sm text-primary">store</span>
                             <span>توزيع الطلبية على الموردين:</span>
                         </label>
                         <div class="space-y-1.5 max-h-36 overflow-y-auto pr-1">
                             <template x-for="(supp, sIdx) in getSupplierBreakdown()" :key="sIdx">
-                                <div class="flex justify-between items-center bg-white/5 p-2.5 rounded-xl border border-white/5 text-xs">
+                                <div class="flex justify-between items-center bg-apple-surface-subtle p-2.5 rounded-xl border border-apple-border text-xs">
                                     <div class="flex items-center gap-2">
                                         <span class="w-2 h-2 rounded-full bg-primary"></span>
-                                        <span class="font-bold text-on-surface" x-text="supp.name"></span>
+                                        <span class="font-bold text-apple-text" x-text="supp.name"></span>
                                     </div>
-                                    <div class="flex items-center gap-3 text-[11px] font-mono">
-                                        <span class="text-on-surface-variant" x-text="supp.count + ' قطعة (' + supp.itemsCount + ' صنف)'"></span>
-                                        <span class="font-bold text-tertiary" x-text="supp.totalCost.toFixed(2) + ' ج.م'"></span>
+                                    <div class="flex items-center gap-2.5 text-[11px] font-mono">
+                                        <span class="text-apple-secondary" x-text="supp.count + ' قطعة'"></span>
+                                        <span class="font-bold text-primary" x-text="supp.totalCost.toFixed(2) + ' ج.م'"></span>
                                     </div>
                                 </div>
                             </template>
@@ -420,79 +458,79 @@
                 </template>
 
                 <!-- Grand Summary Box -->
-                <div class="bg-gradient-to-br from-primary/10 via-surface-container-high/60 to-tertiary/10 p-5 rounded-2xl space-y-3.5 border border-white/10 shadow-lg">
-                    <div class="flex justify-between items-center text-xs text-on-surface-variant">
+                <div class="bg-primary/5 border border-primary/20 p-4 rounded-2xl space-y-3 shadow-sm">
+                    <div class="flex justify-between items-center text-xs text-apple-secondary">
                         <span>إجمالي قطع البضائع:</span>
-                        <span class="font-bold font-mono text-on-surface text-sm" x-text="totalItemsCount + ' قطعة'"></span>
+                        <span class="font-bold font-mono text-apple-text text-sm" x-text="totalItemsCount + ' قطعة'"></span>
                     </div>
-                    <div class="flex justify-between items-center text-xs text-on-surface-variant">
+                    <div class="flex justify-between items-center text-xs text-apple-secondary">
                         <span>أنواع الأصناف والمنتجات:</span>
-                        <span class="font-bold font-mono text-on-surface text-sm" x-text="items.length + ' صنف'"></span>
+                        <span class="font-bold font-mono text-apple-text text-sm" x-text="items.length + ' صنف'"></span>
                     </div>
-                    <div class="pt-3 border-t border-white/10 flex justify-between items-center">
-                        <span class="text-sm font-bold text-on-surface">التكلفة التقديرية الإجمالية:</span>
-                        <span class="text-2xl font-black font-mono text-tertiary" x-text="totalEstimatedCost.toFixed(2) + ' ج.م'"></span>
+                    <div class="pt-2.5 border-t border-primary/15 flex justify-between items-center">
+                        <span class="text-xs sm:text-sm font-bold text-apple-text">التكلفة التقديرية الإجمالية:</span>
+                        <span class="text-xl sm:text-2xl font-black font-mono text-primary" x-text="totalEstimatedCost.toFixed(2) + ' ج.م'"></span>
                     </div>
                 </div>
 
-                <!-- Submission Actions (Sleek High-Contrast Layout) -->
-                <div class="space-y-3.5 pt-2">
+                <!-- Submission Actions (No Emojis - Material Symbols Icons) -->
+                <div class="space-y-2.5 pt-1">
                     <!-- Save as Draft -->
                     <button type="button" @click="saveOrder('draft')" :disabled="isSaving || items.length === 0" 
-                            class="w-full bg-amber-500/15 hover:bg-amber-500/25 border-2 border-amber-500/50 text-amber-700 dark:text-amber-300 font-black px-4 py-4 rounded-2xl flex items-center justify-between transition-all hover:scale-[1.01] active:scale-95 disabled:opacity-50 disabled:pointer-events-none shadow-md shadow-amber-500/10">
+                            class="w-full bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-600 dark:text-amber-400 font-bold px-4 py-3 rounded-2xl flex items-center justify-between transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none shadow-sm cursor-pointer">
                         <template x-if="!isSaving">
                             <div class="flex items-center justify-between w-full">
-                                <div class="flex items-center gap-2.5">
-                                    <span class="material-symbols-outlined text-2xl text-amber-500">bookmark_add</span>
-                                    <span class="text-sm font-black tracking-wide">حفظ الطلب كـ مسودة</span>
+                                <div class="flex items-center gap-2">
+                                    <span class="material-symbols-outlined text-xl">bookmark_add</span>
+                                    <span class="text-xs sm:text-sm font-black">حفظ الطلب كـ مسودة</span>
                                 </div>
-                                <span class="text-xs font-black bg-amber-500 text-slate-950 px-2.5 py-1 rounded-xl shadow-sm border border-amber-400/50 shrink-0">مسودة 📝</span>
+                                <span class="text-[11px] font-bold bg-amber-500/20 px-2.5 py-0.5 rounded-lg border border-amber-500/30">مسودة</span>
                             </div>
                         </template>
                         <template x-if="isSaving">
-                            <div class="flex items-center gap-2 justify-center w-full">
+                            <div class="flex items-center gap-2 justify-center w-full text-xs">
                                 <span class="material-symbols-outlined animate-spin text-base">progress_activity</span>
-                                <span class="font-bold">جاري الحفظ كـ مسودة...</span>
+                                <span>جاري الحفظ كـ مسودة...</span>
                             </div>
                         </template>
                     </button>
 
                     <!-- Save & Send to Supplier (WhatsApp Link) -->
                     <button type="button" @click="saveOrder('sent')" :disabled="isSaving || items.length === 0" 
-                            class="w-full bg-gradient-to-r from-sky-400 via-sky-500 to-blue-600 hover:from-sky-500 hover:to-blue-700 text-white font-black px-4 py-4 rounded-2xl flex items-center justify-between shadow-xl shadow-sky-500/30 transition-all hover:scale-[1.01] active:scale-95 disabled:opacity-50 disabled:pointer-events-none">
+                            class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold px-4 py-3 rounded-2xl flex items-center justify-between shadow-apple-sm transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none cursor-pointer">
                         <template x-if="!isSaving">
                             <div class="flex items-center justify-between w-full">
-                                <div class="flex items-center gap-2.5">
-                                    <span class="material-symbols-outlined text-2xl text-white">send</span>
-                                    <span class="text-sm font-black tracking-wide">حفظ وإرسال للمورد</span>
+                                <div class="flex items-center gap-2">
+                                    <span class="material-symbols-outlined text-xl">send</span>
+                                    <span class="text-xs sm:text-sm font-black">حفظ وإرسال للمورد</span>
                                 </div>
-                                <span class="text-xs font-black bg-slate-950/40 dark:bg-black/50 text-white px-2.5 py-1 rounded-xl border border-white/30 shadow-sm backdrop-blur-md shrink-0">واتساب 🚀</span>
+                                <span class="text-[11px] font-bold bg-white/20 px-2.5 py-0.5 rounded-lg border border-white/30">واتساب</span>
                             </div>
                         </template>
                         <template x-if="isSaving">
-                            <div class="flex items-center gap-2 justify-center w-full">
+                            <div class="flex items-center gap-2 justify-center w-full text-xs">
                                 <span class="material-symbols-outlined animate-spin text-base">progress_activity</span>
-                                <span class="font-bold">جاري التحضير والتحويل للواتساب...</span>
+                                <span>جاري التحضير والتحويل للواتساب...</span>
                             </div>
                         </template>
                     </button>
 
                     <!-- Save & Restock Directly -->
                     <button type="button" @click="saveOrder('received')" :disabled="isSaving || items.length === 0" 
-                            class="w-full bg-gradient-to-r from-emerald-400 via-emerald-500 to-teal-600 hover:from-emerald-500 hover:to-teal-700 text-white font-black px-4 py-4 rounded-2xl flex items-center justify-between shadow-xl shadow-emerald-500/30 transition-all hover:scale-[1.01] active:scale-95 disabled:opacity-50 disabled:pointer-events-none">
+                            class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-3 rounded-2xl flex items-center justify-between shadow-apple-sm transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none cursor-pointer">
                         <template x-if="!isSaving">
                             <div class="flex items-center justify-between w-full">
-                                <div class="flex items-center gap-2.5">
-                                    <span class="material-symbols-outlined text-2xl text-white">inventory_2</span>
-                                    <span class="text-sm font-black tracking-wide">حفظ وتزويد المخزون فوراً</span>
+                                <div class="flex items-center gap-2">
+                                    <span class="material-symbols-outlined text-xl">inventory_2</span>
+                                    <span class="text-xs sm:text-sm font-black">حفظ وتزويد المخزون فوراً</span>
                                 </div>
-                                <span class="text-xs font-black bg-slate-950/40 dark:bg-black/50 text-white px-2.5 py-1 rounded-xl border border-white/30 shadow-sm backdrop-blur-md shrink-0">تزويد مخزني 📦</span>
+                                <span class="text-[11px] font-bold bg-white/20 px-2.5 py-0.5 rounded-lg border border-white/30">تزويد مخزني</span>
                             </div>
                         </template>
                         <template x-if="isSaving">
-                            <div class="flex items-center gap-2 justify-center w-full">
+                            <div class="flex items-center gap-2 justify-center w-full text-xs">
                                 <span class="material-symbols-outlined animate-spin text-base">progress_activity</span>
-                                <span class="font-bold">جاري إدخال البضائع للمخزن...</span>
+                                <span>جاري إدخال البضائع للمخزن...</span>
                             </div>
                         </template>
                     </button>
@@ -500,6 +538,71 @@
             </div>
         </div>
     </div>
+
+    <!-- Modal: Add New Supplier / Company (On-The-Fly Quick Modal) -->
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-4"
+        x-show="showAddSupplierModal" style="display: none;" @click.away="showAddSupplierModal = false"
+        x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95"
+        x-transition:enter-end="opacity-100 scale-100" x-transition:leave="transition ease-in duration-150"
+        x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95">
+
+        <div class="bg-apple-surface border border-apple-border rounded-3xl p-6 sm:p-8 max-w-md w-full space-y-5 text-right shadow-apple-lg relative"
+            @click.stop>
+            
+            <div class="flex items-center justify-between border-b border-apple-border pb-3">
+                <h3 class="text-base font-black text-apple-text flex items-center gap-2">
+                    <span class="material-symbols-outlined text-primary text-xl">add_business</span>
+                    <span>إضافة شركة / مورد جديد</span>
+                </h3>
+                <button type="button" @click="showAddSupplierModal = false" class="p-1 rounded-xl text-apple-secondary hover:text-apple-text hover:bg-apple-surface-subtle">
+                    <span class="material-symbols-outlined text-lg">close</span>
+                </button>
+            </div>
+
+            <form @submit.prevent="submitQuickSupplier()" class="space-y-3.5 text-xs sm:text-sm">
+                <!-- Supplier / Company Name -->
+                <div class="space-y-1">
+                    <label class="font-bold text-apple-text block">اسم المورد أو الشركة: <span class="text-red-500">*</span></label>
+                    <input type="text" x-model="newSupplier.name" required placeholder="مثال: شركة النيل للتوريدات الزراعية"
+                           class="w-full bg-apple-surface-subtle border border-apple-border rounded-xl px-3.5 py-2.5 text-apple-text focus:outline-none focus:border-primary">
+                </div>
+
+                <!-- Contact Person / Department -->
+                <div class="space-y-1">
+                    <label class="font-bold text-apple-secondary block">اسم المسؤول / المندوب:</label>
+                    <input type="text" x-model="newSupplier.company" placeholder="مثال: م. أحمد عبد العزيز"
+                           class="w-full bg-apple-surface-subtle border border-apple-border rounded-xl px-3.5 py-2.5 text-apple-text focus:outline-none focus:border-primary">
+                </div>
+
+                <!-- Phone -->
+                <div class="space-y-1">
+                    <label class="font-bold text-apple-secondary block">رقم هاتف الواتساب / الاتصال:</label>
+                    <input type="text" x-model="newSupplier.phone" placeholder="010XXXXXXXX" dir="ltr"
+                           class="w-full bg-apple-surface-subtle border border-apple-border rounded-xl px-3.5 py-2.5 text-apple-text font-mono text-right focus:outline-none focus:border-primary">
+                </div>
+
+                <!-- Address -->
+                <div class="space-y-1">
+                    <label class="font-bold text-apple-secondary block">العنوان / المقر:</label>
+                    <input type="text" x-model="newSupplier.address" placeholder="المدينة، المنطقة، أو المحافظة"
+                           class="w-full bg-apple-surface-subtle border border-apple-border rounded-xl px-3.5 py-2.5 text-apple-text focus:outline-none focus:border-primary">
+                </div>
+
+                <div class="flex items-center gap-2.5 pt-3 border-t border-apple-border">
+                    <button type="submit" :disabled="isAddingSupplier"
+                            class="flex-1 bg-primary hover:bg-primary/95 text-white font-black py-2.5 sm:py-3 rounded-xl transition-all shadow-apple-sm flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 cursor-pointer">
+                        <span class="material-symbols-outlined text-base" :class="isAddingSupplier ? 'animate-spin' : ''" x-text="isAddingSupplier ? 'progress_activity' : 'check'"></span>
+                        <span x-text="isAddingSupplier ? 'جاري الحفظ...' : 'حفظ واختيار الشركة'"></span>
+                    </button>
+                    <button type="button" @click="showAddSupplierModal = false"
+                            class="px-4 py-2.5 sm:py-3 rounded-xl bg-apple-surface-subtle border border-apple-border text-apple-secondary hover:text-apple-text font-bold text-xs active:scale-95">
+                        إلغاء
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
 </div>
 
 {% load l10n %}
@@ -518,6 +621,18 @@ function purchaseOrderApp() {
         onlyLowStockFilter: false,
         isMainSupplierDropdownOpen: false,
         mainSupplierSearchQuery: '',
+
+        // Quick Add Supplier Modal State
+        showAddSupplierModal: false,
+        isAddingSupplier: false,
+        targetRowForSupplier: null,
+        newSupplier: {
+            name: '',
+            company: '',
+            phone: '',
+            address: '',
+            notes: ''
+        },
 
         // Low stock products passed from backend
         lowStockProductsData: [
@@ -551,20 +666,20 @@ function purchaseOrderApp() {
         suppliersData: {
             {% for s in suppliers %}
             "{{ s.id }}": {
+                id: "{{ s.id }}",
                 name: '{{ s.name|escapejs }}',
-                company: '{{ s.company|default:""|escapejs }}'
+                company: '{{ s.company|default:""|escapejs }}',
+                phone: '{{ s.phone|default:""|escapejs }}'
             },
             {% endfor %}
         },
 
         initData() {
-            // Check if URL has auto_pull or low stock products exist
             const urlParams = new URLSearchParams(window.location.search);
             if (urlParams.get('auto_pull') === 'true') {
                 this.pullLowStockItems();
             }
 
-            // Existing order items if editing
             {% if order %}
                 {% for item in order.items.all %}
                 this.items.push({
@@ -581,6 +696,68 @@ function purchaseOrderApp() {
             {% endif %}
         },
 
+        getSuppliersList() {
+            return Object.values(this.suppliersData);
+        },
+
+        openAddSupplierModal(targetRow = null, initialName = '') {
+            this.targetRowForSupplier = targetRow;
+            this.newSupplier = {
+                name: initialName || '',
+                company: '',
+                phone: '',
+                address: '',
+                notes: ''
+            };
+            this.showAddSupplierModal = true;
+        },
+
+        submitQuickSupplier() {
+            if (!this.newSupplier.name.trim()) {
+                alert('يرجى كتابة اسم الشركة أو المورد.');
+                return;
+            }
+
+            this.isAddingSupplier = true;
+            fetch('{% url "inventory:add_supplier_ajax" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify(this.newSupplier)
+            })
+            .then(res => res.json())
+            .then(data => {
+                this.isAddingSupplier = false;
+                if (data.success && data.supplier) {
+                    const supp = data.supplier;
+                    this.suppliersData[supp.id] = {
+                        id: String(supp.id),
+                        name: supp.name,
+                        company: supp.company || '',
+                        phone: supp.phone || ''
+                    };
+
+                    // If opened from a specific row, assign to it; otherwise assign to main order supplier
+                    if (this.targetRowForSupplier) {
+                        this.targetRowForSupplier.supplier_id = String(supp.id);
+                    } else {
+                        this.orderSupplierId = String(supp.id);
+                    }
+
+                    this.showAddSupplierModal = false;
+                    alert(`تمت إضافة واختيار الشركة "${supp.name}" بنجاح!`);
+                } else {
+                    alert('خطأ: ' + (data.error || 'تعذر حفظ المورد'));
+                }
+            })
+            .catch(err => {
+                this.isAddingSupplier = false;
+                alert('حدث خطأ في الاتصال بالخادم أثناء إضافة المورد.');
+            });
+        },
+
         pullLowStockItems() {
             if (this.lowStockProductsData.length === 0) {
                 alert("لا توجد أصناف في المخزون الحرج حالياً! جميع رصيد الأصناف أكبر من الحد الأدنى.");
@@ -589,7 +766,6 @@ function purchaseOrderApp() {
 
             let addedCount = 0;
             this.lowStockProductsData.forEach(prod => {
-                // Check if already in items
                 const existing = this.items.find(i => i.product_id === prod.product_id);
                 if (!existing) {
                     this.items.push({
@@ -607,7 +783,7 @@ function purchaseOrderApp() {
             });
 
             if (addedCount > 0) {
-                alert(`⚡ تم إدراج (${addedCount}) صنف من أصناف المخزون الحرج بنجاح!`);
+                alert(`تم إدراج (${addedCount}) صنف من أصناف المخزون الحرج بنجاح!`);
             } else {
                 alert("الأصناف المطلوبة موجودة بالفعل بالقائمة.");
             }
@@ -615,10 +791,10 @@ function purchaseOrderApp() {
 
         getSelectedProductLabel() {
             if (!this.selectedProductId) {
-                return '-- اختر صنفاً أو أضف اسم خارجي --';
+                return '-- اختر صنفاً أو اكتب اسم خارجي --';
             }
             const prod = this.allProductsData[this.selectedProductId];
-            return prod ? prod.name : '-- اختر صنفاً أو أضف اسم خارجي --';
+            return prod ? prod.name : '-- اختر صنفاً أو اكتب اسم خارجي --';
         },
 
         getFilteredProducts() {
@@ -655,14 +831,11 @@ function purchaseOrderApp() {
                 return 'عدة شركات / تحديد منفصل لكل صنف';
             }
             const s = this.suppliersData[this.orderSupplierId];
-            return s ? (s.name + (s.company ? ' - ' + s.company : '')) : 'عدة شركات / تحديد منفصل لكل صنف';
+            return s ? (s.name + (s.company ? ' (' + s.company + ')' : '')) : 'عدة شركات / تحديد منفصل لكل صنف';
         },
 
         getFilteredSuppliers() {
-            const list = Object.keys(this.suppliersData).map(id => ({
-                id: id,
-                ...this.suppliersData[id]
-            }));
+            const list = Object.values(this.suppliersData);
             if (!this.mainSupplierSearchQuery || !this.mainSupplierSearchQuery.trim()) {
                 return list;
             }
@@ -682,7 +855,7 @@ function purchaseOrderApp() {
         },
 
         confirmClearAll() {
-            if (confirm("هل أنت تأكد من رغبتك في تفريغ مسودة طلب البضاعة بالكامل؟")) {
+            if (confirm("هل أنت متأكد من رغبتك في تفريغ مسودة طلب البضاعة بالكامل؟")) {
                 this.items = [];
             }
         },
@@ -757,7 +930,7 @@ function purchaseOrderApp() {
             }
 
             if (targetStatus === 'received') {
-                if (!confirm("هل أنت تأكد من استلام هذه الشحنة وتزويد مخزون جميع المنتجات فوراً بنفس الكميات؟")) {
+                if (!confirm("هل أنت متأكد من استلام هذه الشحنة وتزويد مخزون جميع المنتجات فوراً بنفس الكميات؟")) {
                     return;
                 }
             }

@@ -1,0 +1,298 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" class="dark">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>أمر توريد بضاعة رقم #{{ order.order_number }} — النماء ERP</title>
+    <link href="{% static 'vendor/css/cairo-inter.css' %}" rel="stylesheet">
+    <link href="{% static 'vendor/css/material-symbols.css' %}" rel="stylesheet">
+    <script defer src="{% static 'vendor/js/alpine.min.js' %}"></script>
+    <script src="{% static 'vendor/js/tailwind.js' %}"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3b82f6',
+                        'primary-dark': '#1d4ed8',
+                        apple: {
+                            base: '#0f172a',
+                            surface: '#1e293b',
+                            'surface-subtle': '#334155',
+                            border: 'rgba(255, 255, 255, 0.12)',
+                            text: '#f8fafc',
+                            secondary: '#94a3b8',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @media print {
+            @page {
+                size: A4 portrait;
+                margin: 12mm 15mm 12mm 15mm;
+            }
+            .no-print, header, aside, nav, button, [class*="no-print"] {
+                display: none !important;
+            }
+            html, body, div, section, article, p, span, h1, h2, h3, h4, h5, h6, td, th, tr, table, label, strong, b {
+                background: #ffffff !important;
+                background-color: #ffffff !important;
+                color: #111827 !important;
+                box-shadow: none !important;
+                text-shadow: none !important;
+                opacity: 1 !important;
+                visibility: visible !important;
+                filter: none !important;
+                backdrop-filter: none !important;
+            }
+            .print-border {
+                border: 1px solid #cbd5e1 !important;
+            }
+            table {
+                width: 100% !important;
+                border-collapse: collapse !important;
+                margin-top: 12px !important;
+                margin-bottom: 12px !important;
+            }
+            table th {
+                background-color: #f1f5f9 !important;
+                color: #0f172a !important;
+                border: 1px solid #94a3b8 !important;
+                padding: 8px 10px !important;
+                font-weight: 800 !important;
+                font-size: 11px !important;
+            }
+            table td {
+                border: 1px solid #cbd5e1 !important;
+                padding: 8px 10px !important;
+                color: #1e293b !important;
+                font-size: 11px !important;
+            }
+            .print-badge {
+                border: 1px solid #64748b !important;
+                padding: 3px 8px !important;
+                border-radius: 6px !important;
+                background: #f8fafc !important;
+                color: #0f172a !important;
+                font-weight: bold !important;
+            }
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 font-['Cairo'] min-h-screen p-3 sm:p-6 md:p-10 flex flex-col items-center justify-start antialiased"
+      x-data="{
+          copied: false,
+          init() {
+              if (window.location.search.includes('print=1')) {
+                  setTimeout(() => window.print(), 500);
+              }
+          },
+          copyLink() {
+              navigator.clipboard.writeText(window.location.href.split('?')[0]);
+              this.copied = true;
+              setTimeout(() => this.copied = false, 3000);
+          }
+      }">
+
+    <!-- Top Action Bar (hidden when printing to PDF) -->
+    <div class="no-print w-full max-w-4xl mb-6 flex flex-wrap items-center justify-between gap-3 bg-slate-900/90 border border-slate-800 p-4 rounded-2xl shadow-xl backdrop-blur-xl">
+        <div class="flex items-center gap-2 text-sm font-bold text-slate-300">
+            <span class="material-symbols-outlined text-primary text-xl">description</span>
+            <span>مستند أمر توريد بضاعة رسمي (PDF)</span>
+        </div>
+
+        <div class="flex items-center gap-2 flex-wrap">
+            <button @click="copyLink()" class="px-3.5 py-2 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-all flex items-center gap-1.5 active:scale-95">
+                <span class="material-symbols-outlined text-sm">link</span>
+                <span x-text="copied ? 'تم نسخ الرابط!' : 'نسخ الرابط'"></span>
+            </button>
+
+            <button @click="window.print()" class="px-5 py-2.5 rounded-xl text-xs font-black bg-primary hover:bg-primary-dark text-white transition-all flex items-center gap-2 shadow-lg shadow-primary/25 active:scale-95">
+                <span class="material-symbols-outlined text-base">print</span>
+                <span>طباعة وحفظ كـ PDF </span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Official Printable Purchase Order Sheet (A4 Dimensions Ready) -->
+    <div class="w-full max-w-4xl bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-10 shadow-2xl space-y-8 print-border">
+
+        <!-- Document Header -->
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-800 pb-6">
+            <div class="space-y-1">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+                        <span class="material-symbols-outlined text-2xl">local_shipping</span>
+                    </div>
+                    <div>
+                        <h1 class="text-xl sm:text-2xl font-black text-white tracking-tight">النماء للتجارة والتوكيلات</h1>
+                        <p class="text-xs text-slate-400">معدات زراعية • مواقير • قطع غيار • زيوت</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-left space-y-1 sm:text-left self-stretch sm:self-auto bg-slate-800/40 p-3.5 rounded-2xl border border-slate-800 print:bg-white print:p-0">
+                <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-primary/15 text-primary border border-primary/25 font-mono print-badge">
+                    أمر توريد: {{ order.order_number }}
+                </div>
+                <div class="text-xs text-slate-400 font-mono">تاريخ الطلب: {{ order.created_at|date:"Y-m-d — H:i" }}</div>
+                <div class="text-xs font-semibold text-slate-300">
+                    الحالة: <span class="font-bold text-primary">{{ order.get_status_display }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Supplier Details & Directives Card -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="bg-slate-800/50 border border-slate-700/60 rounded-2xl p-4 space-y-2 print-border">
+                <div class="text-xs font-bold text-slate-400 flex items-center gap-1.5">
+                    <span class="material-symbols-outlined text-sm text-primary">business</span>
+                    <span>الجهة الموردة / الشركة:</span>
+                </div>
+                <div class="text-base font-black text-white">
+                    {% if order.supplier %}
+                        {{ order.supplier.name }}
+                        {% if order.supplier.company %}
+                            <span class="text-xs font-normal text-slate-400">({{ order.supplier.company }})</span>
+                        {% endif %}
+                    {% else %}
+                        عدة شركات / توريد متنوع
+                    {% endif %}
+                </div>
+                {% if order.supplier and order.supplier.phone %}
+                    <div class="text-xs font-mono text-slate-300 flex items-center gap-1">
+                        <span class="material-symbols-outlined text-xs">call</span>
+                        {{ order.supplier.phone }}
+                    </div>
+                {% endif %}
+                {% if order.supplier and order.supplier.address %}
+                    <div class="text-xs text-slate-400 flex items-center gap-1">
+                        <span class="material-symbols-outlined text-xs">location_on</span>
+                        {{ order.supplier.address }}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="bg-slate-800/50 border border-slate-700/60 rounded-2xl p-4 space-y-2 print-border">
+                <div class="text-xs font-bold text-slate-400 flex items-center gap-1.5">
+                    <span class="material-symbols-outlined text-sm text-amber-500">notes</span>
+                    <span>ملاحظات وتعليمات الشحن والتسليم:</span>
+                </div>
+                <p class="text-xs text-slate-200 leading-relaxed">
+                    {% if order.notes %}
+                        {{ order.notes }}
+                    {% else %}
+                        يرجى توريد الأصناف مطابقة للمواصفات ومراجعة الكميات والفحص عند الاستلام بالمخزن.
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+
+        <!-- Itemized Breakdown Grouped by Supplier -->
+        <div class="space-y-6">
+            {% for supp_name, group in grouped_items.items %}
+            <div class="space-y-3">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                    <h3 class="text-sm font-black text-slate-200 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-base text-primary">domain</span>
+                        <span>مطلوب من شركة: <strong class="text-white">{{ supp_name }}</strong></span>
+                    </h3>
+                    {% if group.phone %}
+                        <span class="text-xs font-mono text-slate-400">{{ group.phone }}</span>
+                    {% endif %}
+                </div>
+
+                <div class="overflow-x-auto rounded-2xl border border-slate-800 bg-slate-900 shadow-inner print-border">
+                    <table class="w-full text-right text-xs">
+                        <thead class="bg-slate-800/70 border-b border-slate-700 text-slate-400 font-bold">
+                            <tr>
+                                <th class="py-3 px-3 w-10 text-center">#</th>
+                                <th class="py-3 px-4">اسم الصنف / البضاعة المطلوبة</th>
+                                <th class="py-3 px-3 text-center w-28">كود الصنف (SKU)</th>
+                                <th class="py-3 px-3 text-center w-28">الكمية المطلوبة</th>
+                                <th class="py-3 px-3 text-left w-32">السعر التقديري</th>
+                                <th class="py-3 px-3 text-left w-32">الإجمالي</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-800">
+                            {% for item in group.items %}
+                            <tr class="hover:bg-slate-800/40 transition-colors">
+                                <td class="py-3 px-3 text-center font-mono text-slate-400">{{ forloop.counter }}</td>
+                                <td class="py-3 px-4 font-bold text-white text-xs sm:text-sm">
+                                    {{ item.display_name }}
+                                </td>
+                                <td class="py-3 px-3 text-center font-mono text-slate-400">
+                                    {{ item.product.sku|default:"—" }}
+                                </td>
+                                <td class="py-3 px-3 text-center font-black text-primary font-mono text-sm">
+                                    {{ item.quantity_requested }}
+                                </td>
+                                <td class="py-3 px-3 text-left font-mono text-slate-300">
+                                    {{ item.unit_cost }} ج.م
+                                </td>
+                                <td class="py-3 px-3 text-left font-mono font-bold text-white">
+                                    {{ item.total_cost }} ج.م
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot class="bg-slate-800/50 border-t border-slate-700">
+                            <tr>
+                                <td colspan="5" class="py-2.5 px-4 font-bold text-slate-300 text-xs">
+                                    إجمالي مطلوبات ({{ supp_name }}):
+                                </td>
+                                <td class="py-2.5 px-3 text-left font-black font-mono text-primary text-sm">
+                                    {{ group.total_cost }} ج.م
+                                </td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Grand Total Summary Banner -->
+        <div class="p-5 rounded-2xl bg-gradient-to-r from-primary/10 via-slate-800/80 to-primary/5 border border-primary/20 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 print-border">
+            <div class="space-y-0.5">
+                <div class="text-xs font-bold text-slate-400">ملخص أمر التوريد الكلي:</div>
+                <div class="text-sm font-bold text-white">
+                    إجمالي عدد القطع المطلوبة: <span class="text-primary font-mono font-black">{{ order.total_items_count }} قطعة</span>
+                </div>
+            </div>
+
+            <div class="text-left self-stretch sm:self-auto">
+                <div class="text-[11px] font-bold text-slate-400">التكلفة التقديرية الإجمالية</div>
+                <div class="text-2xl sm:text-3xl font-black font-mono text-primary">
+                    {{ order.total_estimated_cost }} <span class="text-xs font-normal text-slate-400">ج.م</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Signatures & Stamp Block (For official printed paper) -->
+        <div class="pt-6 border-t border-slate-800 grid grid-cols-2 gap-8 text-center text-xs">
+            <div class="space-y-8">
+                <div class="font-bold text-slate-400">توقيع واعتماد قسم المشتريات / الإدارة</div>
+                <div class="border-b border-dashed border-slate-700 w-40 mx-auto"></div>
+            </div>
+
+            <div class="space-y-8">
+                <div class="font-bold text-slate-400">توقيع واستلام مندوب الشركة الموردة</div>
+                <div class="border-b border-dashed border-slate-700 w-40 mx-auto"></div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="text-center text-[11px] text-slate-400 pt-2 border-t border-slate-800">
+            تم استخراج أمر التوريد رسمياً بواسطة نظام النماء ERP • هاتف الدعم: 01011079572
+        </div>
+
+    </div>
+
+</body>
+</html>

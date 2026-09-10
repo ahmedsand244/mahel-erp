@@ -4,7 +4,8 @@ from .views import (
     ProductDeleteView, QuickRestockView, BulkPriceAdjustmentView, SingleProductPriceAdjustmentView,
     PurchaseOrderListView, PurchaseOrderBuilderView, PurchaseOrderDetailView, PurchaseOrderReceiveView, PurchaseOrderDeleteView,
     ExportProductsExcelView, DownloadSampleProductsExcelView, ImportProductsExcelView, BarcodeGeneratorView,
-    CategoryCreateView, CategoryDeleteView, QuickUpdateMinStockView
+    CategoryCreateView, CategoryDeleteView, QuickUpdateMinStockView,
+    AddSupplierAjaxView, PublicPurchaseOrderDetailView
 )
 
 app_name = 'inventory'
@@ -28,8 +29,10 @@ urlpatterns = [
     path('orders/new/', PurchaseOrderBuilderView.as_view(), name='purchase_order_create'),
     path('orders/edit/<int:pk>/', PurchaseOrderBuilderView.as_view(), name='purchase_order_edit'),
     path('orders/<int:pk>/', PurchaseOrderDetailView.as_view(), name='purchase_order_detail'),
+    path('orders/<int:pk>/public/', PublicPurchaseOrderDetailView.as_view(), name='purchase_order_public'),
     path('orders/<int:pk>/receive/', PurchaseOrderReceiveView.as_view(), name='purchase_order_receive'),
     path('orders/<int:pk>/delete/', PurchaseOrderDeleteView.as_view(), name='purchase_order_delete'),
+    path('orders/add-supplier-ajax/', AddSupplierAjaxView.as_view(), name='add_supplier_ajax'),
     path('quick-update-min-stock/', QuickUpdateMinStockView.as_view(), name='quick_update_min_stock'),
     # Categories Management
     path('categories/add/', CategoryCreateView.as_view(), name='category_add'),

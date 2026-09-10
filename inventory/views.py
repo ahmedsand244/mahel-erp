@@ -421,6 +421,83 @@ class PurchaseOrderDeleteView(View):
         return redirect('inventory:purchase_order_list')
 
 
+class AddSupplierAjaxView(View):
+    """
+    إضافة شركة / مورد جديد فورياً عبر AJAX من شاشة بناء وتعديل طلبات البضاعة
+    """
+    def post(self, request, *args, **kwargs):
+        try:
+            data = json.loads(request.body)
+            name = data.get('name', '').strip()
+            company = data.get('company', '').strip()
+            phone = data.get('phone', '').strip()
+            address = data.get('address', '').strip()
+            notes = data.get('notes', '').strip()
+
+            if not name:
+                return JsonResponse({'success': False, 'error': 'اسم المورد أو الشركة مطلوب ولا يمكن تركه فارغاً'}, status=400)
+
+            tenant = getattr(request, 'tenant', None)
+            supplier = Supplier.objects.create(
+                name=name,
+                company=company or None,
+                phone=phone or None,
+                address=address or None,
+                notes=notes or None,
+                tenant=tenant
+            )
+
+            return JsonResponse({
+                'success': True,
+                'supplier': {
+                    'id': supplier.id,
+                    'name': supplier.name,
+                    'company': supplier.company or '',
+                    'phone': supplier.phone or '',
+                }
+            })
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': f"خطأ أثناء إضافة المورد: {str(e)}"}, status=400)
+
+
+class PublicPurchaseOrderDetailView(DetailView):
+    """
+    صفحة عرض عامة ورسمية لأمر التوريد / طلب البضاعة مجهزة للطباعة كـ PDF ومشاركتها مع الموردين
+    """
+    model = PurchaseOrder
+    template_name = "public_purchase_order.html"
+    context_object_name = "order"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        order = self.object
+        items = order.items.select_related('product', 'supplier', 'product__default_supplier').all()
+
+        grouped_by_supplier = {}
+        for item in items:
+            supp_name = item.display_supplier_name
+            supp_phone = ""
+            if item.supplier and item.supplier.phone:
+                supp_phone = item.supplier.phone
+            elif item.product and item.product.default_supplier and item.product.default_supplier.phone:
+                supp_phone = item.product.default_supplier.phone
+            elif order.supplier and order.supplier.phone:
+                supp_phone = order.supplier.phone
+
+            if supp_name not in grouped_by_supplier:
+                grouped_by_supplier[supp_name] = {
+                    'supplier_name': supp_name,
+                    'phone': supp_phone,
+                    'items': [],
+                    'total_cost': Decimal('0.00'),
+                }
+            grouped_by_supplier[supp_name]['items'].append(item)
+            grouped_by_supplier[supp_name]['total_cost'] += item.total_cost
+
+        context['grouped_items'] = grouped_by_supplier
+        return context
+
+
 class ExportProductsExcelView(View):
     """تصدير جميع منتجات المخزن إلى ملف Excel (.xlsx) مع دعم CSV الاحتياطي"""
     def get(self, request, *args, **kwargs):

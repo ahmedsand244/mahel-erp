@@ -33,46 +33,57 @@
 {% endblock %}
 
 {% block content %}
-<div class="space-y-8 max-w-5xl mx-auto">
+<div class="space-y-6 sm:space-y-8 max-w-5xl mx-auto" dir="rtl">
     
     <!-- Top Action Bar (hidden on print) -->
-    <div class="no-print flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-surface-container-low/70 backdrop-blur-2xl p-6 rounded-2xl border border-white/10 shadow-xl">
+    <div class="no-print flex flex-col md:flex-row justify-between items-start md:items-center gap-4 glass-card p-5 sm:p-6 rounded-3xl border border-apple-border shadow-apple-md">
         <div class="flex items-center gap-3">
-            <a href="{% url 'inventory:purchase_order_list' %}" class="p-2.5 bg-white/5 hover:bg-white/10 text-on-surface rounded-xl transition-all">
-                <span class="material-symbols-outlined">arrow_forward</span>
+            <a href="{% url 'inventory:purchase_order_list' %}" class="p-2.5 bg-apple-surface-subtle hover:bg-primary/10 text-apple-text hover:text-primary rounded-2xl transition-all border border-apple-border shadow-apple-sm" title="العودة لقائمة الطلبات">
+                <span class="material-symbols-outlined text-xl">arrow_forward</span>
             </a>
             <div>
                 <div class="flex items-center gap-3">
-                    <h1 class="text-2xl font-bold font-mono text-primary">{{ order.order_number }}</h1>
+                    <h1 class="text-xl sm:text-2xl font-black font-mono text-primary">{{ order.order_number }}</h1>
                     {% if order.status == 'draft' %}
-                        <span class="px-3 py-1 rounded-full text-xs font-bold bg-tertiary/20 text-tertiary border border-tertiary/30">📝 مسودة</span>
+                        <span class="px-3 py-1 rounded-full text-xs font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 inline-flex items-center gap-1.5">
+                            <span class="material-symbols-outlined text-xs">edit_document</span>
+                            مسودة
+                        </span>
                     {% elif order.status == 'sent' %}
-                        <span class="px-3 py-1 rounded-full text-xs font-bold bg-sky-500/20 text-sky-400 border border-sky-500/30">🚀 تم الإرسال للشركة</span>
+                        <span class="px-3 py-1 rounded-full text-xs font-bold bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/30 inline-flex items-center gap-1.5">
+                            <span class="material-symbols-outlined text-xs">send</span>
+                            تم الإرسال للشركة
+                        </span>
                     {% elif order.status == 'received' %}
-                        <span class="px-3 py-1 rounded-full text-xs font-bold bg-primary/20 text-primary border border-primary/30">✅ مستلمة بالمخزن</span>
+                        <span class="status-pill-green px-3 py-1 text-xs font-bold inline-flex items-center gap-1.5">
+                            <span class="material-symbols-outlined text-xs">check_circle</span>
+                            مستلمة بالمخزن
+                        </span>
                     {% endif %}
                 </div>
-                <p class="text-xs text-on-surface-variant mt-1">تاريخ الطلب: {{ order.created_at|date:"Y-m-d H:i" }}</p>
+                <p class="text-xs text-apple-secondary mt-1">تاريخ تحرير الطلب: {{ order.created_at|date:"Y-m-d H:i" }}</p>
             </div>
         </div>
 
-        <div class="flex flex-wrap items-center gap-3 w-full md:w-auto">
-            <button onclick="window.print()" class="bg-white/10 hover:bg-white/20 text-on-surface font-bold px-4 py-2.5 rounded-xl flex items-center justify-center gap-2 transition-all">
-                <span class="material-symbols-outlined text-lg">print</span>
-                طباعة الطلبية
-            </button>
+        <div class="flex flex-wrap items-center gap-2.5 w-full md:w-auto">
+            <!-- PDF Direct View / Print Button -->
+            <a href="{% url 'inventory:purchase_order_public' order.id %}?print=1" target="_blank"
+               class="bg-blue-500/15 hover:bg-blue-500 text-blue-600 dark:text-blue-400 hover:text-white border border-blue-500/30 font-bold px-4 py-2.5 rounded-2xl flex items-center justify-center gap-2 text-xs sm:text-sm transition-all shadow-apple-sm">
+                <span class="material-symbols-outlined text-base">picture_as_pdf</span>
+                <span>تحميل وطباعة PDF</span>
+            </a>
 
             {% if order.status != 'received' %}
-                <a href="{% url 'inventory:purchase_order_edit' order.id %}" class="bg-tertiary/20 hover:bg-tertiary/30 border border-tertiary/40 text-tertiary font-bold px-4 py-2.5 rounded-xl flex items-center justify-center gap-2 transition-all">
-                    <span class="material-symbols-outlined text-lg">edit</span>
-                    تعديل
+                <a href="{% url 'inventory:purchase_order_edit' order.id %}" class="bg-apple-surface-subtle hover:bg-primary/10 border border-apple-border hover:border-primary/30 text-apple-text hover:text-primary font-bold px-4 py-2.5 rounded-2xl flex items-center justify-center gap-1.5 text-xs sm:text-sm transition-all shadow-apple-sm">
+                    <span class="material-symbols-outlined text-base">edit</span>
+                    <span>تعديل الطلبية</span>
                 </a>
 
                 <form method="post" action="{% url 'inventory:purchase_order_receive' order.id %}" class="inline" onsubmit="return confirm('هل تأكدت من استلام هذه الشحنة وتزويد مخزون المنتجات تلقائياً؟');">
                     {% csrf_token %}
-                    <button type="submit" class="bg-primary hover:bg-primary/90 text-on-primary font-bold px-5 py-2.5 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-primary/20 transition-all">
-                        <span class="material-symbols-outlined text-lg">inventory</span>
-                        تأكيد استلام البضاعة وتحديث المخزون 📦
+                    <button type="submit" class="bg-primary hover:bg-primary/95 text-white font-bold px-4 sm:px-5 py-2.5 rounded-2xl flex items-center justify-center gap-2 text-xs sm:text-sm shadow-apple-sm transition-all active:scale-95">
+                        <span class="material-symbols-outlined text-base">inventory_2</span>
+                        <span>تأكيد الاستلام بالمخزن</span>
                     </button>
                 </form>
             {% endif %}
@@ -80,92 +91,98 @@
     </div>
 
     <!-- Main Printable Invoice Paper -->
-    <div class="glass-card p-8 rounded-2xl border border-white/10 space-y-8 bg-surface-container/60 shadow-2xl">
+    <div class="glass-card p-6 sm:p-10 rounded-3xl border border-apple-border space-y-8 bg-apple-surface shadow-apple-md">
         
         <!-- Document Header -->
-        <div class="flex justify-between items-start border-b border-white/10 pb-6">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-apple-border pb-6">
             <div class="space-y-1">
-                <h2 class="text-2xl font-bold text-primary">النماء ERP & POS</h2>
-                <p class="text-xs text-on-surface-variant">طلب بضاعة ونواقص للموردين والشركات</p>
-                <p class="text-xs text-on-surface-variant font-mono">رقم المستند: {{ order.order_number }}</p>
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-primary text-2xl">local_shipping</span>
+                    <h2 class="text-xl sm:text-2xl font-black text-apple-text tracking-tight">النماء للتجارة والتوكيلات</h2>
+                </div>
+                <p class="text-xs text-apple-secondary">طلب بضاعة ونواقص للموردين والشركات</p>
+                <p class="text-xs text-apple-secondary font-mono">رقم المستند: {{ order.order_number }}</p>
             </div>
-            <div class="text-left space-y-1">
-                <p class="text-sm font-bold text-on-surface">تاريخ الإصدار: {{ order.created_at|date:"Y-m-d" }}</p>
+            <div class="text-right sm:text-left space-y-1 self-stretch sm:self-auto bg-apple-surface-subtle p-3.5 rounded-2xl border border-apple-border">
+                <p class="text-xs sm:text-sm font-bold text-apple-text">تاريخ الإصدار: {{ order.created_at|date:"Y-m-d" }}</p>
                 {% if order.received_at %}
                     <p class="text-xs text-primary font-bold">تاريخ الاستلام: {{ order.received_at|date:"Y-m-d H:i" }}</p>
                 {% endif %}
-                <p class="text-xs text-on-surface-variant">حالة الطلبية: {{ order.get_status_display }}</p>
+                <p class="text-xs text-apple-secondary">حالة الطلبية: <span class="font-bold text-apple-text">{{ order.get_status_display }}</span></p>
             </div>
         </div>
 
         {% if order.notes %}
         <!-- Order Notes -->
-        <div class="p-4 rounded-xl bg-white/5 border border-white/10">
-            <p class="text-xs font-bold text-tertiary mb-1 flex items-center gap-1">
-                <span class="material-symbols-outlined text-sm">sticky_note_2</span>
+        <div class="p-4 rounded-2xl bg-apple-surface-subtle border border-apple-border space-y-1">
+            <p class="text-xs font-bold text-apple-secondary flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-sm text-primary">description</span>
                 ملاحظات وتوجيهات الشحن:
             </p>
-            <p class="text-sm text-on-surface">{{ order.notes }}</p>
+            <p class="text-xs sm:text-sm text-apple-text leading-relaxed">{{ order.notes }}</p>
         </div>
         {% endif %}
 
         <!-- Grouped Items per Supplier Company -->
         <div class="space-y-8">
             {% for supp_name, group in grouped_items.items %}
-            <div class="space-y-3 bg-white/5 p-6 rounded-xl border border-white/10">
+            <div class="space-y-4 bg-apple-surface-subtle/50 p-5 sm:p-6 rounded-3xl border border-apple-border shadow-apple-sm">
                 
-                <!-- Supplier Sub-header with WhatsApp Button -->
-                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 pb-3 border-b border-white/10">
+                <!-- Supplier Sub-header with WhatsApp & PDF Action Buttons -->
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pb-3 border-b border-apple-border">
                     <div>
-                        <h3 class="text-lg font-bold text-on-surface flex items-center gap-2">
+                        <h3 class="text-base sm:text-lg font-black text-apple-text flex items-center gap-2">
                             <span class="material-symbols-outlined text-primary">business</span>
-                            شركة / المورد: <span class="text-primary">{{ supp_name }}</span>
+                            <span>شركة / المورد: <span class="text-primary">{{ supp_name }}</span></span>
                         </h3>
                         {% if group.phone %}
-                            <p class="text-xs text-on-surface-variant font-mono">رقم التواصل: {{ group.phone }}</p>
+                            <p class="text-xs text-apple-secondary font-mono mt-0.5 flex items-center gap-1">
+                                <span class="material-symbols-outlined text-xs">call</span>
+                                {{ group.phone }}
+                            </p>
                         {% endif %}
                     </div>
 
                     <!-- Direct WhatsApp Share Button for this Supplier -->
-                    <div class="no-print flex items-center gap-2">
-                        <button type="button" onclick="sendWhatsApp('{{ group.phone }}', '{{ order.order_number }}', '{{ supp_name|escapejs }}', [
+                    <div class="no-print flex items-center gap-2 w-full sm:w-auto">
+                        <button type="button" onclick="sendWhatsApp('{{ group.phone }}', '{{ order.id }}', '{{ order.order_number }}', '{{ supp_name|escapejs }}', [
                             {% for item in group.items %}
                             { name: '{{ item.display_name|escapejs }}', qty: {{ item.quantity_requested }} },
                             {% endfor %}
-                        ], '{{ order.notes|escapejs }}')" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2 rounded-xl flex items-center gap-2 transition-all shadow-lg shadow-emerald-600/20">
+                        ], '{{ order.notes|escapejs }}')" class="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-4 py-2.5 rounded-2xl flex items-center justify-center gap-2 transition-all shadow-apple-sm active:scale-95">
                             <span class="material-symbols-outlined text-base">chat</span>
-                            مشاركة القائمة عبر WhatsApp للشركة
+                            <span>إرسال الطلبية و PDF عبر WhatsApp</span>
                         </button>
                     </div>
                 </div>
 
-                <!-- Supplier Items Table -->
-                <div class="overflow-x-auto">
-                    <table class="w-full text-right text-sm">
-                        <thead class="text-xs text-on-surface-variant uppercase bg-black/20 border-b border-white/10">
+                <!-- Supplier Items Table (High Contrast in Light & Dark Mode) -->
+                <div class="overflow-x-auto rounded-2xl border border-apple-border bg-apple-surface shadow-apple-sm">
+                    <table class="w-full text-right text-xs sm:text-sm">
+                        <thead class="bg-slate-100 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs">
                             <tr>
-                                <th class="px-4 py-3">#</th>
+                                <th class="px-4 py-3 text-center w-12">#</th>
                                 <th class="px-4 py-3">اسم البضاعة / الصنف</th>
                                 <th class="px-4 py-3 text-center">الكمية المطلوبة</th>
-                                <th class="px-4 py-3 text-center">السعر التقديري للقطعة</th>
-                                <th class="px-4 py-3 text-center">إجمالي التكلفة</th>
+                                <th class="px-4 py-3 text-left">السعر التقديري</th>
+                                <th class="px-4 py-3 text-left">إجمالي التكلفة</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-white/5">
+                        <tbody class="divide-y divide-slate-200 dark:divide-slate-800 text-xs sm:text-sm">
                             {% for item in group.items %}
-                            <tr class="hover:bg-white/5">
-                                <td class="px-4 py-3 text-xs text-on-surface-variant font-mono">{{ forloop.counter }}</td>
-                                <td class="px-4 py-3 font-semibold text-on-surface">{{ item.display_name }}</td>
-                                <td class="px-4 py-3 text-center font-bold text-primary">{{ item.quantity_requested }} قطعة</td>
-                                <td class="px-4 py-3 text-center font-mono text-tertiary">{{ item.unit_cost }} ج.م</td>
-                                <td class="px-4 py-3 text-center font-mono font-bold text-tertiary">{{ item.total_cost }} ج.م</td>
+                            <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
+                                <td class="px-4 py-3.5 text-center text-xs text-apple-secondary font-mono">{{ forloop.counter }}</td>
+                                <td class="px-4 py-3.5 font-bold text-apple-text">{{ item.display_name }}</td>
+                                <td class="px-4 py-3.5 text-center font-black text-primary font-mono text-sm">{{ item.quantity_requested }} قطعة</td>
+                                <td class="px-4 py-3.5 text-left font-mono text-apple-secondary">{{ item.unit_cost }} ج.م</td>
+                                <td class="px-4 py-3.5 text-left font-mono font-bold text-apple-text">{{ item.total_cost }} ج.م</td>
                             </tr>
                             {% endfor %}
                         </tbody>
-                        <tfoot class="border-t border-white/10 bg-black/20">
+                        <tfoot class="bg-slate-100/90 dark:bg-slate-800/70 border-t border-slate-200 dark:border-slate-700">
                             <tr>
-                                <td colspan="4" class="px-4 py-3 text-left font-bold text-xs">مجموع طلبية {{ supp_name }}:</td>
-                                <td class="px-4 py-3 text-center font-mono font-bold text-tertiary text-base">{{ group.total_cost }} ج.م</td>
+                                <td colspan="4" class="px-4 py-3 text-left font-bold text-xs text-apple-secondary">مجموع طلبية ({{ supp_name }}):</td>
+                                <td class="px-4 py-3 text-left font-mono font-black text-primary text-sm sm:text-base">{{ group.total_cost }} ج.م</td>
                             </tr>
                         </tfoot>
                     </table>
@@ -175,21 +192,21 @@
         </div>
 
         <!-- Overall Summary Footer -->
-        <div class="pt-6 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-4">
-            <div class="text-xs text-on-surface-variant space-y-1">
-                <p>مجموع أصناف الطلبية بالكامل: <span class="font-bold text-on-surface">{{ order.total_items_count }} قطعة</span></p>
+        <div class="pt-6 border-t border-apple-border flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="text-xs text-apple-secondary space-y-1">
+                <p>مجموع أصناف الطلبية بالكامل: <span class="font-bold text-apple-text">{{ order.total_items_count }} قطعة</span></p>
                 <p>تم تحرير الطلب بواسطة نظام النماء لإدارة المحلات والورش</p>
             </div>
-            <div class="text-left bg-white/5 px-6 py-4 rounded-xl border border-white/10">
-                <span class="text-xs text-on-surface-variant block mb-1">التكلفة التقديرية الكلية لجميع الموردين:</span>
-                <span class="text-2xl font-bold font-mono text-tertiary">{{ order.total_estimated_cost }} ج.م</span>
+            <div class="text-left bg-apple-surface-subtle px-6 py-4 rounded-2xl border border-apple-border w-full md:w-auto">
+                <span class="text-xs text-apple-secondary block mb-1">التكلفة التقديرية الكلية لجميع الموردين:</span>
+                <span class="text-2xl font-black font-mono text-primary">{{ order.total_estimated_cost }} ج.م</span>
             </div>
         </div>
     </div>
 </div>
 
 <script>
-function sendWhatsApp(phone, orderNum, supplierName, items, notes) {
+function sendWhatsApp(phone, orderId, orderNum, supplierName, items, notes) {
     let cleanPhone = (phone || '').replace(/[^0-9]/g, '');
     
     // Format text
@@ -206,6 +223,9 @@ function sendWhatsApp(phone, orderNum, supplierName, items, notes) {
         message += `\n*ملاحظات وتوصيات:* ${notes}\n`;
     }
 
+    // Direct link to downloadable/printable PDF document
+    const pdfUrl = `${window.location.origin}/inventory/orders/${orderId}/public/?print=1`;
+    message += `\n📄 *رابط عرض وتحميل أمر التوريد PDF رسمياً:*\n${pdfUrl}\n`;
     message += `\nشاكرين تعاونكم السريع معنا.`;
 
     const encodedText = encodeURIComponent(message);
