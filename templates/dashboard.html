@@ -35,8 +35,8 @@
     <!-- TOP 4 KPI CARDS (Apple-Style Stat Cards with Elevation and Contrast) -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         
-        <!-- Card 1: Total Income -->
-        <div class="glass-card rounded-3xl p-6 border border-primary/20 bg-primary/5 flex flex-col justify-between space-y-4">
+        <!-- Card 1: Total Income & Cash Collections -->
+        <div class="glass-card rounded-3xl p-6 border border-primary/20 bg-primary/5 flex flex-col justify-between space-y-3">
             <div class="flex justify-between items-start">
                 <span class="text-xs font-bold text-primary">إجمالي الدخل والمبيعات</span>
                 <div class="p-2.5 bg-primary/10 rounded-2xl border border-primary/20 text-primary">
@@ -44,8 +44,28 @@
                 </div>
             </div>
             <div>
-                <h3 class="text-3xl font-extrabold font-mono tracking-tight text-primary">{{ total_income|floatformat:2 }}</h3>
+                <h3 class="text-3xl font-extrabold font-mono tracking-tight text-primary">{{ total_income|floatformat:2 }} <span class="text-xs font-normal text-slate-500">ج.م</span></h3>
                 <p class="text-[11px] text-apple-secondary mt-1">مبيعات المحل + قطع الغيار + المصنعيات</p>
+
+                <!-- Detailed Breakdown Badges (نقدية الخزينة vs تحصيل الديون) -->
+                <div class="mt-3 pt-2.5 border-t border-primary/15 space-y-1.5 text-xs">
+                    <div class="flex items-center justify-between">
+                        <span class="flex items-center gap-1.5 text-slate-600 dark:text-slate-300 font-semibold">
+                            <span class="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
+                            <span>نقدية دخلت الدرج والخزينة:</span>
+                        </span>
+                        <span class="font-mono font-bold text-emerald-600 dark:text-emerald-400">{{ total_cash_inflow|floatformat:2 }} ج.م</span>
+                    </div>
+                    {% if collected_from_customers > 0 %}
+                    <div class="flex items-center justify-between text-[11px]">
+                        <span class="text-emerald-600 dark:text-emerald-400 flex items-center gap-1 font-medium">
+                            <span class="material-symbols-outlined text-[14px]">payments</span>
+                            منها تحصيل ديون وعملاء:
+                        </span>
+                        <span class="font-mono font-bold text-emerald-600 dark:text-emerald-400">+{{ collected_from_customers|floatformat:2 }} ج.م</span>
+                    </div>
+                    {% endif %}
+                </div>
             </div>
         </div>
 
@@ -249,6 +269,62 @@
                             {% empty %}
                                 <tr>
                                     <td colspan="5" class="py-8 text-center text-apple-secondary italic text-xs">لا توجد تذاكر صيانة مسجلة بعد</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 3. Recent Cash Collections & Debt Receipts (سندات القبض وتحصيلات النقدية) -->
+            <div class="glass-card rounded-3xl p-6 space-y-4">
+                <div class="flex justify-between items-center border-b border-apple-border pb-4">
+                    <h3 class="text-base font-bold text-apple-text flex items-center gap-2">
+                        <span class="material-symbols-outlined text-emerald-500">payments</span>
+                        آخر سندات القبض والتحصيلات النقدية من العملاء
+                    </h3>
+                    <a href="{% url 'pos:invoices_list' %}" class="text-xs text-emerald-600 dark:text-emerald-400 font-bold hover:underline flex items-center gap-1">
+                        عرض السجل الكامل
+                        <span class="material-symbols-outlined text-[14px]">arrow_back</span>
+                    </a>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-right text-sm min-w-[650px]">
+                        <thead>
+                            <tr class="border-b border-apple-border text-xs font-bold text-apple-secondary">
+                                <th class="py-3 px-3 whitespace-nowrap">رقم السند</th>
+                                <th class="py-3 px-3">العميل المسدد</th>
+                                <th class="py-3 px-3">البيان والتفاصيل</th>
+                                <th class="py-3 px-3 text-left whitespace-nowrap">المبلغ المسدد نقدياً</th>
+                                <th class="py-3 px-3 text-left whitespace-nowrap">التاريخ والوقت</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-apple-border">
+                            {% for col in recent_collections %}
+                                <tr class="hover:bg-apple-surface-subtle transition-colors">
+                                    <td class="py-3.5 px-3 font-mono font-bold text-emerald-600 dark:text-emerald-400 text-xs whitespace-nowrap">
+                                        #REC-{{ col.id|stringformat:"05d" }}
+                                    </td>
+                                    <td class="py-3.5 px-3 font-bold text-apple-text text-xs leading-relaxed">
+                                        {{ col.customer.name }}
+                                        {% if col.customer.phone %}
+                                        <div class="text-[10px] text-apple-secondary font-mono">{{ col.customer.phone }}</div>
+                                        {% endif %}
+                                    </td>
+                                    <td class="py-3.5 px-3 text-apple-secondary text-xs leading-relaxed">
+                                        {{ col.notes|default:"سداد دفعة نقدية من الحساب" }}
+                                    </td>
+                                    <td class="py-3.5 px-3 text-left font-mono font-extrabold text-emerald-600 dark:text-emerald-400 text-sm whitespace-nowrap">
+                                        +{{ col.amount|floatformat:2 }} ج.م
+                                    </td>
+                                    <td class="py-3.5 px-3 text-left text-xs font-mono text-apple-secondary whitespace-nowrap">
+                                        {{ col.created_at|date:"Y-m-d" }}
+                                        <span class="text-emerald-600 dark:text-emerald-400 block">{{ col.created_at|date:"H:i" }}</span>
+                                    </td>
+                                </tr>
+                            {% empty %}
+                                <tr>
+                                    <td colspan="5" class="py-8 text-center text-apple-secondary italic text-xs">لا توجد عمليات تحصيل نقدية مسجلة مؤخراً</td>
                                 </tr>
                             {% endfor %}
                         </tbody>

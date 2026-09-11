@@ -80,19 +80,26 @@
             </div>
         </div>
 
-        <!-- 3. مبيعات الكاش والفيزا -->
+        <!-- 3. المقبوضات والنقدية المحصلة (الخزينة) -->
         <div class="glass-card rounded-2xl sm:rounded-3xl p-5 sm:p-6 space-y-2">
             <div class="flex items-center justify-between">
-                <span class="text-xs font-bold text-apple-text">المحصل كاش وفيزا</span>
-                <div class="w-10 h-10 rounded-2xl bg-apple-surface-subtle border border-apple-border flex items-center justify-center text-apple-text">
-                    <span class="material-symbols-outlined text-xl">credit_card</span>
+                <span class="text-xs font-bold text-apple-text">إجمالي النقدية المحصلة (الخزينة)</span>
+                <div class="w-10 h-10 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500">
+                    <span class="material-symbols-outlined text-xl">payments</span>
                 </div>
             </div>
-            <div class="text-2xl sm:text-3xl font-extrabold font-mono text-apple-text tracking-tight">
+            <div class="text-2xl sm:text-3xl font-extrabold font-mono text-emerald-600 dark:text-emerald-400 tracking-tight">
                 {{ cash_visa_amount|floatformat:2 }} <span class="text-xs font-normal text-apple-secondary">ج.م</span>
             </div>
-            <div class="text-[11px] text-apple-secondary border-t border-apple-border pt-2">
-                مبالغ مدفوعة ومحصلة فوراً
+            <div class="text-[11px] text-apple-secondary border-t border-apple-border pt-2 flex flex-col gap-1">
+                <div class="flex justify-between">
+                    <span>مبيعات كاش وفيزا:</span>
+                    <span class="font-mono font-bold">{{ cash_sales_only|add:visa_sales_amount|floatformat:2 }} ج.م</span>
+                </div>
+                <div class="flex justify-between text-emerald-600 dark:text-emerald-400 font-bold">
+                    <span>تحصيل ديون كاش:</span>
+                    <span class="font-mono">+{{ total_collected_debt|floatformat:2 }} ج.م</span>
+                </div>
             </div>
         </div>
 
@@ -167,11 +174,11 @@
         </form>
     </div>
 
-    <!-- Tab Switcher (POS Invoices vs Maintenance Invoices) -->
-    <div class="flex items-center gap-3 border-b border-apple-border pb-3">
+    <!-- Tab Switcher (POS Invoices vs Maintenance Invoices vs Cash Collections) -->
+    <div class="flex items-center gap-2 sm:gap-3 border-b border-apple-border pb-3 overflow-x-auto no-scrollbar">
         <button type="button" @click="activeTab = 'pos'"
                 :class="activeTab === 'pos' ? 'bg-primary text-white shadow-apple-sm' : 'bg-apple-surface-subtle text-apple-secondary hover:text-apple-text border border-apple-border'"
-                class="px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-extrabold flex items-center gap-2 transition-all">
+                class="px-4 sm:px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-extrabold flex items-center gap-2 transition-all whitespace-nowrap">
             <span class="material-symbols-outlined text-[18px]">point_of_sale</span>
             <span>فواتير مبيعات المحل</span>
             <span class="px-2 py-0.5 rounded-full text-[11px] font-bold font-mono"
@@ -182,12 +189,23 @@
 
         <button type="button" @click="activeTab = 'maintenance'"
                 :class="activeTab === 'maintenance' ? 'bg-amber-600 text-white shadow-apple-sm' : 'bg-apple-surface-subtle text-apple-secondary hover:text-apple-text border border-apple-border'"
-                class="px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-extrabold flex items-center gap-2 transition-all">
+                class="px-4 sm:px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-extrabold flex items-center gap-2 transition-all whitespace-nowrap">
             <span class="material-symbols-outlined text-[18px]">build_circle</span>
             <span>فواتير وتذاكر الصيانة والورشة</span>
             <span class="px-2 py-0.5 rounded-full text-[11px] font-bold font-mono"
                   :class="activeTab === 'maintenance' ? 'bg-white/20 text-white' : 'bg-apple-border text-apple-secondary'">
                 {{ maintenance_tickets_count }}
+            </span>
+        </button>
+
+        <button type="button" @click="activeTab = 'collections'"
+                :class="activeTab === 'collections' ? 'bg-emerald-600 text-white shadow-apple-sm' : 'bg-apple-surface-subtle text-apple-secondary hover:text-apple-text border border-apple-border'"
+                class="px-4 sm:px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-extrabold flex items-center gap-2 transition-all whitespace-nowrap">
+            <span class="material-symbols-outlined text-[18px]">payments</span>
+            <span>سندات القبض وتحصيلات النقدية</span>
+            <span class="px-2 py-0.5 rounded-full text-[11px] font-bold font-mono"
+                  :class="activeTab === 'collections' ? 'bg-white/20 text-white' : 'bg-apple-border text-apple-secondary'">
+                {{ collections_count }}
             </span>
         </button>
     </div>
@@ -400,6 +418,93 @@
                 <tr>
                     <td colspan="9" class="p-12 text-center text-apple-secondary italic text-sm">
                         لا توجد فواتير أو تذاكر صيانة مسجلة حتى الآن.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 3. Cash Collections & Receipt Vouchers Data Table Container -->
+    <div x-show="activeTab === 'collections'" style="display: none;" class="apple-table-container shadow-apple-md border border-apple-border max-w-full">
+        <table class="apple-table min-w-[750px]">
+            <thead>
+                <tr>
+                    <th class="p-4">رقم سند القبض</th>
+                    <th class="p-4">التاريخ والوقت</th>
+                    <th class="p-4">العميل المسدد</th>
+                    <th class="p-4">البيان / تفاصيل العملية</th>
+                    <th class="p-4 text-left">المبلغ المحصل نقدياً</th>
+                    <th class="p-4 text-left">رصيد العميل الحالي</th>
+                    <th class="p-4 text-center">الإجراءات والطباعة</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-apple-border text-sm">
+                {% for col in collections %}
+                <tr class="hover:bg-apple-surface-subtle transition-colors group">
+                    <!-- رقم السند -->
+                    <td class="p-4 font-bold font-mono text-emerald-600 dark:text-emerald-400 text-base whitespace-nowrap">
+                        <div class="flex items-center gap-1.5">
+                            <span class="material-symbols-outlined text-emerald-500 text-base">receipt_long</span>
+                            #REC-{{ col.id|stringformat:"05d" }}
+                        </div>
+                    </td>
+
+                    <!-- التاريخ والوقت -->
+                    <td class="p-4 font-mono text-xs text-apple-secondary whitespace-nowrap">
+                        {{ col.created_at|date:"Y-m-d — H:i" }}
+                    </td>
+
+                    <!-- العميل -->
+                    <td class="p-4">
+                        {% if col.customer %}
+                        <div class="font-bold text-apple-text text-xs sm:text-sm">{{ col.customer.name }}</div>
+                        {% if col.customer.phone %}
+                        <div class="font-mono text-[11px] text-apple-secondary">{{ col.customer.phone }}</div>
+                        {% endif %}
+                        {% else %}
+                        <span class="text-xs text-apple-secondary italic bg-apple-surface-subtle px-2.5 py-1 rounded-full border border-apple-border whitespace-nowrap">عميل نقدي</span>
+                        {% endif %}
+                    </td>
+
+                    <!-- البيان -->
+                    <td class="p-4 text-xs text-apple-secondary max-w-xs">
+                        {{ col.notes|default:"تحصيل دفعة نقدية وسداد من الحساب" }}
+                    </td>
+
+                    <!-- المبلغ المحصل -->
+                    <td class="p-4 text-left font-mono font-extrabold text-emerald-600 dark:text-emerald-400 text-base whitespace-nowrap">
+                        +{{ col.amount|floatformat:2 }} ج.م
+                    </td>
+
+                    <!-- رصيد العميل -->
+                    <td class="p-4 text-left font-mono font-bold text-xs whitespace-nowrap">
+                        {% if col.customer %}
+                            {% if col.customer.balance > 0 %}
+                                <span class="text-error font-bold">{{ col.customer.balance|floatformat:2 }} ج.م (عليه)</span>
+                            {% elif col.customer.balance < 0 %}
+                                <span class="text-blue-500 font-bold">{{ col.customer.balance|floatformat:2 }} ج.م (له رصيد)</span>
+                            {% else %}
+                                <span class="text-emerald-500 font-bold">0.00 ج.م (خالص)</span>
+                            {% endif %}
+                        {% else %}
+                            —
+                        {% endif %}
+                    </td>
+
+                    <!-- الإجراءات -->
+                    <td class="p-4 text-center whitespace-nowrap">
+                        <button @click="openReceiptModal({{ col.id }})"
+                            class="bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 active:scale-95 shadow-apple-sm mx-auto">
+                            <span class="material-symbols-outlined text-[18px]">print</span>
+                            سند القبض
+                        </button>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="p-12 text-center text-apple-secondary italic text-sm">
+                        لا توجد سندات قبض أو تحصيلات نقدية مسجلة بعد.
                     </td>
                 </tr>
                 {% endfor %}
@@ -663,6 +768,108 @@
         </div>
     </div>
 
+    <!-- Modal 3: View & Print Receipt Voucher (سند قبض نقدية) -->
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-4"
+        x-show="showReceiptModal" style="display: none;" @click.away="showReceiptModal = false"
+        x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95"
+        x-transition:enter-end="opacity-100 scale-100" x-transition:leave="transition ease-in duration-150"
+        x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95">
+
+        <div class="bg-apple-surface border border-apple-border rounded-3xl p-6 sm:p-8 max-w-xl w-full space-y-6 text-right shadow-apple-lg max-h-[90vh] overflow-y-auto relative"
+            @click.stop>
+
+            <!-- Loading Spinner State -->
+            <div x-show="isLoadingReceipt" class="py-16 text-center space-y-3">
+                <span class="material-symbols-outlined text-4xl text-emerald-500 animate-spin">sync</span>
+                <p class="text-xs text-apple-secondary font-bold">جاري تحميل وتجهيز بيانات سند القبض...</p>
+            </div>
+
+            <!-- Receipt Content Body -->
+            <div x-show="!isLoadingReceipt && selectedReceipt" class="space-y-6">
+
+                <div id="receiptVoucherPrintArea" class="space-y-5 bg-white text-slate-900 p-6 rounded-2xl border border-slate-200 shadow-sm font-sans" dir="rtl">
+                    <!-- Receipt Header -->
+                    <div class="flex justify-between items-start border-b-2 border-slate-900 pb-4">
+                        <div class="space-y-1">
+                            <h2 class="text-xl font-extrabold text-slate-900 tracking-tight">النمـــــاء</h2>
+                            <p class="text-xs text-slate-600 font-medium">معدات زراعية • مواقير • قطع غيار • ورشة وصيانة</p>
+                        </div>
+                        <div class="text-left space-y-1">
+                            <div class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-emerald-100 text-emerald-800 text-xs font-bold border border-emerald-300">
+                                <span>سند قبض نقدية</span>
+                            </div>
+                            <div class="text-xs font-mono font-bold text-slate-800" x-text="selectedReceipt ? selectedReceipt.receipt_number : ''"></div>
+                            <div class="text-[11px] text-slate-500 font-mono" x-text="selectedReceipt ? selectedReceipt.created_at : ''"></div>
+                        </div>
+                    </div>
+
+                    <!-- Receipt Amount Box -->
+                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 flex items-center justify-between">
+                        <div>
+                            <span class="text-xs text-slate-500 block font-bold">المبلغ المقبوض:</span>
+                            <div class="text-2xl font-black font-mono text-emerald-700 mt-0.5">
+                                <span x-text="selectedReceipt ? selectedReceipt.amount : '0.00'"></span>
+                                <span class="text-sm font-bold text-slate-600">جنيه مصري (EGP)</span>
+                            </div>
+                        </div>
+                        <div class="w-12 h-12 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600">
+                            <span class="material-symbols-outlined text-2xl">payments</span>
+                        </div>
+                    </div>
+
+                    <!-- Receipt Details Table -->
+                    <table class="w-full text-xs text-right border-collapse">
+                        <tbody>
+                            <tr class="border-b border-slate-200">
+                                <td class="py-2.5 px-3 font-bold text-slate-500 w-1/3 bg-slate-50">استلمنا من السيد / العميل:</td>
+                                <td class="py-2.5 px-3 font-extrabold text-slate-900 text-sm" x-text="selectedReceipt && selectedReceipt.customer ? selectedReceipt.customer.name : 'عميل نقدي'"></td>
+                            </tr>
+                            <tr class="border-b border-slate-200">
+                                <td class="py-2.5 px-3 font-bold text-slate-500 bg-slate-50">رقم الهاتف:</td>
+                                <td class="py-2.5 px-3 font-mono text-slate-700" x-text="selectedReceipt && selectedReceipt.customer ? selectedReceipt.customer.phone : '—'"></td>
+                            </tr>
+                            <tr class="border-b border-slate-200">
+                                <td class="py-2.5 px-3 font-bold text-slate-500 bg-slate-50">وذلك عن / البيان:</td>
+                                <td class="py-2.5 px-3 text-slate-800 leading-relaxed" x-text="selectedReceipt ? selectedReceipt.notes : 'سداد دفعة نقدية من الحساب'"></td>
+                            </tr>
+                            <tr class="border-b border-slate-200">
+                                <td class="py-2.5 px-3 font-bold text-slate-500 bg-slate-50">رصيد العميل بعد العملية:</td>
+                                <td class="py-2.5 px-3 font-mono font-bold text-slate-900" x-text="selectedReceipt && selectedReceipt.customer ? (parseFloat(selectedReceipt.customer.balance) > 0 ? selectedReceipt.customer.balance + ' ج.م (عليه)' : (parseFloat(selectedReceipt.customer.balance) < 0 ? selectedReceipt.customer.balance + ' ج.م (له رصيد زائد)' : '0.00 ج.م (خالص تماماً)')) : '0.00 ج.م'"></td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <!-- Signatures -->
+                    <div class="grid grid-cols-2 gap-8 pt-6 border-t border-slate-300 text-center text-xs">
+                        <div class="space-y-8">
+                            <span class="text-slate-600 font-bold block">توقيع المستلم (الخزينة)</span>
+                            <div class="border-b border-dashed border-slate-400 w-3/4 mx-auto"></div>
+                        </div>
+                        <div class="space-y-8">
+                            <span class="text-slate-600 font-bold block">توقيع المسدد / العميل</span>
+                            <div class="border-b border-dashed border-slate-400 w-3/4 mx-auto"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex items-center gap-3 pt-2">
+                    <button @click="printReceiptVoucher()"
+                        class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white py-3 rounded-2xl font-bold shadow-apple-sm text-xs sm:text-sm flex items-center justify-center gap-2 apple-button active:scale-95">
+                        <span class="material-symbols-outlined text-[18px]">print</span>
+                        طباعة سند القبض 🖨️
+                    </button>
+                    <button @click="showReceiptModal = false"
+                        class="px-6 bg-apple-surface-subtle border border-apple-border py-3 rounded-2xl text-apple-secondary hover:text-apple-text text-xs sm:text-sm font-bold active:scale-95">
+                        إغلاق
+                    </button>
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+
 </div>
 {% endblock %}
 
@@ -679,6 +886,10 @@
             showTicketModal: false,
             isLoadingTicket: false,
             selectedTicket: null,
+
+            showReceiptModal: false,
+            isLoadingReceipt: false,
+            selectedReceipt: null,
             
             syncToCloud() {
                 if (this.isSyncingToCloud) return;
@@ -750,11 +961,51 @@
                     });
             },
 
+            openReceiptModal(txId) {
+                this.showReceiptModal = true;
+                this.isLoadingReceipt = true;
+                this.selectedReceipt = null;
+
+                fetch('/pos/invoices/receipt/' + txId + '/json/')
+                    .then(res => res.json())
+                    .then(data => {
+                        this.isLoadingReceipt = false;
+                        if (data.success) {
+                            this.selectedReceipt = data.receipt;
+                        } else {
+                            alert('خطأ: ' + (data.error || 'تعذر تحميل بيانات سند القبض'));
+                            this.showReceiptModal = false;
+                        }
+                    })
+                    .catch(err => {
+                        this.isLoadingReceipt = false;
+                        alert('حدث خطأ في شبكة الاتصال');
+                        this.showReceiptModal = false;
+                    });
+            },
+
             printTicketInvoice() {
                 const printContents = document.getElementById('ticketInvoicePrintArea').innerHTML;
                 const originalContents = document.body.innerHTML;
                 const win = window.open('', '', 'height=700,width=800');
                 win.document.write('<html><head><title>فاتورة تذكرة صيانة</title>');
+                win.document.write('<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Alexandria:wght@300;400;600;700;800&display=swap">');
+                win.document.write('<style>body{font-family:"Alexandria",sans-serif;direction:rtl;padding:24px;color:#111;} table{width:100%;border-collapse:collapse;margin:15px 0;} th,td{border:1px solid #ddd;padding:8px;text-align:right;} th{background:#f4f4f4;} .print\\:hidden{display:none!important;}</style>');
+                win.document.write('</head><body>');
+                win.document.write(printContents);
+                win.document.write('</body></html>');
+                win.document.close();
+                win.focus();
+                setTimeout(() => {
+                    win.print();
+                    win.close();
+                }, 500);
+            },
+
+            printReceiptVoucher() {
+                const printContents = document.getElementById('receiptVoucherPrintArea').innerHTML;
+                const win = window.open('', '', 'height=700,width=800');
+                win.document.write('<html><head><title>سند قبض نقدية</title>');
                 win.document.write('<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Alexandria:wght@300;400;600;700;800&display=swap">');
                 win.document.write('<style>body{font-family:"Alexandria",sans-serif;direction:rtl;padding:24px;color:#111;} table{width:100%;border-collapse:collapse;margin:15px 0;} th,td{border:1px solid #ddd;padding:8px;text-align:right;} th{background:#f4f4f4;} .print\\:hidden{display:none!important;}</style>');
                 win.document.write('</head><body>');

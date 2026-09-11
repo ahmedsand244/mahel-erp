@@ -8,7 +8,7 @@ from pos.models import Order
 from maintenance.models import MaintenanceTicket
 from inventory.models import Product, StockAlert
 from expenses.models import Expense
-from ledger.models import Customer, Supplier
+from ledger.models import Customer, Supplier, Transaction
 from core_project.services import get_profit_and_loss
 
 class DashboardView(TemplateView):
@@ -25,11 +25,17 @@ class DashboardView(TemplateView):
         cogs_total = pnl['cogs'] + pnl['parts_cost']
         store_expenses = pnl['total_expenses']
         total_costs_all = cogs_total + store_expenses
+        collected_from_customers = pnl['collected_from_customers']
 
         context['total_income'] = total_income
         context['total_costs_all'] = total_costs_all
         context['cogs_total'] = cogs_total
         context['store_expenses'] = store_expenses
+        context['collected_from_customers'] = collected_from_customers
+
+        # Actual cash received in store drawer (cash sales + visa sales + labor + debt collections)
+        cash_sales = Order.objects.filter(payment_method__in=['cash', 'visa']).aggregate(Sum('total_amount'))['total_amount__sum'] or Decimal('0.00')
+        context['total_cash_inflow'] = cash_sales + pnl['labor_fees'] + collected_from_customers
 
         # 2. Inventory Valuation (Instant SQL Aggregation - Ultra Fast)
         from django.db.models import ExpressionWrapper
@@ -56,6 +62,7 @@ class DashboardView(TemplateView):
         # 5. Recent Activity Logs
         context['recent_orders'] = Order.objects.select_related('customer').order_by('-created_at')[:6]
         context['recent_tickets'] = MaintenanceTicket.objects.select_related('customer').order_by('-created_at')[:6]
+        context['recent_collections'] = Transaction.objects.filter(transaction_type='pay_received').select_related('customer').order_by('-created_at')[:6]
         
         # 6. Interactive Chart Analytics (Last 7 Days Trend & Product Breakdown)
         from django.utils import timezone

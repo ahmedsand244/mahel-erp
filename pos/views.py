@@ -9,7 +9,7 @@ from decimal import Decimal, InvalidOperation
 
 from inventory.models import Product, Category
 from inventory.views import get_tenant_categories
-from ledger.models import Customer
+from ledger.models import Customer, Transaction
 from pos.models import Order, OrderItem
 from core_project.services import pos_checkout, add_customer_debt
 
@@ -228,9 +228,30 @@ class SalesInvoicesListView(ListView):
         context['maintenance_tickets'] = tickets_qs[:100]
         context['maintenance_tickets_count'] = tickets_qs.count()
 
+        # Cash Collections & Receipt Vouchers Integration (سندات القبض وتحصيلات الديون كاش)
+        collections_qs = Transaction.objects.filter(transaction_type='pay_received').select_related('customer').order_by('-created_at')
+        if search_query:
+            collections_qs = collections_qs.filter(
+                Q(customer__name__icontains=search_query) |
+                Q(notes__icontains=search_query)
+            ).distinct()
+
+        if start_date:
+            collections_qs = collections_qs.filter(created_at__date__gte=start_date)
+        if end_date:
+            collections_qs = collections_qs.filter(created_at__date__lte=end_date)
+
+        total_collected_debt = Transaction.objects.filter(transaction_type='pay_received').aggregate(Sum('amount'))['amount__sum'] or Decimal('0.00')
+
+        context['collections'] = collections_qs[:100]
+        context['collections_count'] = collections_qs.count()
+        context['total_collected_debt'] = total_collected_debt
+        context['cash_sales_only'] = cash_sales_amount
+        context['visa_sales_amount'] = visa_sales_amount
+        context['cash_visa_amount'] = cash_sales_amount + visa_sales_amount + total_collected_debt
+
         context['total_invoices_count'] = total_invoices_count
         context['total_sales_amount'] = total_sales_amount
-        context['cash_visa_amount'] = cash_sales_amount + visa_sales_amount
         context['deferred_sales_amount'] = deferred_sales_amount
         context['total_profit'] = total_profit
 
@@ -240,6 +261,34 @@ class SalesInvoicesListView(ListView):
         context['end_date_str'] = self.request.GET.get('end_date', '')
 
         return context
+
+
+class ReceiptVoucherDetailJsonView(View):
+    """
+    إرجاع تفاصيل سند القبض وتحصيل النقدية لمعاينته وطباعته كإيصال رسمي
+    """
+    def get(self, request, pk, *args, **kwargs):
+        try:
+            tx = Transaction.objects.select_related('customer').get(pk=pk, transaction_type='pay_received')
+            return JsonResponse({
+                'success': True,
+                'receipt': {
+                    'id': tx.id,
+                    'receipt_number': f"REC-{tx.id:05d}",
+                    'created_at': tx.created_at.strftime('%Y-%m-%d %H:%M'),
+                    'amount': str(tx.amount),
+                    'customer': {
+                        'name': tx.customer.name if tx.customer else 'عميل نقدي',
+                        'phone': tx.customer.phone if tx.customer and tx.customer.phone else '—',
+                        'balance': str(tx.customer.balance) if tx.customer else '0.00',
+                    },
+                    'notes': tx.notes or 'سداد دفعة نقدية من الحساب',
+                }
+            })
+        except Transaction.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'سند القبض غير موجود'}, status=404)
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
 
 class TicketInvoiceDetailJsonView(View):
