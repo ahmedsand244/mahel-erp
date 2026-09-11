@@ -363,7 +363,8 @@ class OrderInvoiceDetailJsonView(View):
                     'name': order.customer.name,
                     'phone': order.customer.phone or '',
                     'workplace': order.customer.workplace or '',
-                    'address': order.customer.address or ''
+                    'address': order.customer.address or '',
+                    'balance': str(order.customer.balance)
                 }
 
             profit = order.total_amount - order.cost_of_goods_sold

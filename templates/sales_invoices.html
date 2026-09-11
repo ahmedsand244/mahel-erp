@@ -244,7 +244,10 @@
                     <!-- العميل -->
                     <td class="p-4">
                         {% if order.customer %}
-                        <div class="font-bold text-apple-text text-xs sm:text-sm">{{ order.customer.name }}</div>
+                        <a href="{% url 'ledger:customer_detail' order.customer.id %}" class="font-bold text-apple-text hover:text-primary transition-colors text-xs sm:text-sm inline-flex items-center gap-1 group" title="عرض كشف حساب وسندات العميل">
+                            <span>{{ order.customer.name }}</span>
+                            <span class="material-symbols-outlined text-[13px] text-apple-secondary group-hover:text-primary transition-colors">open_in_new</span>
+                        </a>
                         {% if order.customer.workplace %}
                         <div class="text-[11px] text-apple-secondary">{{ order.customer.workplace }}</div>
                         {% endif %}
@@ -253,7 +256,7 @@
                         {% endif %}
                     </td>
 
-                    <!-- طريقة الدفع -->
+                    <!-- طريقة الدفع وحالة السداد -->
                     <td class="p-4 whitespace-nowrap">
                         {% if order.payment_method == 'cash' %}
                         <span class="status-pill-green px-3 py-1 text-xs font-bold inline-flex items-center gap-1.5">
@@ -266,10 +269,34 @@
                             بطاقة / فيزا
                         </span>
                         {% else %}
-                        <span class="status-pill-yellow px-3 py-1 text-xs font-bold inline-flex items-center gap-1.5">
-                            <span class="w-1.5 h-1.5 rounded-full bg-current animate-pulse"></span>
-                            آجل / شكك
-                        </span>
+                            {% if order.customer and order.customer.balance <= 0 %}
+                            <div class="flex flex-col gap-1">
+                                <span class="status-pill-green px-2.5 py-1 text-xs font-bold inline-flex items-center gap-1">
+                                    <span class="material-symbols-outlined text-[14px]">check_circle</span>
+                                    آجل (تم سداده بالكامل)
+                                </span>
+                                <a href="{% url 'ledger:customer_detail' order.customer.id %}" class="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono hover:underline inline-flex items-center gap-0.5" title="عرض سندات التحصيل وكشف الحساب">
+                                    <span class="material-symbols-outlined text-[11px]">receipt_long</span>
+                                    <span>الرصيد: 0.00 ج.م (خالص)</span>
+                                </a>
+                            </div>
+                            {% elif order.customer and order.customer.balance > 0 %}
+                            <div class="flex flex-col gap-1">
+                                <span class="status-pill-yellow px-2.5 py-1 text-xs font-bold inline-flex items-center gap-1">
+                                    <span class="material-symbols-outlined text-[14px] animate-pulse">pending</span>
+                                    آجل / شكك (مستحق)
+                                </span>
+                                <a href="{% url 'ledger:customer_detail' order.customer.id %}" class="text-[10px] text-red-500 font-bold font-mono hover:underline inline-flex items-center gap-0.5" title="عرض كشف الحساب وسداد المبلغ">
+                                    <span class="material-symbols-outlined text-[11px]">payments</span>
+                                    <span>متبقي عليه: {{ order.customer.balance|floatformat:2 }} ج.م</span>
+                                </a>
+                            </div>
+                            {% else %}
+                            <span class="status-pill-yellow px-3 py-1 text-xs font-bold inline-flex items-center gap-1.5">
+                                <span class="w-1.5 h-1.5 rounded-full bg-current animate-pulse"></span>
+                                آجل / شكك
+                            </span>
+                            {% endif %}
                         {% endif %}
                     </td>
 
@@ -458,7 +485,10 @@
                     <!-- العميل -->
                     <td class="p-4">
                         {% if col.customer %}
-                        <div class="font-bold text-apple-text text-xs sm:text-sm">{{ col.customer.name }}</div>
+                        <a href="{% url 'ledger:customer_detail' col.customer.id %}" class="font-bold text-apple-text hover:text-primary transition-colors text-xs sm:text-sm inline-flex items-center gap-1 group" title="عرض كشف حساب وسندات العميل">
+                            <span>{{ col.customer.name }}</span>
+                            <span class="material-symbols-outlined text-[13px] text-apple-secondary group-hover:text-primary transition-colors">open_in_new</span>
+                        </a>
                         {% if col.customer.phone %}
                         <div class="font-mono text-[11px] text-apple-secondary">{{ col.customer.phone }}</div>
                         {% endif %}
@@ -494,11 +524,21 @@
 
                     <!-- الإجراءات -->
                     <td class="p-4 text-center whitespace-nowrap">
-                        <button @click="openReceiptModal({{ col.id }})"
-                            class="bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 active:scale-95 shadow-apple-sm mx-auto">
-                            <span class="material-symbols-outlined text-[18px]">print</span>
-                            سند القبض
-                        </button>
+                        <div class="flex items-center justify-center gap-2">
+                            <button @click="openReceiptModal({{ col.id }})"
+                                class="bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 active:scale-95 shadow-apple-sm">
+                                <span class="material-symbols-outlined text-[18px]">print</span>
+                                سند القبض
+                            </button>
+                            {% if col.customer %}
+                            <a href="{% url 'ledger:customer_detail' col.customer.id %}"
+                               class="bg-apple-surface-subtle hover:bg-primary/10 text-apple-text hover:text-primary border border-apple-border hover:border-primary/30 px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 active:scale-95 shadow-apple-sm"
+                               title="عرض كشف الحساب الكامل للعميل">
+                                <span class="material-symbols-outlined text-[18px]">account_box</span>
+                                كشف الحساب
+                            </a>
+                            {% endif %}
+                        </div>
                     </td>
                 </tr>
                 {% empty %}
@@ -557,17 +597,39 @@
                     </div>
 
                     <template x-if="selectedInvoice && selectedInvoice.customer">
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs sm:text-sm pt-1">
-                            <div><span class="text-xs text-apple-secondary">الاسم:</span> <strong
-                                    class="text-apple-text" x-text="selectedInvoice.customer.name"></strong></div>
-                            <div><span class="text-xs text-apple-secondary">الهاتف:</span> <strong
-                                    class="font-mono text-apple-text"
-                                    x-text="selectedInvoice.customer.phone || '—'"></strong></div>
-                            <div class="sm:col-span-2" x-show="selectedInvoice.customer.workplace">
-                                <span class="text-xs text-apple-secondary">المزرعة / المكان:</span> <span
-                                    class="text-apple-text font-semibold"
-                                    x-text="selectedInvoice.customer.workplace"></span>
+                        <div class="space-y-3 pt-1">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs sm:text-sm">
+                                <div><span class="text-xs text-apple-secondary">الاسم:</span> <strong
+                                        class="text-apple-text" x-text="selectedInvoice.customer.name"></strong></div>
+                                <div><span class="text-xs text-apple-secondary">الهاتف:</span> <strong
+                                        class="font-mono text-apple-text"
+                                        x-text="selectedInvoice.customer.phone || '—'"></strong></div>
+                                <div class="sm:col-span-2" x-show="selectedInvoice.customer.workplace">
+                                    <span class="text-xs text-apple-secondary">المزرعة / المكان:</span> <span
+                                        class="text-apple-text font-semibold"
+                                        x-text="selectedInvoice.customer.workplace"></span>
+                                </div>
                             </div>
+
+                            <!-- Payment & Ledger Settlement Status Banner -->
+                            <template x-if="selectedInvoice.payment_method === 'deferred'">
+                                <div class="p-3 rounded-2xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs"
+                                     :class="parseFloat(selectedInvoice.customer.balance) <= 0 ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400' : 'bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400'">
+                                    <div class="flex items-center gap-2">
+                                        <span class="material-symbols-outlined text-xl" x-text="parseFloat(selectedInvoice.customer.balance) <= 0 ? 'check_circle' : 'pending'"></span>
+                                        <div>
+                                            <span class="font-bold" x-text="parseFloat(selectedInvoice.customer.balance) <= 0 ? 'حساب العميل مسدد بالكامل (الرصيد 0.00 ج.م)' : 'فاتورة آجلة (شكك) — متبقي دين على العميل:'"></span>
+                                            <span class="font-mono font-black mr-1" x-show="parseFloat(selectedInvoice.customer.balance) > 0" x-text="parseFloat(selectedInvoice.customer.balance).toFixed(2) + ' ج.م'"></span>
+                                        </div>
+                                    </div>
+                                    <a :href="'/ledger/customer/' + selectedInvoice.customer.id + '/'" target="_blank"
+                                       class="px-3 py-1.5 rounded-xl font-bold border hover:scale-105 transition-all inline-flex items-center gap-1 shadow-sm shrink-0"
+                                       :class="parseFloat(selectedInvoice.customer.balance) <= 0 ? 'bg-emerald-600 text-white border-emerald-500' : 'bg-amber-600 text-white border-amber-500'">
+                                        <span class="material-symbols-outlined text-sm">receipt_long</span>
+                                        <span>كشف الحساب وسندات السداد</span>
+                                    </a>
+                                </div>
+                            </template>
                         </div>
                     </template>
                     <template x-if="selectedInvoice && !selectedInvoice.customer">
