@@ -990,10 +990,10 @@ function purchaseOrderApp() {
                 },
                 body: JSON.stringify(payload)
             })
-            .then(res => res.json())
-            .then(data => {
+            .then(async res => {
+                const data = await res.json().catch(() => ({}));
                 this.isSaving = false;
-                if (data.success) {
+                if (res.ok && data.success) {
                     window.location.href = data.redirect_url;
                 } else {
                     alert("خطأ: " + (data.error || "تعذر حفظ الطلبية"));

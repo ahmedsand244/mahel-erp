@@ -10,7 +10,7 @@ from decimal import Decimal, ROUND_HALF_UP
 from django.db.models import F
 from django.db import transaction
 from .models import Product, StockAlert, PurchaseOrder, PurchaseOrderItem, Category
-from ledger.models import Supplier
+from ledger.models import Supplier, Transaction
 
 
 def get_tenant_categories(tenant):
@@ -293,106 +293,109 @@ class PurchaseOrderBuilderView(View):
         if not items_data:
             return JsonResponse({'success': False, 'error': 'يرجى إضافة صنف واحد على الأقل للطلبية'}, status=400)
 
-        with transaction.atomic():
-            if pk:
-                order = get_object_or_404(PurchaseOrder, pk=pk)
-                order.supplier_id = supplier_id
-                order.notes = notes
-                order.status = status
-                order.save()
-                order.items.all().delete()
-            else:
-                today_str = timezone.now().strftime('%Y%m%d')
-                random_suffix = str(uuid.uuid4().hex[:4]).upper()
-                order_number = f"PO-{today_str}-{random_suffix}"
-                order = PurchaseOrder.objects.create(
-                    order_number=order_number,
-                    supplier_id=supplier_id,
-                    notes=notes,
-                    status=status,
-                )
+        try:
+            with transaction.atomic():
+                if pk:
+                    order = get_object_or_404(PurchaseOrder, pk=pk)
+                    order.supplier_id = supplier_id
+                    order.notes = notes
+                    order.status = status
+                    order.save()
+                    order.items.all().delete()
+                else:
+                    today_str = timezone.now().strftime('%Y%m%d')
+                    random_suffix = str(uuid.uuid4().hex[:4]).upper()
+                    order_number = f"PO-{today_str}-{random_suffix}"
+                    order = PurchaseOrder.objects.create(
+                        order_number=order_number,
+                        supplier_id=supplier_id,
+                        notes=notes,
+                        status=status,
+                    )
 
-            item_supplier_ids = set()
-            for item in items_data:
-                product_id = item.get('product_id')
-                custom_name = str(item.get('custom_name', '') or '').strip()
-                item_supplier_id = item.get('supplier_id') or supplier_id or None
-                if item_supplier_id:
-                    try:
-                        item_supplier_ids.add(int(item_supplier_id))
-                    except (ValueError, TypeError):
-                        pass
+                item_supplier_ids = set()
+                for item in items_data:
+                    product_id = item.get('product_id')
+                    custom_name = str(item.get('custom_name', '') or '').strip()
+                    item_supplier_id = item.get('supplier_id') or supplier_id or None
+                    if item_supplier_id:
+                        try:
+                            item_supplier_ids.add(int(item_supplier_id))
+                        except (ValueError, TypeError):
+                            pass
 
-                quantity = int(item.get('quantity', 1))
-                unit_cost = Decimal(str(item.get('unit_cost', 0)))
+                    quantity = int(item.get('quantity', 1))
+                    unit_cost = Decimal(str(item.get('unit_cost', 0)))
 
-                prod_obj = Product.objects.filter(id=product_id).first() if product_id else None
+                    prod_obj = Product.objects.filter(id=product_id).first() if product_id else None
 
-                # Fallback to product default supplier if no supplier specified
-                if not item_supplier_id and prod_obj and prod_obj.default_supplier_id:
-                    item_supplier_id = prod_obj.default_supplier_id
-                    item_supplier_ids.add(prod_obj.default_supplier_id)
+                    # Fallback to product default supplier if no supplier specified
+                    if not item_supplier_id and prod_obj and prod_obj.default_supplier_id:
+                        item_supplier_id = prod_obj.default_supplier_id
+                        item_supplier_ids.add(prod_obj.default_supplier_id)
 
-                PurchaseOrderItem.objects.create(
-                    purchase_order=order,
-                    product=prod_obj,
-                    custom_item_name=custom_name or (prod_obj.name if prod_obj else "صنف مخصص"),
-                    supplier_id=item_supplier_id if item_supplier_id else None,
-                    quantity_requested=max(1, quantity),
-                    unit_cost=max(Decimal('0.00'), unit_cost)
-                )
+                    PurchaseOrderItem.objects.create(
+                        purchase_order=order,
+                        product=prod_obj,
+                        custom_item_name=custom_name or (prod_obj.name if prod_obj else "صنف مخصص"),
+                        supplier_id=item_supplier_id if item_supplier_id else None,
+                        quantity_requested=max(1, quantity),
+                        unit_cost=max(Decimal('0.00'), unit_cost)
+                    )
 
-            # Auto-assign order.supplier if all items belong to a single supplier and order.supplier was empty
-            if not order.supplier_id and len(item_supplier_ids) == 1:
-                order.supplier_id = list(item_supplier_ids)[0]
-                order.save(update_fields=['supplier_id'])
+                # Auto-assign order.supplier if all items belong to a single supplier and order.supplier was empty
+                if not order.supplier_id and len(item_supplier_ids) == 1:
+                    order.supplier_id = list(item_supplier_ids)[0]
+                    order.save(update_fields=['supplier_id'])
 
-            if status == 'received' and not order.received_at:
-                for item in order.items.all():
-                    if item.product and not item.is_received:
-                        item.product.stock_quantity += item.quantity_requested
-                        item.product.save()
-                        StockAlert.objects.filter(product=item.product, is_resolved=False).update(is_resolved=True)
-                        item.is_received = True
-                        item.save()
-                order.received_at = timezone.now()
-                order.save()
+                if status == 'received' and not order.received_at:
+                    for item in order.items.all():
+                        if item.product and not item.is_received:
+                            item.product.stock_quantity += item.quantity_requested
+                            item.product.save()
+                            StockAlert.objects.filter(product=item.product, is_resolved=False).update(is_resolved=True)
+                            item.is_received = True
+                            item.save()
+                    order.received_at = timezone.now()
+                    order.save()
 
-                # Record financial transaction (Cash Drawer deduction or Supplier Debt)
-                payment_method = data.get('payment_method', 'cash')
-                total_cost = order.total_estimated_cost
-                if total_cost > 0:
-                    supplier = order.supplier
-                    if not supplier and len(item_supplier_ids) == 1:
-                        supplier = Supplier.objects.filter(id=list(item_supplier_ids)[0]).first()
-                        if supplier:
-                            order.supplier = supplier
-                            order.save(update_fields=['supplier'])
+                    # Record financial transaction (Cash Drawer deduction or Supplier Debt)
+                    payment_method = data.get('payment_method', 'cash')
+                    total_cost = order.total_estimated_cost
+                    if total_cost > 0:
+                        supplier = order.supplier
+                        if not supplier and len(item_supplier_ids) == 1:
+                            supplier = Supplier.objects.filter(id=list(item_supplier_ids)[0]).first()
+                            if supplier:
+                                order.supplier = supplier
+                                order.save(update_fields=['supplier'])
 
-                    if payment_method == 'cash':
-                        Transaction.objects.create(
-                            supplier=supplier,
-                            amount=total_cost,
-                            transaction_type='pay_sent',
-                            notes=f'سداد نقدي فوري لشراء بضاعة طلبية {order.order_number}' + (f' ({supplier.name})' if supplier else '')
-                        )
-                    else:
-                        if supplier:
-                            supplier.balance += total_cost
-                            supplier.save()
+                        if payment_method == 'cash':
                             Transaction.objects.create(
                                 supplier=supplier,
                                 amount=total_cost,
-                                transaction_type='purchase_credit',
-                                notes=f'بضاعة مستلمة آجل — طلبية {order.order_number}'
+                                transaction_type='pay_sent',
+                                notes=f'سداد نقدي فوري لشراء بضاعة طلبية {order.order_number}' + (f' ({supplier.name})' if supplier else '')
                             )
+                        else:
+                            if supplier:
+                                supplier.balance += total_cost
+                                supplier.save()
+                                Transaction.objects.create(
+                                    supplier=supplier,
+                                    amount=total_cost,
+                                    transaction_type='purchase_credit',
+                                    notes=f'بضاعة مستلمة آجل — طلبية {order.order_number}'
+                                )
 
-        return JsonResponse({
-            'success': True,
-            'order_id': order.id,
-            'order_number': order.order_number,
-            'redirect_url': str(reverse_lazy('inventory:purchase_order_detail', kwargs={'pk': order.id}))
-        })
+            return JsonResponse({
+                'success': True,
+                'order_id': order.id,
+                'order_number': order.order_number,
+                'redirect_url': str(reverse_lazy('inventory:purchase_order_detail', kwargs={'pk': order.id}))
+            })
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': f'حدث خطأ: {str(e)}'}, status=400)
 
 
 class PurchaseOrderDetailView(DetailView):
