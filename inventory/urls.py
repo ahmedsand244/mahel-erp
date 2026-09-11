@@ -30,6 +30,7 @@ urlpatterns = [
     path('orders/edit/<int:pk>/', PurchaseOrderBuilderView.as_view(), name='purchase_order_edit'),
     path('orders/<int:pk>/', PurchaseOrderDetailView.as_view(), name='purchase_order_detail'),
     path('orders/<int:pk>/public/', PublicPurchaseOrderDetailView.as_view(), name='purchase_order_public'),
+    path('orders/<int:pk>/public-view/', PublicPurchaseOrderDetailView.as_view(), name='public_purchase_order'),
     path('orders/<int:pk>/receive/', PurchaseOrderReceiveView.as_view(), name='purchase_order_receive'),
     path('orders/<int:pk>/delete/', PurchaseOrderDeleteView.as_view(), name='purchase_order_delete'),
     path('orders/add-supplier-ajax/', AddSupplierAjaxView.as_view(), name='add_supplier_ajax'),
