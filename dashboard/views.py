@@ -35,7 +35,17 @@ class DashboardView(TemplateView):
 
         # Actual cash received in store drawer (cash sales + visa sales + labor + debt collections)
         cash_sales = Order.objects.filter(payment_method__in=['cash', 'visa']).aggregate(Sum('total_amount'))['total_amount__sum'] or Decimal('0.00')
-        context['total_cash_inflow'] = cash_sales + pnl['labor_fees'] + collected_from_customers
+        total_cash_inflow = cash_sales + pnl['labor_fees'] + collected_from_customers
+        context['total_cash_inflow'] = total_cash_inflow
+
+        # Net Cash Position = All Cash In - All Cash Out
+        # Cash In: cash/visa sales + labor fees collected + customer debt collections
+        # Cash Out: operating expenses paid + payments sent to suppliers
+        total_cash_in = total_cash_inflow
+        total_cash_out = pnl['total_expenses'] + pnl['paid_to_suppliers']
+        context['total_cash_in'] = total_cash_in
+        context['total_cash_out'] = total_cash_out
+        context['net_cash_position'] = total_cash_in - total_cash_out
 
         # 2. Inventory Valuation (Instant SQL Aggregation - Ultra Fast)
         from django.db.models import ExpressionWrapper
