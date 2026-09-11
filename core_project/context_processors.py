@@ -17,6 +17,9 @@ def smart_notifications(request):
     if not request.user.is_authenticated:
         return {'smart_alerts': [], 'smart_alerts_count': 0}
 
+    if hasattr(request, '_cached_smart_alerts'):
+        return request._cached_smart_alerts
+
     alerts = []
     today = timezone.now().date()
 
@@ -35,11 +38,11 @@ def smart_notifications(request):
             'badge': 'تجديد الاشتراك'
         })
 
-    # 1. تنبيهات استحقاق ديون العملاء
+    # 1. تنبيهات استحقاق ديون العملاء (استعلام فائق السرعة)
     overdue_customers = Customer.objects.filter(
         balance__gt=0,
         due_date__lte=today
-    ).order_by('due_date')[:5]
+    ).only('id', 'name', 'balance', 'due_date').order_by('due_date')[:5]
 
     for c in overdue_customers:
         days = (today - c.due_date).days if c.due_date else 0
@@ -57,7 +60,7 @@ def smart_notifications(request):
     overdue_suppliers = Supplier.objects.filter(
         balance__gt=0,
         due_date__lte=today
-    ).order_by('due_date')[:5]
+    ).only('id', 'name', 'balance', 'due_date').order_by('due_date')[:5]
 
     for s in overdue_suppliers:
         days = (today - s.due_date).days if s.due_date else 0
@@ -74,7 +77,7 @@ def smart_notifications(request):
     # 3. تنبيهات نقص المخزون والحد الأدنى
     low_stock = Product.objects.filter(
         stock_quantity__lte=F('min_stock_threshold')
-    ).order_by('stock_quantity')[:5]
+    ).only('id', 'name', 'stock_quantity', 'min_stock_threshold').order_by('stock_quantity')[:5]
 
     for p in low_stock:
         alerts.append({
@@ -87,7 +90,7 @@ def smart_notifications(request):
         })
 
     # 4. تنبيهات تذاكر الصيانة والورشة المعلقة
-    active_tickets = MaintenanceTicket.objects.exclude(status='delivered').order_by('-created_at')[:5]
+    active_tickets = MaintenanceTicket.objects.exclude(status='delivered').select_related('customer').only('id', 'ticket_number', 'device_name', 'status', 'customer__name', 'created_at').order_by('-created_at')[:5]
 
     for t in active_tickets:
         cust_name = t.customer.name if t.customer else "عميل"
@@ -100,34 +103,41 @@ def smart_notifications(request):
             'badge': 'ورشة نشطة'
         })
 
-    return {
+    result = {
         'smart_alerts': alerts,
         'smart_alerts_count': len(alerts)
     }
+    request._cached_smart_alerts = result
+    return result
 
 
 def tenant_subscription_info(request):
     """
     يوفر معلومات اشتراك الشركة والوقت المتبقي لجميع صفحات النظام
     """
+    if hasattr(request, '_cached_tenant_subscription_info'):
+        return request._cached_tenant_subscription_info
+
     tenant = getattr(request, 'tenant', None)
     if not tenant and request.user.is_authenticated:
         from tenants.models import TenantUser, Tenant
-        membership = TenantUser.objects.filter(user=request.user).first()
+        membership = TenantUser.objects.filter(user=request.user).select_related('tenant').first()
         if membership:
             tenant = membership.tenant
         else:
             tenant = Tenant.objects.filter(owner=request.user).first()
 
     if not tenant:
-        return {'subscription_info': None}
+        res = {'subscription_info': None}
+        request._cached_tenant_subscription_info = res
+        return res
 
     now = timezone.now()
     end_date = tenant.trial_ends_at or (tenant.created_at + timezone.timedelta(days=14))
     days_left = max(0, (end_date - now).days)
     hours_left = max(0, int((end_date - now).total_seconds() // 3600))
 
-    return {
+    res = {
         'subscription_info': {
             'tenant_name': tenant.name,
             'plan_display': tenant.get_plan_display(),
@@ -138,3 +148,5 @@ def tenant_subscription_info(request):
             'badge_color': 'emerald' if days_left > 5 else ('amber' if days_left > 2 else 'rose'),
         }
     }
+    request._cached_tenant_subscription_info = res
+    return res

@@ -47,7 +47,7 @@
         <div class="lg:col-span-8 space-y-6 w-full min-w-0">
             
             <!-- Add Product Toolbar Card -->
-            <div class="glass-card p-5 sm:p-6 rounded-3xl border border-apple-border space-y-4 bg-apple-surface shadow-apple-md">
+            <div class="glass-card p-5 sm:p-6 rounded-3xl border border-apple-border space-y-4 bg-apple-surface shadow-apple-md relative z-30 overflow-visible">
                 <div class="flex items-center justify-between border-b border-apple-border pb-3">
                     <h3 class="text-sm sm:text-base font-black text-apple-text flex items-center gap-2">
                         <span class="material-symbols-outlined text-primary text-xl">add_shopping_cart</span>
@@ -58,11 +58,11 @@
                 
                 <div class="grid grid-cols-1 md:grid-cols-12 gap-3.5 items-end">
                     <!-- Product Custom Searchable Dropdown -->
-                    <div class="md:col-span-6 space-y-1.5 relative" @click.away="isProductDropdownOpen = false">
+                    <div :class="selectedProductId ? 'md:col-span-8' : 'md:col-span-5'" class="space-y-1.5 relative" @click.away="isProductDropdownOpen = false">
                         <label class="text-xs font-bold text-apple-secondary">اختر صنف من المخزن:</label>
                         
                         <!-- Dropdown Trigger Button -->
-                        <div class="w-full bg-apple-surface-subtle border border-apple-border rounded-2xl px-3.5 py-2.5 text-xs sm:text-sm text-apple-text flex justify-between items-center cursor-pointer hover:border-primary/50 transition-all select-none min-h-[44px] shadow-sm"
+                        <div class="w-full bg-apple-surface-subtle border border-apple-border rounded-2xl px-3.5 text-xs sm:text-sm text-apple-text flex justify-between items-center cursor-pointer hover:border-primary/50 transition-all select-none h-11 shadow-sm"
                              @click="isProductDropdownOpen = !isProductDropdownOpen">
                             <div class="flex items-center gap-2 truncate flex-1 min-w-0">
                                 <template x-if="selectedProductId">
@@ -87,7 +87,7 @@
                              x-transition:leave="transition ease-in duration-100"
                              x-transition:leave-start="opacity-100 scale-100 translate-y-0"
                              x-transition:leave-end="opacity-0 scale-95 -translate-y-2"
-                             class="absolute z-50 right-0 left-0 mt-1.5 bg-apple-surface border border-apple-border rounded-2xl shadow-apple-lg overflow-hidden flex flex-col max-h-80 w-full backdrop-blur-xl">
+                             class="absolute z-50 right-0 left-0 mt-1.5 bg-apple-surface border border-apple-border rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-80 w-full backdrop-blur-2xl">
 
                             <!-- Live Search Input & Low Stock Toggle Filter -->
                             <div class="p-2.5 border-b border-apple-border bg-apple-surface-subtle sticky top-0 z-10 space-y-2">
@@ -149,13 +149,13 @@
                     <div class="md:col-span-4 space-y-1.5" x-show="!selectedProductId">
                         <label class="text-xs font-bold text-apple-secondary">أو اسم صنف خارجي غير مسجل:</label>
                         <input type="text" x-model="customItemName" placeholder="أدخل اسم البضاعة المطلوبة..." 
-                               class="w-full bg-apple-surface-subtle border border-apple-border rounded-2xl px-3.5 py-2.5 text-xs sm:text-sm text-apple-text focus:outline-none focus:border-primary shadow-sm">
+                               class="w-full bg-apple-surface-subtle border border-apple-border rounded-2xl px-3.5 text-xs sm:text-sm text-apple-text focus:outline-none focus:border-primary shadow-sm h-11">
                     </div>
 
                     <!-- Add Button -->
-                    <div class="md:col-span-2" :class="selectedProductId ? 'md:col-span-6' : 'md:col-span-2'">
-                        <button type="button" @click="addItem()" class="w-full bg-primary hover:bg-primary/95 text-white font-bold py-2.5 sm:py-3 rounded-2xl flex items-center justify-center gap-1.5 shadow-apple-sm transition-all active:scale-95 text-xs sm:text-sm cursor-pointer">
-                            <span class="material-symbols-outlined text-lg">add</span>
+                    <div :class="selectedProductId ? 'md:col-span-4' : 'md:col-span-3'" class="w-full">
+                        <button type="button" @click="addItem()" class="w-full h-11 bg-primary hover:bg-primary/95 text-white font-bold px-4 rounded-2xl flex items-center justify-center gap-1.5 shadow-apple-sm transition-all active:scale-95 text-xs sm:text-sm cursor-pointer whitespace-nowrap">
+                            <span class="material-symbols-outlined text-xl">add</span>
                             <span>إضافة للقائمة</span>
                         </button>
                     </div>
@@ -163,7 +163,7 @@
             </div>
 
             <!-- Items Table Card (Responsive for Mobile & Desktop) -->
-            <div class="glass-card rounded-3xl border border-apple-border shadow-apple-md bg-apple-surface overflow-hidden">
+            <div class="glass-card rounded-3xl border border-apple-border shadow-apple-md bg-apple-surface overflow-hidden relative z-10">
                 <div class="p-4 sm:p-5 border-b border-apple-border flex justify-between items-center bg-apple-surface-subtle/50">
                     <div class="flex items-center gap-3">
                         <h2 class="text-sm sm:text-base font-black text-apple-text flex items-center gap-2">

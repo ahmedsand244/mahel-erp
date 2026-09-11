@@ -193,7 +193,7 @@ def get_profit_and_loss(start_date=None, end_date=None):
     Net Profit = (Gross Sales Revenues + Maintenance Labor Fees) - (Cost of Goods Sold + Operating Expenses)
     Supports filtering by optional start_date and end_date.
     """
-    from django.db.models import Sum
+    from django.db.models import Sum, Count, Q
     from expenses.models import Expense
     import datetime
 
@@ -226,22 +226,40 @@ def get_profit_and_loss(start_date=None, end_date=None):
             expenses_qs = expenses_qs.filter(created_at__date__lte=end_date)
             tx_qs = tx_qs.filter(created_at__date__lte=end_date)
 
-    gross_sales = orders_qs.aggregate(Sum('total_amount'))['total_amount__sum'] or Decimal('0.00')
-    cogs = orders_qs.aggregate(Sum('cost_of_goods_sold'))['cost_of_goods_sold__sum'] or Decimal('0.00')
-    orders_count = orders_qs.count()
+    # Fast consolidated aggregations (1 query each instead of 12)
+    orders_agg = orders_qs.aggregate(
+        gross_sales=Sum('total_amount'),
+        cogs=Sum('cost_of_goods_sold'),
+        orders_count=Count('id')
+    )
+    gross_sales = orders_agg['gross_sales'] or Decimal('0.00')
+    cogs = orders_agg['cogs'] or Decimal('0.00')
+    orders_count = orders_agg['orders_count'] or 0
 
-    labor_fees = tickets_qs.aggregate(Sum('labor_fees'))['labor_fees__sum'] or Decimal('0.00')
-    maintenance_parts_sell = tickets_qs.aggregate(Sum('parts_sell'))['parts_sell__sum'] or Decimal('0.00')
-    maintenance_parts_cost = tickets_qs.aggregate(Sum('parts_cost'))['parts_cost__sum'] or Decimal('0.00')
-    tickets_count = tickets_qs.count()
+    tickets_agg = tickets_qs.aggregate(
+        labor_fees=Sum('labor_fees'),
+        parts_sell=Sum('parts_sell'),
+        parts_cost=Sum('parts_cost'),
+        tickets_count=Count('id')
+    )
+    labor_fees = tickets_agg['labor_fees'] or Decimal('0.00')
+    maintenance_parts_sell = tickets_agg['parts_sell'] or Decimal('0.00')
+    maintenance_parts_cost = tickets_agg['parts_cost'] or Decimal('0.00')
+    tickets_count = tickets_agg['tickets_count'] or 0
 
     total_expenses = expenses_qs.aggregate(Sum('amount'))['amount__sum'] or Decimal('0.00')
 
-    # Cash collections & payments during period
-    collected_from_customers = tx_qs.filter(transaction_type='pay_received').aggregate(Sum('amount'))['amount__sum'] or Decimal('0.00')
-    paid_to_suppliers = tx_qs.filter(transaction_type='pay_sent').aggregate(Sum('amount'))['amount__sum'] or Decimal('0.00')
-    cash_deposits = tx_qs.filter(transaction_type='cash_deposit').aggregate(Sum('amount'))['amount__sum'] or Decimal('0.00')
-    cash_withdrawals = tx_qs.filter(transaction_type='cash_withdraw').aggregate(Sum('amount'))['amount__sum'] or Decimal('0.00')
+    # Cash collections & payments during period consolidated in 1 query
+    tx_agg = tx_qs.aggregate(
+        collected_from_customers=Sum('amount', filter=Q(transaction_type='pay_received')),
+        paid_to_suppliers=Sum('amount', filter=Q(transaction_type='pay_sent')),
+        cash_deposits=Sum('amount', filter=Q(transaction_type='cash_deposit')),
+        cash_withdrawals=Sum('amount', filter=Q(transaction_type='cash_withdraw'))
+    )
+    collected_from_customers = tx_agg['collected_from_customers'] or Decimal('0.00')
+    paid_to_suppliers = tx_agg['paid_to_suppliers'] or Decimal('0.00')
+    cash_deposits = tx_agg['cash_deposits'] or Decimal('0.00')
+    cash_withdrawals = tx_agg['cash_withdrawals'] or Decimal('0.00')
 
     # Total Sales includes POS Sales + Maintenance Parts Sales
     total_revenues = gross_sales + maintenance_parts_sell

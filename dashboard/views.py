@@ -34,8 +34,12 @@ class DashboardView(TemplateView):
         context['collected_from_customers'] = collected_from_customers
 
         # Actual cash received in store drawer (cash sales + visa sales + labor + debt collections + cash deposits)
-        cash_sales = Order.objects.filter(payment_method__in=['cash', 'visa']).aggregate(Sum('total_amount'))['total_amount__sum'] or Decimal('0.00')
-        deferred_sales = Order.objects.filter(payment_method='deferred').aggregate(Sum('total_amount'))['total_amount__sum'] or Decimal('0.00')
+        order_methods = Order.objects.aggregate(
+            cash_visa=Sum('total_amount', filter=Q(payment_method__in=['cash', 'visa'])),
+            deferred=Sum('total_amount', filter=Q(payment_method='deferred'))
+        )
+        cash_sales = order_methods['cash_visa'] or Decimal('0.00')
+        deferred_sales = order_methods['deferred'] or Decimal('0.00')
         cash_deposits = pnl.get('cash_deposits', Decimal('0.00'))
         cash_withdrawals = pnl.get('cash_withdrawals', Decimal('0.00'))
         cash_sales_fawry = cash_sales + pnl['labor_fees']
@@ -71,7 +75,7 @@ class DashboardView(TemplateView):
         # 3. Dynamic deduplicated low stock products
         low_stock_products = Product.objects.filter(
             stock_quantity__lte=F('min_stock_threshold')
-        ).order_by('stock_quantity', 'name')[:5]
+        ).only('id', 'name', 'stock_quantity', 'min_stock_threshold').order_by('stock_quantity', 'name')[:5]
         
         context['low_stock_products'] = low_stock_products
         context['low_stock_count'] = low_stock_products.count()
@@ -86,7 +90,7 @@ class DashboardView(TemplateView):
         context['recent_tickets'] = MaintenanceTicket.objects.select_related('customer').order_by('-created_at')[:6]
         context['recent_collections'] = Transaction.objects.filter(transaction_type__in=['pay_received', 'cash_deposit']).select_related('customer', 'supplier').order_by('-created_at')[:6]
         
-        # 6. Interactive Chart Analytics (Last 7 Days Trend & Product Breakdown)
+        # 6. Interactive Chart Analytics (Single Grouped Query for Entire 7 Days)
         from django.utils import timezone
         import datetime
 
@@ -95,14 +99,20 @@ class DashboardView(TemplateView):
         chart_sales = []
         chart_profits = []
 
+        seven_days_ago = today - datetime.timedelta(days=6)
+        daily_stats = {
+            row['created_at__date']: row
+            for row in Order.objects.filter(created_at__date__gte=seven_days_ago)
+                                    .values('created_at__date')
+                                    .annotate(sales=Sum('total_amount'), cogs=Sum('cost_of_goods_sold'))
+        }
+
         for i in range(6, -1, -1):
             day_date = today - datetime.timedelta(days=i)
-            day_str = day_date.strftime('%Y-%m-%d')
             chart_dates.append(day_date.strftime('%m/%d'))
-
-            day_orders = Order.objects.filter(created_at__date=day_date)
-            sales = day_orders.aggregate(Sum('total_amount'))['total_amount__sum'] or Decimal('0.00')
-            cogs = day_orders.aggregate(Sum('cost_of_goods_sold'))['cost_of_goods_sold__sum'] or Decimal('0.00')
+            day_data = daily_stats.get(day_date, {})
+            sales = day_data.get('sales') or Decimal('0.00')
+            cogs = day_data.get('cogs') or Decimal('0.00')
             profit = sales - cogs
 
             chart_sales.append(float(sales))

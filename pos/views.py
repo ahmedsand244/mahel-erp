@@ -199,13 +199,21 @@ class SalesInvoicesListView(ListView):
         context = super().get_context_data(**kwargs)
         all_orders = Order.objects.all()
 
-        total_invoices_count = all_orders.count()
-        total_sales_amount = all_orders.aggregate(Sum('total_amount'))['total_amount__sum'] or Decimal('0.00')
-        cash_sales_amount = all_orders.filter(payment_method='cash').aggregate(Sum('total_amount'))['total_amount__sum'] or Decimal('0.00')
-        visa_sales_amount = all_orders.filter(payment_method='visa').aggregate(Sum('total_amount'))['total_amount__sum'] or Decimal('0.00')
-        deferred_sales_amount = all_orders.filter(payment_method='deferred').aggregate(Sum('total_amount'))['total_amount__sum'] or Decimal('0.00')
-        
-        total_cogs = all_orders.aggregate(Sum('cost_of_goods_sold'))['cost_of_goods_sold__sum'] or Decimal('0.00')
+        orders_agg = all_orders.aggregate(
+            total_count=Count('id'),
+            total_sales=Sum('total_amount'),
+            cash_sales=Sum('total_amount', filter=Q(payment_method='cash')),
+            visa_sales=Sum('total_amount', filter=Q(payment_method='visa')),
+            deferred_sales=Sum('total_amount', filter=Q(payment_method='deferred')),
+            total_cogs=Sum('cost_of_goods_sold')
+        )
+
+        total_invoices_count = orders_agg['total_count'] or 0
+        total_sales_amount = orders_agg['total_sales'] or Decimal('0.00')
+        cash_sales_amount = orders_agg['cash_sales'] or Decimal('0.00')
+        visa_sales_amount = orders_agg['visa_sales'] or Decimal('0.00')
+        deferred_sales_amount = orders_agg['deferred_sales'] or Decimal('0.00')
+        total_cogs = orders_agg['total_cogs'] or Decimal('0.00')
         total_profit = total_sales_amount - total_cogs
 
         # Maintenance Tickets Invoices Integration
