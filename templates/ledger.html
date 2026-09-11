@@ -926,7 +926,7 @@
 
             <form method="post" action="{% url 'ledger:deposit_cash' %}" class="space-y-4">
                 {% csrf_token %}
-                <input type="hidden" name="redirect_url" value="{% url 'ledger:ledger_list' %}">
+                <input type="hidden" name="redirect_url" value="{{ request.path }}">
                 
                 <div>
                     <label class="block text-xs font-bold text-slate-200 mb-1">المبلغ المودع بالدرج (ج.م) *</label>

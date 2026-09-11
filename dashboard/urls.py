@@ -9,6 +9,7 @@ app_name = 'dashboard'
 
 urlpatterns = [
     path('', DashboardView.as_view(), name='dashboard_view'),
+    path('view/', DashboardView.as_view(), name='dashboard'),
     path('api/global-search/', GlobalSearchView.as_view(), name='global_search'),
     path('backup/', BackupDashboardView.as_view(), name='backup_manage'),
     path('backup/download-db/', DownloadDatabaseBackupView.as_view(), name='backup_download_db'),
