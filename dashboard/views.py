@@ -35,9 +35,14 @@ class DashboardView(TemplateView):
 
         # Actual cash received in store drawer (cash sales + visa sales + labor + debt collections + cash deposits)
         cash_sales = Order.objects.filter(payment_method__in=['cash', 'visa']).aggregate(Sum('total_amount'))['total_amount__sum'] or Decimal('0.00')
+        deferred_sales = Order.objects.filter(payment_method='deferred').aggregate(Sum('total_amount'))['total_amount__sum'] or Decimal('0.00')
         cash_deposits = pnl.get('cash_deposits', Decimal('0.00'))
         cash_withdrawals = pnl.get('cash_withdrawals', Decimal('0.00'))
-        total_cash_inflow = cash_sales + pnl['labor_fees'] + collected_from_customers + cash_deposits
+        cash_sales_fawry = cash_sales + pnl['labor_fees']
+        total_cash_inflow = cash_sales_fawry + collected_from_customers + cash_deposits
+        
+        context['cash_sales_fawry'] = cash_sales_fawry
+        context['deferred_sales'] = deferred_sales
         context['total_cash_inflow'] = total_cash_inflow
         context['cash_deposits'] = cash_deposits
         context['cash_withdrawals'] = cash_withdrawals

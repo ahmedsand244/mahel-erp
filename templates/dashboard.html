@@ -58,13 +58,17 @@
                     <div class="flex items-center justify-between text-[11px] text-apple-secondary">
                         <span class="flex items-center gap-1">
                             <span class="w-1.5 h-1.5 rounded-full bg-primary shrink-0"></span>
-                            يشمل: كاش + فيزا + آجل وشكك
+                            <span>مبيعات وصيانة كاش فوري:</span>
                         </span>
+                        <span class="font-mono font-bold text-apple-text">{{ cash_sales_fawry|floatformat:2 }} ج.م</span>
                     </div>
-                    {% if collected_from_customers > 0 %}
-                    <div class="flex items-center justify-between text-[11px]">
-                        <span class="text-slate-500">منه نقدية دخلت الدرج:</span>
-                        <span class="font-mono font-bold text-primary">{{ total_cash_inflow|floatformat:2 }} ج.م</span>
+                    {% if deferred_sales > 0 %}
+                    <div class="flex items-center justify-between text-[11px] text-amber-600 dark:text-amber-400 font-semibold">
+                        <span class="flex items-center gap-1">
+                            <span class="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0"></span>
+                            <span>مبيعات آجلة (شكك):</span>
+                        </span>
+                        <span class="font-mono font-bold">{{ deferred_sales|floatformat:2 }} ج.م</span>
                     </div>
                     {% endif %}
                 </div>

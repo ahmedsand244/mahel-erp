@@ -28,6 +28,7 @@ class LedgerListView(ListView):
 
         context['customers'] = customers
         context['suppliers'] = suppliers
+        context['total_accounts_count'] = len(customers) + len(suppliers)
         context['total_customer_debt'] = total_customer_debt
         context['total_supplier_debt'] = total_supplier_debt
         context['net_balance'] = net_balance
