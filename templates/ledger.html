@@ -12,6 +12,7 @@
     showAddPartyModal: false,
     showAddDebtModal: false,
     showAddSupplierDebtModal: false,
+    showDepositModal: false,
     selectedCustomer: { id: '', name: '', balance: 0 }, 
     selectedSupplier: { id: '', name: '', balance: 0 },
     payAmount: '',
@@ -36,6 +37,12 @@
             </div>
             
             <div class="flex items-center gap-2.5 flex-wrap w-full md:w-auto">
+                <button @click="showDepositModal = true" 
+                        class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-3 rounded-2xl font-bold active:scale-95 transition-all flex items-center justify-center gap-1.5 text-xs sm:text-sm shadow-xl shadow-emerald-600/20 cursor-pointer">
+                    <span class="material-symbols-outlined text-[18px]">savings</span>
+                    + إنعاش الخزينة / إيداع
+                </button>
+
                 <a href="{% url 'ledger:export_customers_excel' %}" 
                    class="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 px-4 py-3 rounded-2xl font-bold hover:bg-emerald-500 hover:text-white transition-all flex items-center justify-center gap-1.5 text-xs sm:text-sm shadow-sm"
                    title="تصدير جميع ديون العملاء لملف Excel">
@@ -51,7 +58,7 @@
                 </a>
 
                 <button @click="partyType = 'customer'; showAddPartyModal = true" 
-                        class="w-full md:w-auto bg-gradient-to-r from-primary to-primary-container text-on-primary px-5 py-3 rounded-2xl font-bold hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-2 text-sm shadow-xl shadow-primary/25">
+                        class="w-full md:w-auto bg-gradient-to-r from-primary to-primary-container text-on-primary px-5 py-3 rounded-2xl font-bold hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-2 text-sm shadow-xl shadow-primary/25 cursor-pointer">
                     <span class="material-symbols-outlined text-[20px]">person_add</span>
                     إضافة حساب جديد
                 </button>
@@ -502,16 +509,17 @@
                             <div class="flex items-center gap-3">
                                 <!-- Direction Icon -->
                                 <div class="w-8 h-8 rounded-xl flex items-center justify-center shrink-0
-                                    {% if tx.transaction_type == 'pay_received' or tx.transaction_type == 'pay_sent' %}bg-primary/10 text-primary border border-primary/20{% else %}bg-error/10 text-error border border-error/20{% endif %}">
+                                    {% if tx.transaction_type == 'cash_deposit' %}bg-emerald-500/15 text-emerald-400 border border-emerald-500/30{% elif tx.transaction_type == 'pay_received' or tx.transaction_type == 'pay_sent' %}bg-primary/10 text-primary border border-primary/20{% else %}bg-error/10 text-error border border-error/20{% endif %}">
                                     <span class="material-symbols-outlined text-sm">
-                                        {% if tx.transaction_type == 'pay_received' %}south_west
+                                        {% if tx.transaction_type == 'cash_deposit' %}savings
+                                        {% elif tx.transaction_type == 'pay_received' %}south_west
                                         {% elif tx.transaction_type == 'pay_sent' %}north_west
                                         {% else %}north_east{% endif %}
                                     </span>
                                 </div>
 
                                 <div class="space-y-0.5">
-                                    <div class="font-bold text-on-surface truncate max-w-[130px]">
+                                    <div class="font-bold text-on-surface truncate max-w-[140px]">
                                         {% if tx.customer %}
                                             <a href="{% url 'ledger:customer_detail' tx.customer.id %}" class="hover:text-primary transition-colors">
                                                 <span class="text-primary font-mono text-[10px] px-1 bg-primary/10 rounded">[عميل]</span> {{ tx.customer.name }}
@@ -520,6 +528,10 @@
                                             <a href="{% url 'ledger:supplier_detail' tx.supplier.id %}" class="hover:text-secondary transition-colors">
                                                 <span class="text-secondary font-mono text-[10px] px-1 bg-secondary/10 rounded">[مورد]</span> {{ tx.supplier.name }}
                                             </a>
+                                        {% elif tx.transaction_type == 'cash_deposit' %}
+                                            <span class="text-emerald-400 font-bold text-xs">إيداع نقدي بالخزينة</span>
+                                        {% else %}
+                                            <span class="text-on-surface-variant font-bold text-xs">{{ tx.get_transaction_type_display }}</span>
                                         {% endif %}
                                     </div>
                                     <div class="text-[10px] text-on-surface-variant/70 flex items-center gap-1 font-mono">
@@ -531,8 +543,8 @@
 
                             <div class="text-left font-mono">
                                 <span class="font-extrabold text-sm block tracking-tight
-                                    {% if tx.transaction_type == 'pay_received' or tx.transaction_type == 'pay_sent' %}text-primary{% else %}text-error{% endif %}">
-                                    {% if tx.transaction_type == 'pay_received' or tx.transaction_type == 'pay_sent' %}-{% else %}+{% endif %}{{ tx.amount|floatformat:2 }} ج.م
+                                    {% if tx.transaction_type == 'cash_deposit' %}text-emerald-400{% elif tx.transaction_type == 'pay_received' or tx.transaction_type == 'pay_sent' %}text-primary{% else %}text-error{% endif %}">
+                                    {% if tx.transaction_type == 'cash_deposit' %}+{% elif tx.transaction_type == 'pay_received' or tx.transaction_type == 'pay_sent' %}-{% else %}+{% endif %}{{ tx.amount|floatformat:2 }} ج.م
                                 </span>
                                 {% if tx.notes %}
                                     <span class="text-[10px] text-on-surface-variant/80 italic block truncate max-w-[110px]" title="{{ tx.notes }}">{{ tx.notes }}</span>
@@ -886,6 +898,57 @@
                         حفظ وإنشاء الحساب
                     </button>
                     <button type="button" @click="showAddPartyModal = false" class="px-5 bg-white/5 hover:bg-white/10 border border-white/10 py-3 rounded-xl text-on-surface-variant font-bold text-sm">
+                        إلغاء
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: إنعاش الخزينة / إيداع نقدية بالدرج -->
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md p-4"
+         x-show="showDepositModal" style="display: none;" x-cloak>
+        <div class="bg-slate-900 text-slate-100 rounded-3xl p-6 sm:p-8 max-w-md w-full space-y-5 text-right shadow-2xl relative border border-emerald-500/30" dir="rtl" @click.away="showDepositModal = false">
+            <div class="flex items-center justify-between border-b border-slate-700/60 pb-3">
+                <div class="flex items-center gap-2.5">
+                    <div class="p-2 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-500">
+                        <span class="material-symbols-outlined text-xl">savings</span>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-extrabold text-emerald-400">⚡ إنعاش الخزينة / إيداع نقدية بالدرج</h3>
+                        <p class="text-[11px] text-slate-400">توريد سيولة شخصية، سلفة للمحل، أو تغطية عجز المشتريات</p>
+                    </div>
+                </div>
+                <button type="button" @click="showDepositModal = false" class="text-slate-400 hover:text-white p-1 rounded-full hover:bg-slate-800 transition-colors">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+
+            <form method="post" action="{% url 'ledger:deposit_cash' %}" class="space-y-4">
+                {% csrf_token %}
+                <input type="hidden" name="redirect_url" value="{% url 'ledger:ledger_list' %}">
+                
+                <div>
+                    <label class="block text-xs font-bold text-slate-200 mb-1">المبلغ المودع بالدرج (ج.م) *</label>
+                    <input type="number" step="0.01" name="amount" required min="0.01" placeholder="0.00" autofocus
+                           class="w-full bg-slate-800 border border-slate-700 rounded-2xl py-3 px-4 focus:outline-none focus:border-emerald-500 text-right font-mono font-black text-2xl text-emerald-400">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-200 mb-1">البيان / مصدر السيولة</label>
+                    <input type="text" name="notes" placeholder="مثال: توريد سيولة لتغطية مشتريات بضاعة"
+                           class="w-full bg-slate-800 border border-slate-700 rounded-2xl py-2.5 px-3.5 focus:outline-none focus:border-emerald-500 text-right text-xs text-slate-100">
+                </div>
+
+                <div class="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl text-xs text-emerald-300">
+                    💡 المبلغ سيضاف مباشرة إلى <strong>النقدية الفعلية بالدرج</strong> ويقوم بتغطية أي رصيد سالب فوراً.
+                </div>
+
+                <div class="flex gap-3 pt-2">
+                    <button type="submit" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-2xl shadow-lg shadow-emerald-600/20 transition-all cursor-pointer">
+                        تأكيد الإيداع وإنعاش الدرج
+                    </button>
+                    <button type="button" @click="showDepositModal = false" class="px-5 bg-slate-800 border border-slate-700 py-3 rounded-2xl text-slate-300 font-bold text-xs cursor-pointer">
                         إلغاء
                     </button>
                 </div>

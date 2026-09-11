@@ -5,7 +5,8 @@ from decimal import Decimal, InvalidOperation
 from .models import Customer, Supplier, Transaction
 from core_project.services import (
     receive_customer_payment, send_supplier_payment,
-    add_customer_debt, add_supplier_debt
+    add_customer_debt, add_supplier_debt,
+    deposit_cash_to_drawer, withdraw_cash_from_drawer
 )
 
 
@@ -220,6 +221,44 @@ class AddCustomerSupplierView(View):
         return redirect('ledger:ledger_list')
 
 
+class DepositCashView(View):
+    """إيداع نقدي / إنعاش الخزينة والدرج — توريد سيولة ورأس مال إضافي"""
+    def post(self, request, *args, **kwargs):
+        amount = request.POST.get('amount', '').strip()
+        notes = request.POST.get('notes', '').strip()
+        redirect_url = request.POST.get('redirect_url', '').strip() or request.META.get('HTTP_REFERER') or 'ledger:ledger_list'
+
+        if not amount:
+            messages.error(request, "يرجى إدخال مبلغ الإيداع.")
+            return redirect(redirect_url)
+        try:
+            amt_dec = Decimal(str(amount))
+            deposit_cash_to_drawer(amt_dec, notes=notes)
+            messages.success(request, f"⚡ تم إيداع {amt_dec} ج.م وإنعاش النقدية الفعلية بالدرج والخزينة بنجاح!")
+        except Exception as e:
+            messages.error(request, f"فشلت عملية الإيداع: {str(e)}")
+        return redirect(redirect_url)
+
+
+class WithdrawCashView(View):
+    """سحب نقدي من الخزينة والدرج — مسحوبات نقدية شخصية أو إدارية"""
+    def post(self, request, *args, **kwargs):
+        amount = request.POST.get('amount', '').strip()
+        notes = request.POST.get('notes', '').strip()
+        redirect_url = request.POST.get('redirect_url', '').strip() or request.META.get('HTTP_REFERER') or 'ledger:ledger_list'
+
+        if not amount:
+            messages.error(request, "يرجى إدخال مبلغ السحب.")
+            return redirect(redirect_url)
+        try:
+            amt_dec = Decimal(str(amount))
+            withdraw_cash_from_drawer(amt_dec, notes=notes)
+            messages.success(request, f"💸 تم تسجيل سحب نقدي {amt_dec} ج.م من الخزينة بنجاح!")
+        except Exception as e:
+            messages.error(request, f"فشلت عملية السحب: {str(e)}")
+        return redirect(redirect_url)
+
+
 class CustomerDetailView(DetailView):
     """صفحة تفاصيل العميل — كل معاملاته وبياناته بالتسلسل الزمني"""
     model = Customer
@@ -246,20 +285,23 @@ class CustomerDetailView(DetailView):
 
 
 class SupplierDetailView(DetailView):
-    """صفحة تفاصيل المورد — كل معاملاته وبياناته بالتسلسل الزمني"""
+    """صفحة تفاصيل المورد — كل معاملاته، كشف الحساب، وطلبيات البضاعة المرتبطة به"""
     model = Supplier
     template_name = 'ledger_supplier_detail.html'
     context_object_name = 'supplier'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        supplier = self.object
+
+        # 1. Financial ledger transactions
         context['transactions'] = (
             Transaction.objects
-            .filter(supplier=self.object)
+            .filter(supplier=supplier)
             .order_by('-created_at')
         )
         txs = list(context['transactions'])
-        running = self.object.balance
+        running = supplier.balance
         for tx in txs:
             tx.running_balance = running
             if tx.transaction_type == 'pay_sent':
@@ -267,6 +309,21 @@ class SupplierDetailView(DetailView):
             else:
                 running -= tx.amount
         context['transactions'] = txs
+
+        # 2. Related Purchase Orders (orders where supplier=supplier or items have this supplier)
+        from inventory.models import PurchaseOrder
+        from django.db.models import Q
+        purchase_orders = (
+            PurchaseOrder.objects
+            .filter(Q(supplier=supplier) | Q(items__supplier=supplier))
+            .distinct()
+            .prefetch_related('items', 'items__product')
+            .order_by('-created_at')
+        )
+        context['purchase_orders'] = purchase_orders
+        context['purchase_orders_count'] = purchase_orders.count()
+        context['total_po_value'] = sum((po.total_estimated_cost for po in purchase_orders), Decimal('0.00'))
+
         return context
 
 

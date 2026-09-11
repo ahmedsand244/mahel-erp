@@ -151,6 +151,8 @@ class Transaction(models.Model):
         ('purchase_credit', 'فاتورة مشتريات آجل'),
         ('pay_received', 'دفعة مستلمة من العميل'),
         ('pay_sent', 'دفعة مسددة للمورد'),
+        ('cash_deposit', 'إيداع نقدي / إنعاش الخزينة'),
+        ('cash_withdraw', 'سحب نقدي من الخزينة'),
     ]
 
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE, blank=True, null=True, related_name='ledger_transactions', verbose_name="العميل")
@@ -177,5 +179,5 @@ class Transaction(models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        party = self.customer.name if self.customer else (self.supplier.name if self.supplier else "N/A")
+        party = self.customer.name if self.customer else (self.supplier.name if self.supplier else "خزينة المحل")
         return f"{self.get_transaction_type_display()} - {party} - {self.amount}"

@@ -1,6 +1,7 @@
 from django.urls import path
 from .views import (
     LedgerListView, CollectPaymentView, PaySupplierView,
+    DepositCashView, WithdrawCashView,
     AddCustomerSupplierView, AddCustomerDebtView, AddSupplierDebtView,
     CustomerDetailView, SupplierDetailView, UpdateCustomerProfileView, UpdateSupplierProfileView,
     PublicCustomerLedgerView, ExportCustomersExcelView, ExportSuppliersExcelView
@@ -12,6 +13,8 @@ urlpatterns = [
     path('', LedgerListView.as_view(), name='ledger_list'),
     path('collect-payment/', CollectPaymentView.as_view(), name='collect_payment'),
     path('pay-supplier/', PaySupplierView.as_view(), name='pay_supplier'),
+    path('deposit-cash/', DepositCashView.as_view(), name='deposit_cash'),
+    path('withdraw-cash/', WithdrawCashView.as_view(), name='withdraw_cash'),
     path('add-party/', AddCustomerSupplierView.as_view(), name='add_party'),
     path('add-customer-debt/<int:pk>/', AddCustomerDebtView.as_view(), name='add_customer_debt'),
     path('add-supplier-debt/<int:pk>/', AddSupplierDebtView.as_view(), name='add_supplier_debt'),

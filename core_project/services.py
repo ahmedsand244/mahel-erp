@@ -240,6 +240,8 @@ def get_profit_and_loss(start_date=None, end_date=None):
     # Cash collections & payments during period
     collected_from_customers = tx_qs.filter(transaction_type='pay_received').aggregate(Sum('amount'))['amount__sum'] or Decimal('0.00')
     paid_to_suppliers = tx_qs.filter(transaction_type='pay_sent').aggregate(Sum('amount'))['amount__sum'] or Decimal('0.00')
+    cash_deposits = tx_qs.filter(transaction_type='cash_deposit').aggregate(Sum('amount'))['amount__sum'] or Decimal('0.00')
+    cash_withdrawals = tx_qs.filter(transaction_type='cash_withdraw').aggregate(Sum('amount'))['amount__sum'] or Decimal('0.00')
 
     # Total Sales includes POS Sales + Maintenance Parts Sales
     total_revenues = gross_sales + maintenance_parts_sell
@@ -258,10 +260,47 @@ def get_profit_and_loss(start_date=None, end_date=None):
         'total_expenses': total_expenses,
         'collected_from_customers': collected_from_customers,
         'paid_to_suppliers': paid_to_suppliers,
+        'cash_deposits': cash_deposits,
+        'cash_withdrawals': cash_withdrawals,
         'total_revenues': total_revenues,
         'total_costs': total_cost_goods,
         'net_profit': net_profit,
     }
+
+
+@transaction.atomic
+def deposit_cash_to_drawer(amount, notes=''):
+    """
+    Record an external cash injection / deposit into the store cash drawer / treasury.
+    Increases the net cash position (covers negative balances or adds cash liquidity).
+    """
+    amount_dec = Decimal(str(amount))
+    if amount_dec <= 0:
+        raise ValueError("مبلغ الإيداع يجب أن يكون أكبر من صفر")
+
+    tx = Transaction.objects.create(
+        amount=amount_dec,
+        transaction_type='cash_deposit',
+        notes=notes or f'إيداع نقدي / إنعاش الخزينة بمبلغ {amount_dec} ج.م'
+    )
+    return tx
+
+
+@transaction.atomic
+def withdraw_cash_from_drawer(amount, notes=''):
+    """
+    Record a cash withdrawal from the store cash drawer / treasury.
+    """
+    amount_dec = Decimal(str(amount))
+    if amount_dec <= 0:
+        raise ValueError("مبلغ السحب يجب أن يكون أكبر من صفر")
+
+    tx = Transaction.objects.create(
+        amount=amount_dec,
+        transaction_type='cash_withdraw',
+        notes=notes or f'سحب نقدي من الخزينة بمبلغ {amount_dec} ج.م'
+    )
+    return tx
 
 
 @transaction.atomic

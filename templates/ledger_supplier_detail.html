@@ -98,15 +98,20 @@
         <!-- Quick Actions -->
         <div x-data="{ showPayModal: false, showDebtModal: false }" class="mt-6 flex flex-wrap gap-3 pt-6 border-t border-white/10">
             <button @click="showPayModal = true"
-                    class="inline-flex items-center gap-2 bg-primary text-on-primary px-6 py-3 rounded-xl font-bold hover:brightness-110 transition-all shadow-lg shadow-primary/20">
+                    class="inline-flex items-center gap-2 bg-primary text-on-primary px-6 py-3 rounded-xl font-bold hover:brightness-110 transition-all shadow-lg shadow-primary/20 cursor-pointer">
                 <span class="material-symbols-outlined">payments</span>
                 سداد دفعة للمورد
             </button>
             <button @click="showDebtModal = true"
-                    class="inline-flex items-center gap-2 bg-error/10 text-error border border-error/30 px-6 py-3 rounded-xl font-bold hover:bg-error hover:text-white transition-all">
+                    class="inline-flex items-center gap-2 bg-error/10 text-error border border-error/30 px-6 py-3 rounded-xl font-bold hover:bg-error hover:text-white transition-all cursor-pointer">
                 <span class="material-symbols-outlined">add_circle</span>
                 إضافة بضاعة آجل (دين)
             </button>
+            <a href="{% url 'inventory:purchase_order_create' %}?supplier_id={{ supplier.id }}"
+               class="inline-flex items-center gap-2 bg-indigo-600/15 text-indigo-400 border border-indigo-500/30 px-6 py-3 rounded-xl font-bold hover:bg-indigo-600 hover:text-white transition-all cursor-pointer mr-auto">
+                <span class="material-symbols-outlined">add_shopping_cart</span>
+                + طلب بضاعة / نواقص من هذه الشركة
+            </a>
 
             <!-- Modal: سداد -->
             <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
@@ -128,8 +133,8 @@
                                    class="w-full bg-white/5 border border-white/10 rounded-lg py-2 px-3 focus:outline-none text-right text-xs">
                         </div>
                         <div class="flex gap-3 pt-2">
-                            <button type="submit" class="flex-1 bg-primary text-on-primary py-2.5 rounded-lg font-bold">سداد وحفظ</button>
-                            <button type="button" @click="showPayModal = false" class="flex-1 bg-white/5 border border-white/10 py-2.5 rounded-lg text-on-surface-variant">إلغاء</button>
+                            <button type="submit" class="flex-1 bg-primary text-on-primary py-2.5 rounded-lg font-bold cursor-pointer">سداد وحفظ</button>
+                            <button type="button" @click="showPayModal = false" class="flex-1 bg-white/5 border border-white/10 py-2.5 rounded-lg text-on-surface-variant cursor-pointer">إلغاء</button>
                         </div>
                     </form>
                 </div>
@@ -153,8 +158,8 @@
                                    class="w-full bg-white/5 border border-white/10 rounded-lg py-2 px-3 focus:outline-none text-right text-xs">
                         </div>
                         <div class="flex gap-3 pt-2">
-                            <button type="submit" class="flex-1 bg-error text-white py-2.5 rounded-lg font-bold">تسجيل المستحقات</button>
-                            <button type="button" @click="showDebtModal = false" class="flex-1 bg-white/5 border border-white/10 py-2.5 rounded-lg text-on-surface-variant">إلغاء</button>
+                            <button type="submit" class="flex-1 bg-error text-white py-2.5 rounded-lg font-bold cursor-pointer">تسجيل المستحقات</button>
+                            <button type="button" @click="showDebtModal = false" class="flex-1 bg-white/5 border border-white/10 py-2.5 rounded-lg text-on-surface-variant cursor-pointer">إلغاء</button>
                         </div>
                     </form>
                 </div>
@@ -162,15 +167,133 @@
         </div>
     </div>
 
-    <!-- Transaction History -->
+    <!-- Section 1: Purchase Orders (طلبات البضاعة والنواقص الصادرة لهذه الشركة) -->
+    <div class="glass-card rounded-2xl overflow-hidden border border-white/5 mb-8">
+        <div class="p-6 border-b border-white/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div>
+                <h2 class="text-base font-bold text-on-surface flex items-center gap-2">
+                    <span class="material-symbols-outlined text-indigo-400">inventory_2</span>
+                    طلبات البضاعة والنواقص الصادرة للشركة
+                </h2>
+                <p class="text-xs text-on-surface-variant mt-0.5">سجل كافة طلبيات التوريد المحررة لـ {{ supplier.name }} وحالات استلامها</p>
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="text-xs font-mono font-bold text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 px-3 py-1 rounded-full">
+                    {{ purchase_orders_count }} طلبية — إجمالي: {{ total_po_value|floatformat:2 }} ج.م
+                </span>
+                <a href="{% url 'inventory:purchase_order_create' %}?supplier_id={{ supplier.id }}"
+                   class="bg-primary/10 hover:bg-primary text-primary hover:text-white px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1 border border-primary/20">
+                    <span class="material-symbols-outlined text-sm">add</span>
+                    طلب جديد
+                </a>
+            </div>
+        </div>
+
+        {% if purchase_orders %}
+        <div class="overflow-x-auto">
+            <table class="w-full text-right">
+                <thead>
+                    <tr class="bg-surface-container/50 border-b border-white/10 text-xs font-bold text-on-surface-variant">
+                        <th class="p-4">#</th>
+                        <th class="p-4">رقم الطلبية</th>
+                        <th class="p-4">تاريخ الإنشاء</th>
+                        <th class="p-4 text-center">عدد الأصناف</th>
+                        <th class="p-4 text-left">التكلفة التقديرية</th>
+                        <th class="p-4 text-center">حالة الطلبية</th>
+                        <th class="p-4 text-center">الإجراءات</th>
+                    </tr>
+                </thead>
+                <tbody class="text-sm divide-y divide-white/5">
+                    {% for po in purchase_orders %}
+                    <tr class="hover:bg-white/[0.03] transition-colors">
+                        <td class="p-4 text-on-surface-variant text-xs font-mono">{{ forloop.counter }}</td>
+                        <td class="p-4">
+                            <a href="{% url 'inventory:purchase_order_detail' po.id %}" class="font-mono font-bold text-primary hover:underline flex items-center gap-1.5">
+                                <span class="material-symbols-outlined text-sm">receipt</span>
+                                <span>{{ po.order_number }}</span>
+                            </a>
+                        </td>
+                        <td class="p-4">
+                            <div class="font-mono text-xs">
+                                <span class="text-on-surface font-semibold">{{ po.created_at|date:"Y-m-d" }}</span>
+                                <span class="text-on-surface-variant block text-[11px]">{{ po.created_at|date:"H:i" }}</span>
+                            </div>
+                        </td>
+                        <td class="p-4 text-center font-mono font-bold text-xs text-on-surface">
+                            <span class="bg-white/5 px-2.5 py-1 rounded-lg border border-white/10">
+                                {{ po.items.count }} صنف ({{ po.total_items_count }} قطعة)
+                            </span>
+                        </td>
+                        <td class="p-4 text-left font-mono font-bold text-sm text-indigo-400">
+                            {{ po.total_estimated_cost|floatformat:2 }} ج.م
+                        </td>
+                        <td class="p-4 text-center">
+                            {% if po.status == 'received' %}
+                                <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-bold">
+                                    <span class="material-symbols-outlined text-[14px]">check_circle</span>
+                                    تم الاستلام بالمخزن
+                                </span>
+                            {% elif po.status == 'sent' %}
+                                <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 text-xs font-bold">
+                                    <span class="material-symbols-outlined text-[14px]">send</span>
+                                    تم الإرسال للشركة
+                                </span>
+                            {% elif po.status == 'cancelled' %}
+                                <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/20 text-xs font-bold">
+                                    <span class="material-symbols-outlined text-[14px]">cancel</span>
+                                    ملغي
+                                </span>
+                            {% else %}
+                                <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-slate-500/10 text-slate-400 border border-slate-500/20 text-xs font-bold">
+                                    <span class="material-symbols-outlined text-[14px]">edit_note</span>
+                                    مسودة (قيد التحضير)
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td class="p-4 text-center">
+                            <div class="flex items-center justify-center gap-2">
+                                <a href="{% url 'inventory:purchase_order_detail' po.id %}"
+                                   class="p-2 rounded-xl bg-white/5 hover:bg-primary/20 text-primary transition-all border border-white/10"
+                                   title="عرض تفاصيل الطلبية">
+                                    <span class="material-symbols-outlined text-base">visibility</span>
+                                </a>
+                                <a href="{% url 'inventory:public_purchase_order' po.id %}?print=1" target="_blank"
+                                   class="p-2 rounded-xl bg-white/5 hover:bg-emerald-500/20 text-emerald-400 transition-all border border-white/10"
+                                   title="طباعة / PDF">
+                                    <span class="material-symbols-outlined text-base">print</span>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+            <div class="p-10 text-center space-y-3">
+                <span class="material-symbols-outlined text-4xl text-on-surface-variant/30 block">local_shipping</span>
+                <p class="text-on-surface-variant text-sm font-medium">لا توجد طلبيات بضاعة مسجلة لهذه الشركة حتى الآن</p>
+                <a href="{% url 'inventory:purchase_order_create' %}?supplier_id={{ supplier.id }}"
+                   class="inline-flex items-center gap-2 bg-primary text-on-primary px-4 py-2 rounded-xl text-xs font-bold hover:brightness-110 transition-all">
+                    <span class="material-symbols-outlined text-sm">add_shopping_cart</span>
+                    إنشاء أول طلبية بضاعة لـ {{ supplier.name }}
+                </a>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Section 2: Transaction History (كشف الحساب وسجل كل المعاملات) -->
     <div class="glass-card rounded-2xl overflow-hidden border border-white/5">
         <div class="p-6 border-b border-white/10 flex items-center justify-between">
-            <h2 class="text-base font-bold text-on-surface flex items-center gap-2">
-                <span class="material-symbols-outlined text-primary">history</span>
-                سجل كل المعاملات
-            </h2>
+            <div>
+                <h2 class="text-base font-bold text-on-surface flex items-center gap-2">
+                    <span class="material-symbols-outlined text-primary">history</span>
+                    كشف الحساب المالي وسجل المعاملات
+                </h2>
+                <p class="text-xs text-on-surface-variant mt-0.5">الحركات الدفترية وفواتير المشتريات الآجلة ودفعات السداد</p>
+            </div>
             <span class="text-xs text-on-surface-variant bg-white/5 px-3 py-1 rounded-full">
-                {{ transactions|length }} عملية
+                {{ transactions|length }} حركة مالية
             </span>
         </div>
 
@@ -203,6 +326,11 @@
                                     <span class="material-symbols-outlined text-[13px]">south_west</span>
                                     {{ tx.get_transaction_type_display }}
                                 </span>
+                            {% elif tx.transaction_type == 'cash_deposit' %}
+                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-bold">
+                                    <span class="material-symbols-outlined text-[13px]">savings</span>
+                                    {{ tx.get_transaction_type_display }}
+                                </span>
                             {% else %}
                                 <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-error/10 text-error border border-error/20 text-xs font-bold">
                                     <span class="material-symbols-outlined text-[13px]">north_east</span>
@@ -226,7 +354,7 @@
                 </tbody>
                 <tfoot>
                     <tr class="bg-surface-container/30 border-t-2 border-white/10">
-                        <td colspan="4" class="p-4 text-xs font-bold text-on-surface-variant text-right">الرصيد الحالي الإجمالي</td>
+                        <td colspan="4" class="p-4 text-xs font-bold text-on-surface-variant text-right">الرصيد الحالي المستحق للمورد</td>
                         <td colspan="2" class="p-4 text-left">
                             <span class="text-xl font-bold font-mono {% if supplier.balance > 0 %}text-error{% else %}text-primary{% endif %}">
                                 {{ supplier.balance|floatformat:2 }} ج.م

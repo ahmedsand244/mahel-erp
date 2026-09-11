@@ -33,16 +33,20 @@ class DashboardView(TemplateView):
         context['store_expenses'] = store_expenses
         context['collected_from_customers'] = collected_from_customers
 
-        # Actual cash received in store drawer (cash sales + visa sales + labor + debt collections)
+        # Actual cash received in store drawer (cash sales + visa sales + labor + debt collections + cash deposits)
         cash_sales = Order.objects.filter(payment_method__in=['cash', 'visa']).aggregate(Sum('total_amount'))['total_amount__sum'] or Decimal('0.00')
-        total_cash_inflow = cash_sales + pnl['labor_fees'] + collected_from_customers
+        cash_deposits = pnl.get('cash_deposits', Decimal('0.00'))
+        cash_withdrawals = pnl.get('cash_withdrawals', Decimal('0.00'))
+        total_cash_inflow = cash_sales + pnl['labor_fees'] + collected_from_customers + cash_deposits
         context['total_cash_inflow'] = total_cash_inflow
+        context['cash_deposits'] = cash_deposits
+        context['cash_withdrawals'] = cash_withdrawals
 
         # Net Cash Position = All Cash In - All Cash Out
-        # Cash In: cash/visa sales + labor fees collected + customer debt collections
-        # Cash Out: operating expenses paid + payments sent to suppliers
+        # Cash In: cash/visa sales + labor fees collected + customer debt collections + cash injections (top-ups)
+        # Cash Out: operating expenses paid + payments sent to suppliers + cash withdrawals
         total_cash_in = total_cash_inflow
-        total_cash_out = pnl['total_expenses'] + pnl['paid_to_suppliers']
+        total_cash_out = pnl['total_expenses'] + pnl['paid_to_suppliers'] + cash_withdrawals
         context['total_cash_in'] = total_cash_in
         context['total_cash_out'] = total_cash_out
         context['net_cash_position'] = total_cash_in - total_cash_out
@@ -75,7 +79,7 @@ class DashboardView(TemplateView):
         # 5. Recent Activity Logs
         context['recent_orders'] = Order.objects.select_related('customer').order_by('-created_at')[:6]
         context['recent_tickets'] = MaintenanceTicket.objects.select_related('customer').order_by('-created_at')[:6]
-        context['recent_collections'] = Transaction.objects.filter(transaction_type='pay_received').select_related('customer').order_by('-created_at')[:6]
+        context['recent_collections'] = Transaction.objects.filter(transaction_type__in=['pay_received', 'cash_deposit']).select_related('customer', 'supplier').order_by('-created_at')[:6]
         
         # 6. Interactive Chart Analytics (Last 7 Days Trend & Product Breakdown)
         from django.utils import timezone

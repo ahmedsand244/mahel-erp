@@ -268,12 +268,14 @@ class PurchaseOrderBuilderView(View):
             stock_quantity__lte=F('min_stock_threshold')
         ).select_related('default_supplier').order_by('stock_quantity', 'name')
         suppliers = Supplier.objects.all()
+        initial_supplier_id = request.GET.get('supplier_id', '')
 
         context = {
             'order': order,
             'all_products': all_products,
             'low_stock_products': low_stock_products,
             'suppliers': suppliers,
+            'initial_supplier_id': initial_supplier_id,
         }
         return render(request, "purchase_order_builder.html", context)
 
@@ -310,14 +312,26 @@ class PurchaseOrderBuilderView(View):
                     status=status,
                 )
 
+            item_supplier_ids = set()
             for item in items_data:
                 product_id = item.get('product_id')
                 custom_name = str(item.get('custom_name', '') or '').strip()
-                item_supplier_id = item.get('supplier_id')
+                item_supplier_id = item.get('supplier_id') or supplier_id or None
+                if item_supplier_id:
+                    try:
+                        item_supplier_ids.add(int(item_supplier_id))
+                    except (ValueError, TypeError):
+                        pass
+
                 quantity = int(item.get('quantity', 1))
                 unit_cost = Decimal(str(item.get('unit_cost', 0)))
 
                 prod_obj = Product.objects.filter(id=product_id).first() if product_id else None
+
+                # Fallback to product default supplier if no supplier specified
+                if not item_supplier_id and prod_obj and prod_obj.default_supplier_id:
+                    item_supplier_id = prod_obj.default_supplier_id
+                    item_supplier_ids.add(prod_obj.default_supplier_id)
 
                 PurchaseOrderItem.objects.create(
                     purchase_order=order,
@@ -327,6 +341,11 @@ class PurchaseOrderBuilderView(View):
                     quantity_requested=max(1, quantity),
                     unit_cost=max(Decimal('0.00'), unit_cost)
                 )
+
+            # Auto-assign order.supplier if all items belong to a single supplier and order.supplier was empty
+            if not order.supplier_id and len(item_supplier_ids) == 1:
+                order.supplier_id = list(item_supplier_ids)[0]
+                order.save(update_fields=['supplier_id'])
 
             if status == 'received' and not order.received_at:
                 for item in order.items.all():
@@ -416,35 +435,51 @@ class PurchaseOrderReceiveView(View):
             order.received_at = timezone.now()
             order.save()
 
-            # 3. Record financial transaction if amount > 0 and supplier exists
-            if actual_amount > 0 and order.supplier:
+            # 3. Record financial transaction if amount > 0
+            if actual_amount > 0:
                 supplier = order.supplier
+                if not supplier:
+                    item_suppliers = set(order.items.values_list('supplier_id', flat=True))
+                    item_suppliers.discard(None)
+                    if len(item_suppliers) == 1:
+                        supplier = Supplier.objects.filter(id=list(item_suppliers)[0]).first()
+                        if supplier:
+                            order.supplier = supplier
+                            order.save(update_fields=['supplier'])
+
                 if payment_method == 'cash':
-                    # Cash payment from drawer: record as pay_sent (increases cash_out on dashboard)
+                    # Cash payment from drawer: record as pay_sent (deducts from cash drawer / increases cash_out on dashboard)
                     Transaction.objects.create(
                         supplier=supplier,
                         amount=actual_amount,
                         transaction_type='pay_sent',
-                        notes=f'سداد نقدي فوري عند استلام طلبية {order.order_number}'
+                        notes=f'سداد نقدي فوري عند استلام طلبية {order.order_number}' + (f' ({supplier.name})' if supplier else '')
                     )
+                    supp_text = f" للمورد '{supplier.name}'" if supplier else ""
                     messages.success(
                         request,
-                        f"تم استلام شحنة الطلبية ({order.order_number}) بنجاح وتسجيل سداد نقدي {actual_amount} ج.م للمورد!"
+                        f"تم استلام شحنة الطلبية ({order.order_number}) بنجاح وتسجيل سداد نقدي {actual_amount} ج.م{supp_text} وخصمها من النقدية بالدرج!"
                     )
                 else:
                     # Deferred: add to supplier balance (shows in supplier liabilities on dashboard)
-                    supplier.balance += actual_amount
-                    supplier.save()
-                    Transaction.objects.create(
-                        supplier=supplier,
-                        amount=actual_amount,
-                        transaction_type='purchase_credit',
-                        notes=f'بضاعة مستلمة آجل — طلبية {order.order_number}'
-                    )
-                    messages.success(
-                        request,
-                        f"تم استلام شحنة الطلبية ({order.order_number}) وتسجيل {actual_amount} ج.م على حساب المورد آجل!"
-                    )
+                    if supplier:
+                        supplier.balance += actual_amount
+                        supplier.save()
+                        Transaction.objects.create(
+                            supplier=supplier,
+                            amount=actual_amount,
+                            transaction_type='purchase_credit',
+                            notes=f'بضاعة مستلمة آجل — طلبية {order.order_number}'
+                        )
+                        messages.success(
+                            request,
+                            f"تم استلام شحنة الطلبية ({order.order_number}) وتسجيل {actual_amount} ج.م على حساب المورد '{supplier.name}' آجل!"
+                        )
+                    else:
+                        messages.success(
+                            request,
+                            f"تم استلام شحنة الطلبية ({order.order_number}) بنجاح بمبلغ {actual_amount} ج.م!"
+                        )
             else:
                 messages.success(
                     request,

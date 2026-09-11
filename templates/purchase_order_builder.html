@@ -613,7 +613,7 @@ function purchaseOrderApp() {
         items: [],
         selectedProductId: '',
         customItemName: '',
-        orderSupplierId: '{% if order and order.supplier %}{{ order.supplier.id }}{% endif %}',
+        orderSupplierId: '{% if order and order.supplier %}{{ order.supplier.id }}{% elif initial_supplier_id %}{{ initial_supplier_id }}{% endif %}',
         orderNotes: '{% if order %}{{ order.notes|escapejs }}{% endif %}',
         isSaving: false,
         isProductDropdownOpen: false,
@@ -678,6 +678,9 @@ function purchaseOrderApp() {
             const urlParams = new URLSearchParams(window.location.search);
             if (urlParams.get('auto_pull') === 'true') {
                 this.pullLowStockItems();
+            }
+            if (urlParams.get('supplier_id') && !this.orderSupplierId) {
+                this.orderSupplierId = urlParams.get('supplier_id');
             }
 
             {% if order %}
