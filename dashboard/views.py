@@ -47,6 +47,9 @@ class DashboardView(TemplateView):
         context['total_cash_out'] = total_cash_out
         context['net_cash_position'] = total_cash_in - total_cash_out
 
+        # Total Supplier Liabilities (what the store owes to all suppliers combined)
+        context['total_supplier_liabilities'] = Supplier.objects.aggregate(Sum('balance'))['balance__sum'] or Decimal('0.00')
+
         # 2. Inventory Valuation (Instant SQL Aggregation - Ultra Fast)
         from django.db.models import ExpressionWrapper
         inv_agg = Product.objects.aggregate(

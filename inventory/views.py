@@ -384,13 +384,23 @@ class PurchaseOrderDetailView(DetailView):
 
 class PurchaseOrderReceiveView(View):
     def post(self, request, pk, *args, **kwargs):
+        from ledger.models import Transaction
+        from decimal import Decimal
+
         order = get_object_or_404(PurchaseOrder, pk=pk)
 
         if order.status == 'received':
             messages.warning(request, f"الطلبية رقم {order.order_number} تم استلامها وإضافتها للمخزن سابقاً!")
             return redirect('inventory:purchase_order_detail', pk=order.id)
 
+        payment_method = request.POST.get('payment_method', 'deferred')  # 'cash' or 'deferred'
+        try:
+            actual_amount = Decimal(str(request.POST.get('actual_amount', '0') or '0'))
+        except Exception:
+            actual_amount = Decimal('0.00')
+
         with transaction.atomic():
+            # 1. Update stock quantities
             updated_count = 0
             for item in order.items.all():
                 if item.product and not item.is_received:
@@ -401,14 +411,46 @@ class PurchaseOrderReceiveView(View):
                     item.save()
                     updated_count += 1
 
+            # 2. Mark order received
             order.status = 'received'
             order.received_at = timezone.now()
             order.save()
 
-        messages.success(
-            request, 
-            f"🎉 تم استلام شحنة الطلبية ({order.order_number}) بنجاح! تم تزويد رصيد المخزون لـ ({updated_count}) صنف."
-        )
+            # 3. Record financial transaction if amount > 0 and supplier exists
+            if actual_amount > 0 and order.supplier:
+                supplier = order.supplier
+                if payment_method == 'cash':
+                    # Cash payment from drawer: record as pay_sent (increases cash_out on dashboard)
+                    Transaction.objects.create(
+                        supplier=supplier,
+                        amount=actual_amount,
+                        transaction_type='pay_sent',
+                        notes=f'سداد نقدي فوري عند استلام طلبية {order.order_number}'
+                    )
+                    messages.success(
+                        request,
+                        f"تم استلام شحنة الطلبية ({order.order_number}) بنجاح وتسجيل سداد نقدي {actual_amount} ج.م للمورد!"
+                    )
+                else:
+                    # Deferred: add to supplier balance (shows in supplier liabilities on dashboard)
+                    supplier.balance += actual_amount
+                    supplier.save()
+                    Transaction.objects.create(
+                        supplier=supplier,
+                        amount=actual_amount,
+                        transaction_type='purchase_credit',
+                        notes=f'بضاعة مستلمة آجل — طلبية {order.order_number}'
+                    )
+                    messages.success(
+                        request,
+                        f"تم استلام شحنة الطلبية ({order.order_number}) وتسجيل {actual_amount} ج.م على حساب المورد آجل!"
+                    )
+            else:
+                messages.success(
+                    request,
+                    f"تم استلام شحنة الطلبية ({order.order_number}) بنجاح! تم تزويد رصيد المخزون لـ ({updated_count}) صنف."
+                )
+
         return redirect('inventory:purchase_order_detail', pk=order.id)
 
 

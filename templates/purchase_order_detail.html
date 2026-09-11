@@ -79,13 +79,12 @@
                     <span>تعديل الطلبية</span>
                 </a>
 
-                <form method="post" action="{% url 'inventory:purchase_order_receive' order.id %}" class="inline" onsubmit="return confirm('هل تأكدت من استلام هذه الشحنة وتزويد مخزون المنتجات تلقائياً؟');">
-                    {% csrf_token %}
-                    <button type="submit" class="bg-primary hover:bg-primary/95 text-white font-bold px-4 sm:px-5 py-2.5 rounded-2xl flex items-center justify-center gap-2 text-xs sm:text-sm shadow-apple-sm transition-all active:scale-95">
-                        <span class="material-symbols-outlined text-base">inventory_2</span>
-                        <span>تأكيد الاستلام بالمخزن</span>
-                    </button>
-                </form>
+                <!-- Receive Shipment Button — triggers payment modal -->
+                <button type="button" onclick="openReceiveModal()"
+                    class="bg-primary hover:bg-primary/95 text-white font-bold px-4 sm:px-5 py-2.5 rounded-2xl flex items-center justify-center gap-2 text-xs sm:text-sm shadow-apple-sm transition-all active:scale-95">
+                    <span class="material-symbols-outlined text-base">inventory_2</span>
+                    <span>تأكيد الاستلام بالمخزن</span>
+                </button>
             {% endif %}
         </div>
     </div>
@@ -242,4 +241,154 @@ function sendWhatsApp(phone, orderId, orderNum, supplierName, items, notes) {
     window.open(waUrl, '_blank');
 }
 </script>
+<!-- =================== RECEIVE MODAL =================== -->
+{% if order.status != 'received' %}
+<div id="receiveModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4" dir="rtl">
+    <!-- Backdrop -->
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeReceiveModal()"></div>
+
+    <!-- Modal Card -->
+    <div class="relative z-10 w-full max-w-md glass-card rounded-3xl p-6 border border-apple-border shadow-2xl space-y-5 animate-modal-in">
+
+        <!-- Header -->
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <div class="p-2 bg-primary/10 rounded-2xl border border-primary/20 text-primary">
+                    <span class="material-symbols-outlined text-xl">local_shipping</span>
+                </div>
+                <div>
+                    <h3 class="text-base font-black text-apple-text">تأكيد استلام الشحنة</h3>
+                    <p class="text-[11px] text-apple-secondary font-mono">{{ order.order_number }}</p>
+                </div>
+            </div>
+            <button onclick="closeReceiveModal()" class="p-2 rounded-xl hover:bg-apple-surface-subtle text-apple-secondary transition-colors">
+                <span class="material-symbols-outlined text-lg">close</span>
+            </button>
+        </div>
+
+        <!-- Estimated Cost Info -->
+        <div class="bg-apple-surface-subtle rounded-2xl p-4 border border-apple-border space-y-1">
+            <p class="text-[11px] text-apple-secondary">التكلفة التقديرية الكلية للطلبية:</p>
+            <p class="text-2xl font-black font-mono text-primary">{{ order.total_estimated_cost }} <span class="text-xs font-normal text-apple-secondary">ج.م</span></p>
+            {% if order.supplier %}
+            <p class="text-[11px] text-apple-secondary flex items-center gap-1">
+                <span class="material-symbols-outlined text-[12px]">business</span>
+                المورد: <span class="font-bold text-apple-text">{{ order.supplier.name }}</span>
+            </p>
+            {% endif %}
+        </div>
+
+        <!-- Payment Method Toggle -->
+        <div class="space-y-2">
+            <p class="text-xs font-bold text-apple-text">طريقة السداد:</p>
+            <div class="grid grid-cols-2 gap-2">
+                <label id="label-deferred" class="cursor-pointer">
+                    <input type="radio" name="modal_payment_method" value="deferred" class="sr-only" checked onchange="onPaymentMethodChange('deferred')">
+                    <div id="opt-deferred" class="flex flex-col items-center gap-1.5 p-3.5 rounded-2xl border-2 border-amber-500 bg-amber-500/10 transition-all">
+                        <span class="material-symbols-outlined text-xl text-amber-600 dark:text-amber-400">account_balance</span>
+                        <span class="text-xs font-bold text-amber-600 dark:text-amber-400">آجل على الحساب</span>
+                        <span class="text-[10px] text-apple-secondary text-center">يُضاف لمستحقات المورد</span>
+                    </div>
+                </label>
+                <label id="label-cash" class="cursor-pointer">
+                    <input type="radio" name="modal_payment_method" value="cash" class="sr-only" onchange="onPaymentMethodChange('cash')">
+                    <div id="opt-cash" class="flex flex-col items-center gap-1.5 p-3.5 rounded-2xl border-2 border-apple-border bg-apple-surface-subtle transition-all">
+                        <span class="material-symbols-outlined text-xl text-apple-secondary">payments</span>
+                        <span class="text-xs font-bold text-apple-secondary">كاش من الدرج</span>
+                        <span class="text-[10px] text-apple-secondary text-center">يُخصم من النقدية فوراً</span>
+                    </div>
+                </label>
+            </div>
+        </div>
+
+        <!-- Actual Amount Field -->
+        <div class="space-y-1.5">
+            <label class="text-xs font-bold text-apple-text" for="modalActualAmount">المبلغ الفعلي (ج.م)</label>
+            <input type="number" id="modalActualAmount" step="0.01" min="0"
+                value="{{ order.total_estimated_cost }}"
+                class="w-full px-4 py-3 rounded-2xl border border-apple-border bg-apple-surface text-apple-text font-mono text-base focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all"
+                placeholder="0.00">
+            <p class="text-[10px] text-apple-secondary">اتركه 0 إذا لم تريد تسجيل حركة مالية الآن</p>
+        </div>
+
+        <!-- Hidden Real Form -->
+        <form id="receiveForm" method="post" action="{% url 'inventory:purchase_order_receive' order.id %}">
+            {% csrf_token %}
+            <input type="hidden" id="hiddenPaymentMethod" name="payment_method" value="deferred">
+            <input type="hidden" id="hiddenActualAmount" name="actual_amount" value="{{ order.total_estimated_cost }}">
+
+            <!-- Action Buttons -->
+            <div class="flex gap-2 pt-1">
+                <button type="button" onclick="closeReceiveModal()"
+                    class="flex-1 py-3 rounded-2xl border border-apple-border text-apple-secondary font-bold text-sm hover:bg-apple-surface-subtle transition-all">
+                    إلغاء
+                </button>
+                <button type="submit"
+                    class="flex-2 flex-grow py-3 px-5 rounded-2xl bg-primary text-white font-bold text-sm hover:bg-primary/90 transition-all shadow-apple-sm active:scale-95 flex items-center justify-center gap-2">
+                    <span class="material-symbols-outlined text-base">check_circle</span>
+                    تأكيد الاستلام والتسجيل
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+@keyframes modal-in {
+    from { opacity: 0; transform: scale(0.95) translateY(10px); }
+    to   { opacity: 1; transform: scale(1)   translateY(0); }
+}
+.animate-modal-in { animation: modal-in 0.2s ease-out forwards; }
+</style>
+
+<script>
+function openReceiveModal() {
+    const modal = document.getElementById('receiveModal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+}
+
+function closeReceiveModal() {
+    const modal = document.getElementById('receiveModal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+}
+
+function onPaymentMethodChange(value) {
+    document.getElementById('hiddenPaymentMethod').value = value;
+
+    const optDeferred = document.getElementById('opt-deferred');
+    const optCash     = document.getElementById('opt-cash');
+
+    if (value === 'deferred') {
+        optDeferred.className = 'flex flex-col items-center gap-1.5 p-3.5 rounded-2xl border-2 border-amber-500 bg-amber-500/10 transition-all';
+        optDeferred.querySelector('.material-symbols-outlined').className = 'material-symbols-outlined text-xl text-amber-600 dark:text-amber-400';
+        optDeferred.querySelectorAll('span')[1].className = 'text-xs font-bold text-amber-600 dark:text-amber-400';
+
+        optCash.className = 'flex flex-col items-center gap-1.5 p-3.5 rounded-2xl border-2 border-apple-border bg-apple-surface-subtle transition-all';
+        optCash.querySelector('.material-symbols-outlined').className = 'material-symbols-outlined text-xl text-apple-secondary';
+        optCash.querySelectorAll('span')[1].className = 'text-xs font-bold text-apple-secondary';
+    } else {
+        optCash.className = 'flex flex-col items-center gap-1.5 p-3.5 rounded-2xl border-2 border-emerald-500 bg-emerald-500/10 transition-all';
+        optCash.querySelector('.material-symbols-outlined').className = 'material-symbols-outlined text-xl text-emerald-600 dark:text-emerald-400';
+        optCash.querySelectorAll('span')[1].className = 'text-xs font-bold text-emerald-600 dark:text-emerald-400';
+
+        optDeferred.className = 'flex flex-col items-center gap-1.5 p-3.5 rounded-2xl border-2 border-apple-border bg-apple-surface-subtle transition-all';
+        optDeferred.querySelector('.material-symbols-outlined').className = 'material-symbols-outlined text-xl text-apple-secondary';
+        optDeferred.querySelectorAll('span')[1].className = 'text-xs font-bold text-apple-secondary';
+    }
+}
+
+// Sync amount field to hidden input before submit
+document.getElementById('receiveForm').addEventListener('submit', function() {
+    document.getElementById('hiddenActualAmount').value = document.getElementById('modalActualAmount').value || '0';
+});
+
+// Close modal on Escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeReceiveModal();
+});
+</script>
+{% endif %}
+
 {% endblock %}
