@@ -36,6 +36,11 @@ class Order(models.Model):
     def __str__(self):
         return f"فاتورة مبيعات #{self.order_number}"
 
+    @property
+    def profit(self):
+        from decimal import Decimal
+        return (self.total_amount or Decimal('0.00')) - (self.cost_of_goods_sold or Decimal('0.00'))
+
 
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='items', verbose_name="الفاتورة")

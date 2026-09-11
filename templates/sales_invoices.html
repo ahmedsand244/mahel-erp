@@ -284,8 +284,8 @@
                     </td>
 
                     <!-- أرباح الفاتورة -->
-                    <td class="p-4 text-left font-mono font-bold text-xs text-apple-secondary whitespace-nowrap">
-                        + {{ order.total_amount|add:order.cost_of_goods_sold|floatformat:2 }} ج.م
+                    <td class="p-4 text-left font-mono font-bold text-xs {% if order.profit >= 0 %}text-emerald-500{% else %}text-red-500{% endif %} whitespace-nowrap">
+                        {% if order.profit >= 0 %}+{% endif %}{{ order.profit|floatformat:2 }} ج.م
                     </td>
 
                     <!-- الإجراءات والطباعة والواتساب -->
