@@ -358,6 +358,35 @@ class PurchaseOrderBuilderView(View):
                 order.received_at = timezone.now()
                 order.save()
 
+                # Record financial transaction (Cash Drawer deduction or Supplier Debt)
+                payment_method = data.get('payment_method', 'cash')
+                total_cost = order.total_estimated_cost
+                if total_cost > 0:
+                    supplier = order.supplier
+                    if not supplier and len(item_supplier_ids) == 1:
+                        supplier = Supplier.objects.filter(id=list(item_supplier_ids)[0]).first()
+                        if supplier:
+                            order.supplier = supplier
+                            order.save(update_fields=['supplier'])
+
+                    if payment_method == 'cash':
+                        Transaction.objects.create(
+                            supplier=supplier,
+                            amount=total_cost,
+                            transaction_type='pay_sent',
+                            notes=f'سداد نقدي فوري لشراء بضاعة طلبية {order.order_number}' + (f' ({supplier.name})' if supplier else '')
+                        )
+                    else:
+                        if supplier:
+                            supplier.balance += total_cost
+                            supplier.save()
+                            Transaction.objects.create(
+                                supplier=supplier,
+                                amount=total_cost,
+                                transaction_type='purchase_credit',
+                                notes=f'بضاعة مستلمة آجل — طلبية {order.order_number}'
+                            )
+
         return JsonResponse({
             'success': True,
             'order_id': order.id,

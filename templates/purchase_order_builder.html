@@ -473,6 +473,32 @@
                     </div>
                 </div>
 
+                <!-- Payment Method for Instant Restock -->
+                <div class="space-y-2 border-t border-apple-border pt-3">
+                    <label class="text-xs font-bold text-apple-text flex items-center justify-between">
+                        <span class="flex items-center gap-1">
+                            <span class="material-symbols-outlined text-sm text-primary">payments</span>
+                            <span>طريقة السداد عند الاستلام / التزويد:</span>
+                        </span>
+                    </label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button type="button" @click="paymentMethod = 'cash'"
+                                class="p-2.5 rounded-2xl border text-xs font-bold flex flex-col items-center gap-1 transition-all cursor-pointer text-center"
+                                :class="paymentMethod === 'cash' ? 'bg-emerald-500/15 border-emerald-500 text-emerald-600 dark:text-emerald-400 font-black shadow-sm' : 'bg-apple-surface-subtle border-apple-border text-apple-secondary hover:text-apple-text'">
+                            <span class="material-symbols-outlined text-base">account_balance_wallet</span>
+                            <span>كاش من الخزينة</span>
+                            <span class="text-[9px] font-normal opacity-80">(يخصم من نقدية الدرج)</span>
+                        </button>
+                        <button type="button" @click="paymentMethod = 'deferred'"
+                                class="p-2.5 rounded-2xl border text-xs font-bold flex flex-col items-center gap-1 transition-all cursor-pointer text-center"
+                                :class="paymentMethod === 'deferred' ? 'bg-amber-500/15 border-amber-500 text-amber-600 dark:text-amber-400 font-black shadow-sm' : 'bg-apple-surface-subtle border-apple-border text-apple-secondary hover:text-apple-text'">
+                            <span class="material-symbols-outlined text-base">receipt_long</span>
+                            <span>آجل على الحساب</span>
+                            <span class="text-[9px] font-normal opacity-80">(يُسجل كدين للمورد)</span>
+                        </button>
+                    </div>
+                </div>
+
                 <!-- Submission Actions (No Emojis - Material Symbols Icons) -->
                 <div class="space-y-2.5 pt-1">
                     <!-- Save as Draft -->
@@ -615,6 +641,7 @@ function purchaseOrderApp() {
         customItemName: '',
         orderSupplierId: '{% if order and order.supplier %}{{ order.supplier.id }}{% elif initial_supplier_id %}{{ initial_supplier_id }}{% endif %}',
         orderNotes: '{% if order %}{{ order.notes|escapejs }}{% endif %}',
+        paymentMethod: 'cash',
         isSaving: false,
         isProductDropdownOpen: false,
         productSearchQuery: '',
@@ -943,6 +970,7 @@ function purchaseOrderApp() {
                 supplier_id: this.orderSupplierId || null,
                 notes: this.orderNotes,
                 status: targetStatus,
+                payment_method: this.paymentMethod || 'cash',
                 items: this.items.map(item => ({
                     product_id: item.product_id,
                     custom_name: item.name,

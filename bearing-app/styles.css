@@ -1,0 +1,53 @@
+.glass{background:rgba(255,255,255,.75);border:1px solid rgba(15,23,42,.08);border-radius:1.25rem;box-shadow:0 10px 30px -12px rgba(0,0,0,.15)}
+.dark .glass{background:rgba(15,23,42,.6);border-color:rgba(255,255,255,.08)}
+.lbl{font-weight:800;font-size:.85rem;display:block;margin-bottom:.5rem}
+.hint{font-size:11px;color:#64748b;margin-top:.4rem}
+.tab{flex:1;padding:.55rem .5rem;border-radius:.9rem;font-size:.8rem;font-weight:800;background:#e2e8f0;color:#334155;transition:.2s;white-space:nowrap}
+.dark .tab{background:#1e293b;color:#cbd5e1}
+.tab.active{background:linear-gradient(135deg,#f59e0b,#ef4444);color:#fff;box-shadow:0 6px 16px -6px rgba(239,68,68,.6)}
+.chip-btn{background:#e2e8f0;color:#0f172a;font-size:.75rem;font-weight:800;padding:.45rem .8rem;border-radius:999px;transition:.2s;white-space:nowrap}
+.dark .chip-btn{background:#1e293b;color:#e2e8f0}
+.chip-btn:hover{transform:translateY(-1px)}
+.chip{font-family:ui-monospace,monospace;font-weight:800;font-size:.75rem;background:#fff;border:1px solid #e2e8f0;padding:.35rem .7rem;border-radius:999px;cursor:pointer;transition:.15s}
+.dark .chip{background:#0f172a;border-color:#334155}
+.chip:hover{border-color:#f59e0b;color:#f59e0b;transform:translateY(-1px)}
+.num-card{background:linear-gradient(180deg,#f8fafc,#eef2f7);border:1px solid #e2e8f0;border-radius:1rem;padding:.7rem;text-align:center}
+.dark .num-card{background:linear-gradient(180deg,#1e293b,#0f172a);border-color:#334155}
+.num-lbl{font-size:11px;color:#64748b;font-weight:700}
+.num-val{font-family:ui-monospace,monospace;font-weight:900;font-size:1.6rem;line-height:1.2}
+.num-val small{font-size:.7rem;color:#94a3b8;margin-inline-start:2px}
+.type-badge{font-size:10px;font-weight:800;background:#fef3c7;color:#92400e;padding:.25rem .6rem;border-radius:999px;white-space:nowrap}
+.dark .type-badge{background:#451a03;color:#fcd34d}
+.mini-stat{background:#f8fafc;border:1px solid #e2e8f0;border-radius:.75rem;padding:.5rem .6rem;display:flex;justify-content:space-between;gap:.5rem;align-items:center}
+.dark .mini-stat{background:#0f172a;border-color:#334155}
+.mini-stat span{color:#64748b}
+.act{font-size:.8rem;font-weight:800;padding:.55rem .9rem;border-radius:.8rem;transition:.2s}
+.act:hover{transform:translateY(-1px);filter:brightness(1.05)}
+.dim{font-family:ui-monospace,monospace;font-weight:900;font-size:14px;fill:currentColor}
+.ball{fill:#f59e0b33;stroke:#f59e0b;stroke-width:2.5}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-inline-end:4px}
+.dim-in{background:#f8fafc;border:1px solid #e2e8f0;border-radius:.9rem;padding:.5rem .7rem;font-size:.75rem;font-weight:800;color:#64748b;display:grid;gap:.25rem}
+.dark .dim-in{background:#0f172a;border-color:#334155}
+.dim-in input{background:#fff;border:1px solid #e2e8f0;border-radius:.6rem;padding:.5rem;font-size:1.05rem;font-weight:900;color:#0f172a;width:100%;outline:none}
+.dark .dim-in input{background:#1e293b;border-color:#475569;color:#fff}
+.dim-in input:focus{border-color:#f59e0b}
+.th{padding:.6rem .5rem;text-align:start}
+#allBody td{padding:.5rem;border-top:1px solid #f1f5f9}
+.dark #allBody td{border-color:#1e293b}
+#allBody tr:hover{background:#fff7ed}
+.dark #allBody tr:hover{background:#1e293b}
+.rev-card{display:flex;align-items:center;gap:.7rem;background:#fff;border:1px solid #e2e8f0;border-radius:1rem;padding:.6rem .8rem;cursor:pointer;transition:.15s}
+.dark .rev-card{background:#0f172a;border-color:#334155}
+.rev-card:hover{border-color:#f59e0b;transform:translateY(-1px)}
+.sug{padding:.6rem .9rem;cursor:pointer;display:flex;justify-content:space-between;font-family:ui-monospace,monospace;font-weight:800;border-bottom:1px solid #f1f5f9}
+.dark .sug{border-color:#1e293b}
+.sug:hover,.sug.sel{background:#fff7ed}
+.dark .sug:hover,.sug.sel{background:#1e293b}
+.cmp-cell{background:#f8fafc;border:1px solid #e2e8f0;border-radius:1rem;padding:.7rem;font-size:.8rem}
+.dark .cmp-cell{background:#0f172a;border-color:#334155}
+@media print{
+  header,.no-print,#drawer,#cmpFab,#modeB,#modeAll,#chips,#toast,.glass:last-of-type{display:none!important}
+  body{background:#fff!important}
+  #result{display:grid!important}
+  .glass{box-shadow:none;border:1px solid #ddd}
+}
