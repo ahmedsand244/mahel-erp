@@ -27,14 +27,14 @@
                         class="bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/30 px-4 py-3 rounded-2xl font-bold hover:bg-blue-500 hover:text-white transition-all flex items-center justify-center gap-1.5 text-xs sm:text-sm shadow-sm cursor-pointer disabled:opacity-50"
                         title="رفع ومزامنة جميع فواتير الكمبيوتر مع موقع السيرفر السحابي (PythonAnywhere)">
                     <span class="material-symbols-outlined text-[18px]" :class="isSyncingToCloud ? 'animate-spin' : ''">cloud_upload</span>
-                    <span x-text="isSyncingToCloud ? 'جارِ المزامنة...' : 'مزامنة مع السحابة ☁️'"></span>
+                    <span x-text="isSyncingToCloud ? 'جارِ المزامنة...' : 'مزامنة مع السحابة'"></span>
                 </button>
 
                 <a href="{% url 'pos:export_invoices_excel' %}" 
                    class="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 px-4 py-3 rounded-2xl font-bold hover:bg-emerald-500 hover:text-white transition-all flex items-center justify-center gap-1.5 text-xs sm:text-sm shadow-sm"
                    title="تصدير جميع فواتير المبيعات إلى ملف Excel">
                     <span class="material-symbols-outlined text-[18px]">download</span>
-                    تصدير الفواتير Excel 📊
+                    <span>تصدير الفواتير Excel</span>
                 </a>
 
                 <a href="{% url 'pos:pos_view' %}"
@@ -142,21 +142,24 @@
                 </a>
 
                 <a href="?payment_method=cash"
-                   class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap active:scale-95"
+                   class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap active:scale-95 flex items-center gap-1"
                    :class="'{{ selected_payment_method }}' === 'cash' ? 'bg-primary text-white shadow-apple-sm' : 'bg-apple-surface-subtle text-apple-secondary hover:text-apple-text border border-apple-border'">
-                    نقدي 💵
+                    <span class="material-symbols-outlined text-[15px]">payments</span>
+                    <span>نقدي</span>
                 </a>
 
                 <a href="?payment_method=visa"
-                   class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap active:scale-95"
+                   class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap active:scale-95 flex items-center gap-1"
                    :class="'{{ selected_payment_method }}' === 'visa' ? 'bg-primary text-white shadow-apple-sm' : 'bg-apple-surface-subtle text-apple-secondary hover:text-apple-text border border-apple-border'">
-                    بطاقة / فيزا 💳
+                    <span class="material-symbols-outlined text-[15px]">credit_card</span>
+                    <span>بطاقة / فيزا</span>
                 </a>
 
                 <a href="?payment_method=deferred"
-                   class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap active:scale-95"
+                   class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap active:scale-95 flex items-center gap-1"
                    :class="'{{ selected_payment_method }}' === 'deferred' ? 'bg-primary text-white shadow-apple-sm' : 'bg-apple-surface-subtle text-apple-secondary hover:text-apple-text border border-apple-border'">
-                    آجل / شكك 📝
+                    <span class="material-symbols-outlined text-[15px]">history_edu</span>
+                    <span>آجل / شكك</span>
                 </a>
             </div>
 
@@ -553,13 +556,13 @@
     </div>
 
     <!-- Modal: View & Share POS Invoice -->
-    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-4"
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-2.5 sm:p-4"
         x-show="showModal" style="display: none;" @click.away="showModal = false"
         x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95"
         x-transition:enter-end="opacity-100 scale-100" x-transition:leave="transition ease-in duration-150"
         x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95">
 
-        <div class="bg-apple-surface border border-apple-border rounded-3xl p-6 sm:p-8 max-w-2xl w-full space-y-6 text-right shadow-apple-lg max-h-[90vh] overflow-y-auto relative"
+        <div class="bg-apple-surface border border-apple-border rounded-3xl p-4 sm:p-8 max-w-2xl w-full space-y-4 sm:space-y-6 text-right shadow-apple-lg max-h-[92vh] overflow-y-auto relative"
             @click.stop>
 
             <!-- Loading Spinner State -->
@@ -569,28 +572,28 @@
             </div>
 
             <!-- Invoice Content Body -->
-            <div x-show="!isLoading && selectedInvoice" class="space-y-6">
+            <div x-show="!isLoading && selectedInvoice" class="space-y-4 sm:space-y-6">
 
                 <!-- Invoice Header -->
-                <div class="flex justify-between items-start border-b border-apple-border pb-5">
-                    <div class="space-y-1">
-                        <h2 class="text-xl sm:text-2xl font-extrabold text-primary tracking-tight">النمـــــاء ERP & POS</h2>
-                        <p class="text-xs text-apple-secondary">معدات زراعية • مواقير • قطع غيار • زيوت</p>
+                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 border-b border-apple-border pb-4">
+                    <div class="space-y-0.5">
+                        <h2 class="text-lg sm:text-2xl font-extrabold text-primary tracking-tight">النمـــــاء ERP & POS</h2>
+                        <p class="text-[11px] sm:text-xs text-apple-secondary">معدات زراعية • مواقير • قطع غيار • زيوت</p>
                     </div>
-                    <div class="text-left space-y-1">
-                        <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-primary/10 text-primary border border-primary/20">
-                            فاتورة مبيعات رقم: <span class="font-mono" x-text="selectedInvoice ? selectedInvoice.order_number : ''"></span>
+                    <div class="flex flex-wrap sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-1.5 w-full sm:w-auto">
+                        <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-primary/10 text-primary border border-primary/20 max-w-full">
+                            <span>فاتورة مبيعات رقم:</span>
+                            <span class="font-mono font-black" x-text="selectedInvoice ? selectedInvoice.order_number : ''"></span>
                         </div>
-                        <div class="text-[11px] text-apple-secondary font-mono" x-text="selectedInvoice ? selectedInvoice.created_at : ''">
-                        </div>
+                        <div class="text-[11px] text-apple-secondary font-mono" x-text="selectedInvoice ? selectedInvoice.created_at : ''"></div>
                     </div>
                 </div>
 
                 <!-- Customer Details Card -->
-                <div class="bg-apple-surface-subtle border border-apple-border rounded-2xl p-4 space-y-2">
-                    <div class="flex justify-between items-center text-xs">
+                <div class="bg-apple-surface-subtle border border-apple-border rounded-2xl p-3 sm:p-4 space-y-2">
+                    <div class="flex flex-wrap justify-between items-center gap-2 text-xs">
                         <span class="text-apple-secondary font-bold">بيانات العميل / المشتري:</span>
-                        <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold"
+                        <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold shrink-0"
                             :class="selectedInvoice && selectedInvoice.payment_method === 'cash' ? 'status-pill-green' : (selectedInvoice && selectedInvoice.payment_method === 'visa' ? 'bg-primary/20 text-primary' : 'status-pill-yellow')"
                             x-text="selectedInvoice ? 'طريقة الدفع: ' + selectedInvoice.payment_method_display : ''">
                         </span>
@@ -623,7 +626,7 @@
                                         </div>
                                     </div>
                                     <a :href="'/ledger/customer/' + selectedInvoice.customer.id + '/'" target="_blank"
-                                       class="px-3 py-1.5 rounded-xl font-bold border hover:scale-105 transition-all inline-flex items-center gap-1 shadow-sm shrink-0"
+                                       class="w-full sm:w-auto px-3 py-1.5 rounded-xl font-bold border hover:scale-105 transition-all inline-flex items-center justify-center gap-1 shadow-sm shrink-0"
                                        :class="parseFloat(selectedInvoice.customer.balance) <= 0 ? 'bg-emerald-600 text-white border-emerald-500' : 'bg-amber-600 text-white border-amber-500'">
                                         <span class="material-symbols-outlined text-sm">receipt_long</span>
                                         <span>كشف الحساب وسندات السداد</span>
@@ -637,59 +640,82 @@
                     </template>
                 </div>
 
-                <!-- Itemized Breakdown Table -->
+                <!-- Itemized Breakdown Table & Mobile Cards -->
                 <div class="space-y-2">
                     <h3 class="text-xs font-bold text-apple-secondary">أصناف ومحتويات الفاتورة:</h3>
-                    <div class="rounded-2xl border border-apple-border overflow-hidden bg-apple-surface shadow-apple-sm">
+
+                    <!-- Desktop & Tablet Table (sm:block) -->
+                    <div class="hidden sm:block rounded-2xl border border-apple-border overflow-hidden bg-apple-surface shadow-apple-sm">
                         <table class="w-full text-right text-xs table-fixed">
                             <thead class="bg-apple-surface-subtle border-b border-apple-border text-apple-secondary font-bold text-[11px]">
                                 <tr>
-                                    <th class="py-2.5 px-1.5 w-6 text-center">#</th>
-                                    <th class="py-2.5 px-2 text-right">اسم المنتج / الصنف</th>
-                                    <th class="py-2.5 px-1.5 w-10 text-center">الكمية</th>
-                                    <th class="py-2.5 px-1.5 w-20 text-left">سعر القطعة</th>
-                                    <th class="py-2.5 px-1.5 w-20 text-left">الإجمالي</th>
+                                    <th class="py-2.5 px-2 w-8 text-center">#</th>
+                                    <th class="py-2.5 px-3 text-right">اسم المنتج / الصنف</th>
+                                    <th class="py-2.5 px-2 w-14 text-center">الكمية</th>
+                                    <th class="py-2.5 px-3 w-28 text-left">سعر القطعة</th>
+                                    <th class="py-2.5 px-3 w-28 text-left">الإجمالي</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-apple-border text-xs">
                                 <template x-for="(item, index) in (selectedInvoice ? selectedInvoice.items : [])" :key="item.id">
                                     <tr class="hover:bg-apple-surface-subtle/60 transition-colors">
-                                        <td class="py-2.5 px-1.5 text-center font-mono text-apple-secondary text-[11px]" x-text="index + 1"></td>
-                                        <td class="py-2.5 px-2 text-right font-bold text-apple-text break-words leading-tight" x-text="item.product_name"></td>
-                                        <td class="py-2.5 px-1.5 text-center font-mono font-bold text-primary" x-text="item.quantity"></td>
-                                        <td class="py-2.5 px-1.5 text-left font-mono text-[11px] text-apple-secondary whitespace-nowrap" x-text="parseFloat(item.unit_price).toFixed(2) + ' ج.م'"></td>
-                                        <td class="py-2.5 px-1.5 text-left font-mono font-bold text-apple-text text-[11px] whitespace-nowrap" x-text="parseFloat(item.total_price).toFixed(2) + ' ج.م'"></td>
+                                        <td class="py-2.5 px-2 text-center font-mono text-apple-secondary text-[11px]" x-text="index + 1"></td>
+                                        <td class="py-2.5 px-3 text-right font-bold text-apple-text break-words leading-tight" x-text="item.product_name"></td>
+                                        <td class="py-2.5 px-2 text-center font-mono font-bold text-primary" x-text="item.quantity"></td>
+                                        <td class="py-2.5 px-3 text-left font-mono text-[11px] text-apple-secondary whitespace-nowrap" x-text="parseFloat(item.unit_price).toFixed(2) + ' ج.م'"></td>
+                                        <td class="py-2.5 px-3 text-left font-mono font-bold text-apple-text text-[11px] whitespace-nowrap" x-text="parseFloat(item.total_price).toFixed(2) + ' ج.م'"></td>
                                     </tr>
                                 </template>
                             </tbody>
                         </table>
                     </div>
+
+                    <!-- Mobile Native Item Cards (sm:hidden) -->
+                    <div class="block sm:hidden space-y-2">
+                        <template x-for="(item, index) in (selectedInvoice ? selectedInvoice.items : [])" :key="item.id">
+                            <div class="p-3 rounded-2xl bg-apple-surface-subtle/60 border border-apple-border shadow-apple-sm space-y-2">
+                                <div class="flex items-start justify-between gap-2">
+                                    <div class="flex items-start gap-2 flex-1">
+                                        <span class="w-5 h-5 rounded-full bg-apple-surface border border-apple-border text-apple-secondary text-[10px] font-mono font-bold flex items-center justify-center shrink-0 mt-0.5" x-text="index + 1"></span>
+                                        <span class="font-bold text-apple-text text-xs leading-snug break-words" x-text="item.product_name"></span>
+                                    </div>
+                                    <div class="text-left shrink-0">
+                                        <span class="font-mono font-black text-xs text-primary" x-text="parseFloat(item.total_price).toFixed(2) + ' ج.م'"></span>
+                                    </div>
+                                </div>
+                                <div class="flex items-center justify-between text-[11px] text-apple-secondary border-t border-apple-border/50 pt-1.5 font-mono">
+                                    <span class="bg-primary/10 text-primary px-2 py-0.5 rounded-lg font-bold" x-text="'الكمية: ' + item.quantity"></span>
+                                    <span x-text="'سعر القطعة: ' + parseFloat(item.unit_price).toFixed(2) + ' ج.م'"></span>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
                 </div>
 
                 <!-- Financial Totals Summary -->
-                <div class="p-4 rounded-2xl bg-primary/10 border border-primary/20 flex justify-between items-center">
-                    <div class="space-y-1">
+                <div class="p-3.5 sm:p-4 rounded-2xl bg-primary/10 border border-primary/20 flex justify-between items-center">
+                    <div class="space-y-0.5">
                         <div class="text-xs font-bold text-apple-secondary">المبلغ الإجمالي للفاتورة</div>
                         <div class="text-[11px] text-primary font-bold">شامل كافة الأصناف والقطع</div>
                     </div>
-                    <div class="text-2xl sm:text-3xl font-extrabold font-mono text-primary"
+                    <div class="text-xl sm:text-3xl font-extrabold font-mono text-primary whitespace-nowrap"
                         x-text="selectedInvoice ? parseFloat(selectedInvoice.total_amount).toFixed(2) + ' ج.م' : ''"></div>
                 </div>
 
                 <!-- Actions Footer -->
-                <div class="flex flex-wrap gap-3 pt-3 border-t border-apple-border">
+                <div class="flex flex-col sm:flex-row gap-2.5 sm:gap-3 pt-3 border-t border-apple-border">
                     <a :href="'/pos/invoices/' + (selectedInvoice ? selectedInvoice.id : '') + '/public/'" target="_blank"
-                       class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white py-3 rounded-2xl font-bold shadow-apple-sm text-xs sm:text-sm flex items-center justify-center gap-2 transition-all">
-                        <span class="material-symbols-outlined text-[18px]">share</span>
-                        فتح صفحة الفاتورة العامة للشير والواتساب 🔗
+                       class="w-full sm:flex-1 bg-emerald-600 hover:bg-emerald-500 text-white py-3 px-4 rounded-2xl font-bold shadow-apple-sm text-xs sm:text-sm flex items-center justify-center gap-2 transition-all cursor-pointer">
+                        <span class="material-symbols-outlined text-lg">share</span>
+                        <span>مشاركة الفاتورة (واتساب ورابط مباشر)</span>
                     </a>
                     <button @click="window.open('/pos/invoices/' + (selectedInvoice ? selectedInvoice.id : '') + '/public/?print=1', '_blank')"
-                        class="flex-1 bg-primary text-white py-3 rounded-2xl font-bold shadow-apple-sm text-xs sm:text-sm flex items-center justify-center gap-2 apple-button active:scale-95">
-                        <span class="material-symbols-outlined text-[18px]">print</span>
-                        طباعة الفاتورة A4 / PDF 🖨️
+                        class="w-full sm:flex-1 bg-primary hover:bg-primary/90 text-white py-3 px-4 rounded-2xl font-bold shadow-apple-sm text-xs sm:text-sm flex items-center justify-center gap-2 apple-button active:scale-95 cursor-pointer">
+                        <span class="material-symbols-outlined text-lg">print</span>
+                        <span>طباعة الفاتورة A4 / PDF</span>
                     </button>
                     <button @click="showModal = false"
-                        class="px-6 bg-apple-surface-subtle border border-apple-border py-3 rounded-2xl text-apple-secondary hover:text-apple-text text-xs sm:text-sm font-bold active:scale-95">
+                        class="w-full sm:w-auto px-6 bg-apple-surface-subtle border border-apple-border py-2.5 sm:py-3 rounded-2xl text-apple-secondary hover:text-apple-text text-xs sm:text-sm font-bold active:scale-95 cursor-pointer">
                         إغلاق
                     </button>
                 </div>
@@ -700,13 +726,13 @@
     </div>
 
     <!-- Modal: View Maintenance Ticket Invoice -->
-    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-4"
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-2.5 sm:p-4"
         x-show="showTicketModal" style="display: none;" @click.away="showTicketModal = false"
         x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95"
         x-transition:enter-end="opacity-100 scale-100" x-transition:leave="transition ease-in duration-150"
         x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95">
 
-        <div id="ticketInvoicePrintArea" class="bg-apple-surface border border-apple-border rounded-3xl p-6 sm:p-8 max-w-2xl w-full space-y-6 text-right shadow-apple-lg max-h-[90vh] overflow-y-auto relative"
+        <div id="ticketInvoicePrintArea" class="bg-apple-surface border border-apple-border rounded-3xl p-4 sm:p-8 max-w-2xl w-full space-y-4 sm:space-y-6 text-right shadow-apple-lg max-h-[92vh] overflow-y-auto relative"
             @click.stop>
 
             <!-- Loading Spinner State -->
@@ -716,33 +742,34 @@
             </div>
 
             <!-- Ticket Invoice Content Body -->
-            <div x-show="!isLoadingTicket && selectedTicket" class="space-y-6">
+            <div x-show="!isLoadingTicket && selectedTicket" class="space-y-4 sm:space-y-6">
 
                 <!-- Ticket Header -->
-                <div class="flex justify-between items-start border-b border-apple-border pb-5">
-                    <div class="space-y-1">
-                        <h2 class="text-xl sm:text-2xl font-extrabold text-amber-500 tracking-tight flex items-center gap-2">
+                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 border-b border-apple-border pb-4">
+                    <div class="space-y-0.5">
+                        <h2 class="text-lg sm:text-2xl font-extrabold text-amber-500 tracking-tight flex items-center gap-2">
                             <span class="material-symbols-outlined text-2xl">construction</span>
                             فاتورة صيانة ورشة النماء
                         </h2>
-                        <p class="text-xs text-apple-secondary">معدات زراعية • مواقير • إصلاح محركات • تركيب قطع غيار</p>
+                        <p class="text-[11px] sm:text-xs text-apple-secondary">معدات زراعية • مواقير • إصلاح محركات • تركيب قطع غيار</p>
                     </div>
-                    <div class="text-left space-y-1">
+                    <div class="flex flex-wrap sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-1.5 w-full sm:w-auto">
                         <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-500/10 text-amber-500 border border-amber-500/20">
-                            تذكرة رقم: <span class="font-mono" x-text="selectedTicket ? '#' + selectedTicket.ticket_number : ''"></span>
+                            <span>تذكرة صيانة رقم:</span>
+                            <span class="font-mono font-black" x-text="selectedTicket ? '#' + selectedTicket.ticket_number : ''"></span>
                         </div>
                         <div class="text-[11px] text-apple-secondary font-mono" x-text="selectedTicket ? selectedTicket.created_at : ''"></div>
                     </div>
                 </div>
 
                 <!-- Ticket Info & Customer Card -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div class="bg-apple-surface-subtle border border-apple-border rounded-2xl p-4 space-y-1.5">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
+                    <div class="bg-apple-surface-subtle border border-apple-border rounded-2xl p-3 sm:p-4 space-y-1">
                         <div class="text-xs font-bold text-apple-secondary">بيانات العميل:</div>
                         <div class="text-sm font-bold text-apple-text" x-text="selectedTicket && selectedTicket.customer ? selectedTicket.customer.name : 'عميل نقدي / ورشة'"></div>
                         <div class="text-xs font-mono text-apple-secondary" x-text="selectedTicket && selectedTicket.customer && selectedTicket.customer.phone ? selectedTicket.customer.phone : '—'"></div>
                     </div>
-                    <div class="bg-apple-surface-subtle border border-apple-border rounded-2xl p-4 space-y-1.5">
+                    <div class="bg-apple-surface-subtle border border-apple-border rounded-2xl p-3 sm:p-4 space-y-1">
                         <div class="text-xs font-bold text-apple-secondary">الجهاز وحالة الصيانة:</div>
                         <div class="text-sm font-bold text-apple-text" x-text="selectedTicket ? selectedTicket.device_name : ''"></div>
                         <div>
@@ -766,61 +793,86 @@
                              x-text="selectedTicket ? parseFloat(selectedTicket.labor_fees).toFixed(2) + ' ج.م' : '0.00 ج.م'"></div>
                     </div>
 
-                    <!-- Consumed Parts Table -->
+                    <!-- Consumed Parts Table & Mobile Cards -->
                     <div class="rounded-2xl border border-apple-border overflow-hidden bg-apple-surface shadow-apple-sm">
                         <div class="bg-apple-surface-subtle px-3 py-2 border-b border-apple-border text-xs font-bold text-apple-secondary flex items-center gap-1.5">
                             <span class="material-symbols-outlined text-[16px]">settings</span>
                             قطع الغيار المستهلكة في الصيانة
                         </div>
-                        <table class="w-full text-right text-xs table-fixed">
-                            <thead class="bg-apple-surface-subtle/50 border-b border-apple-border text-apple-secondary font-bold text-[11px]">
-                                <tr>
-                                    <th class="py-2 px-2 text-right">اسم القطعة / الصنف</th>
-                                    <th class="py-2 px-1.5 w-12 text-center">الكمية</th>
-                                    <th class="py-2 px-2 w-24 text-left">سعر البيع</th>
-                                    <th class="py-2 px-2 w-24 text-left">الإجمالي</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-apple-border text-xs">
-                                <template x-for="part in (selectedTicket ? selectedTicket.parts : [])" :key="part.product_sku + part.product_name">
-                                    <tr class="hover:bg-apple-surface-subtle/60 transition-colors">
-                                        <td class="py-2 px-2 font-bold text-apple-text break-words leading-tight" x-text="part.product_name"></td>
-                                        <td class="py-2 px-1.5 text-center font-mono font-bold text-amber-500" x-text="part.quantity"></td>
-                                        <td class="py-2 px-2 text-left font-mono text-[11px] text-apple-secondary whitespace-nowrap" x-text="parseFloat(part.sell_price).toFixed(2) + ' ج.م'"></td>
-                                        <td class="py-2 px-2 text-left font-mono font-bold text-apple-text text-[11px] whitespace-nowrap" x-text="parseFloat(part.total_price).toFixed(2) + ' ج.م'"></td>
-                                    </tr>
-                                </template>
-                                <template x-if="selectedTicket && (!selectedTicket.parts || selectedTicket.parts.length === 0)">
+
+                        <!-- Desktop Table (sm:block) -->
+                        <div class="hidden sm:block">
+                            <table class="w-full text-right text-xs table-fixed">
+                                <thead class="bg-apple-surface-subtle/50 border-b border-apple-border text-apple-secondary font-bold text-[11px]">
                                     <tr>
-                                        <td colspan="4" class="py-4 text-center text-apple-secondary italic text-xs">
-                                            لم يتم تسجيل قطع غيار مستهلكة (أجرة صيانة يد فقط).
-                                        </td>
+                                        <th class="py-2 px-3 text-right">اسم القطعة / الصنف</th>
+                                        <th class="py-2 px-2 w-16 text-center">الكمية</th>
+                                        <th class="py-2 px-3 w-28 text-left">سعر البيع</th>
+                                        <th class="py-2 px-3 w-28 text-left">الإجمالي</th>
                                     </tr>
-                                </template>
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody class="divide-y divide-apple-border text-xs">
+                                    <template x-for="part in (selectedTicket ? selectedTicket.parts : [])" :key="part.product_sku + part.product_name">
+                                        <tr class="hover:bg-apple-surface-subtle/60 transition-colors">
+                                            <td class="py-2 px-3 font-bold text-apple-text break-words leading-tight" x-text="part.product_name"></td>
+                                            <td class="py-2 px-2 text-center font-mono font-bold text-amber-500" x-text="part.quantity"></td>
+                                            <td class="py-2 px-3 text-left font-mono text-[11px] text-apple-secondary whitespace-nowrap" x-text="parseFloat(part.sell_price).toFixed(2) + ' ج.م'"></td>
+                                            <td class="py-2 px-3 text-left font-mono font-bold text-apple-text text-[11px] whitespace-nowrap" x-text="parseFloat(part.total_price).toFixed(2) + ' ج.م'"></td>
+                                        </tr>
+                                    </template>
+                                    <template x-if="selectedTicket && (!selectedTicket.parts || selectedTicket.parts.length === 0)">
+                                        <tr>
+                                            <td colspan="4" class="py-4 text-center text-apple-secondary italic text-xs">
+                                                لم يتم تسجيل قطع غيار مستهلكة (أجرة صيانة يد فقط).
+                                            </td>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Mobile Item Cards (sm:hidden) -->
+                        <div class="block sm:hidden p-2.5 space-y-2">
+                            <template x-for="part in (selectedTicket ? selectedTicket.parts : [])" :key="part.product_sku + part.product_name">
+                                <div class="p-2.5 rounded-xl bg-apple-surface-subtle border border-apple-border space-y-1.5">
+                                    <div class="flex items-start justify-between gap-2">
+                                        <span class="font-bold text-apple-text text-xs leading-snug break-words flex-1" x-text="part.product_name"></span>
+                                        <span class="font-mono font-black text-xs text-amber-500 shrink-0" x-text="parseFloat(part.total_price).toFixed(2) + ' ج.م'"></span>
+                                    </div>
+                                    <div class="flex items-center justify-between text-[11px] text-apple-secondary border-t border-apple-border/50 pt-1 font-mono">
+                                        <span class="bg-amber-500/10 text-amber-500 px-2 py-0.5 rounded-md font-bold" x-text="'الكمية: ' + part.quantity"></span>
+                                        <span x-text="'السعر: ' + parseFloat(part.sell_price).toFixed(2) + ' ج.م'"></span>
+                                    </div>
+                                </div>
+                            </template>
+                            <template x-if="selectedTicket && (!selectedTicket.parts || selectedTicket.parts.length === 0)">
+                                <div class="py-3 text-center text-apple-secondary italic text-xs">
+                                    لم يتم تسجيل قطع غيار مستهلكة (أجرة صيانة يد فقط).
+                                </div>
+                            </template>
+                        </div>
                     </div>
                 </div>
 
                 <!-- Grand Total -->
-                <div class="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex justify-between items-center">
-                    <div class="space-y-1">
+                <div class="p-3.5 sm:p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex justify-between items-center">
+                    <div class="space-y-0.5">
                         <div class="text-xs font-bold text-apple-secondary">إجمالي حساب الصيانة المستحق</div>
                         <div class="text-[11px] text-amber-500 font-bold">مصنعية اليد + تكلفة قطع الغيار</div>
                     </div>
-                    <div class="text-2xl sm:text-3xl font-extrabold font-mono text-amber-500"
+                    <div class="text-xl sm:text-3xl font-extrabold font-mono text-amber-500 whitespace-nowrap"
                         x-text="selectedTicket ? parseFloat(selectedTicket.total_amount).toFixed(2) + ' ج.م' : ''"></div>
                 </div>
 
                 <!-- Actions Footer -->
-                <div class="flex flex-wrap gap-3 pt-3 border-t border-apple-border print:hidden">
+                <div class="flex flex-col sm:flex-row gap-2.5 sm:gap-3 pt-3 border-t border-apple-border print:hidden">
                     <button @click="printTicketInvoice()"
-                        class="flex-1 bg-amber-600 hover:bg-amber-500 text-white py-3 rounded-2xl font-bold shadow-apple-sm text-xs sm:text-sm flex items-center justify-center gap-2 apple-button active:scale-95">
-                        <span class="material-symbols-outlined text-[18px]">print</span>
-                        طباعة إيصال الصيانة 🖨️
+                        class="w-full sm:flex-1 bg-amber-600 hover:bg-amber-500 text-white py-3 px-4 rounded-2xl font-bold shadow-apple-sm text-xs sm:text-sm flex items-center justify-center gap-2 apple-button active:scale-95 cursor-pointer">
+                        <span class="material-symbols-outlined text-lg">print</span>
+                        <span>طباعة إيصال الصيانة</span>
                     </button>
                     <button @click="showTicketModal = false"
-                        class="px-6 bg-apple-surface-subtle border border-apple-border py-3 rounded-2xl text-apple-secondary hover:text-apple-text text-xs sm:text-sm font-bold active:scale-95">
+                        class="w-full sm:w-auto px-6 bg-apple-surface-subtle border border-apple-border py-2.5 sm:py-3 rounded-2xl text-apple-secondary hover:text-apple-text text-xs sm:text-sm font-bold active:scale-95 cursor-pointer">
                         إغلاق
                     </button>
                 </div>
@@ -831,13 +883,13 @@
     </div>
 
     <!-- Modal 3: View & Print Receipt Voucher (سند قبض نقدية) -->
-    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-4"
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-2.5 sm:p-4"
         x-show="showReceiptModal" style="display: none;" @click.away="showReceiptModal = false"
         x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95"
         x-transition:enter-end="opacity-100 scale-100" x-transition:leave="transition ease-in duration-150"
         x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95">
 
-        <div class="bg-apple-surface border border-apple-border rounded-3xl p-6 sm:p-8 max-w-xl w-full space-y-6 text-right shadow-apple-lg max-h-[90vh] overflow-y-auto relative"
+        <div class="bg-apple-surface border border-apple-border rounded-3xl p-4 sm:p-8 max-w-xl w-full space-y-4 sm:space-y-6 text-right shadow-apple-lg max-h-[92vh] overflow-y-auto relative"
             @click.stop>
 
             <!-- Loading Spinner State -->
@@ -847,35 +899,31 @@
             </div>
 
             <!-- Receipt Content Body -->
-            <div x-show="!isLoadingReceipt && selectedReceipt" class="space-y-6">
+            <div x-show="!isLoadingReceipt && selectedReceipt" class="space-y-4 sm:space-y-6">
 
-                <div id="receiptVoucherPrintArea" class="space-y-5 bg-white text-slate-900 p-6 rounded-2xl border border-slate-200 shadow-sm font-sans" dir="rtl">
+                <div id="receiptVoucherPrintArea" class="space-y-4 sm:space-y-5 bg-white text-slate-900 p-4 sm:p-6 rounded-2xl border border-slate-200 shadow-sm font-sans" dir="rtl">
                     <!-- Receipt Header -->
-                    <div class="flex justify-between items-start border-b-2 border-slate-900 pb-4">
-                        <div class="space-y-1">
-                            <h2 class="text-xl font-extrabold text-slate-900 tracking-tight">النمـــــاء</h2>
-                            <p class="text-xs text-slate-600 font-medium">معدات زراعية • مواقير • قطع غيار • ورشة وصيانة</p>
+                    <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 border-b-2 border-slate-900 pb-3 sm:pb-4">
+                        <div class="space-y-0.5">
+                            <h2 class="text-lg sm:text-xl font-extrabold text-slate-900 tracking-tight">النمـــــاء</h2>
+                            <p class="text-[11px] sm:text-xs text-slate-600 font-medium">معدات زراعية • مواقير • قطع غيار • ورشة وصيانة</p>
                         </div>
-                        <div class="text-left space-y-1">
-                            <div class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-emerald-100 text-emerald-800 text-xs font-bold border border-emerald-300">
-                                <span>سند قبض نقدية</span>
-                            </div>
-                            <div class="text-xs font-mono font-bold text-slate-800" x-text="selectedReceipt ? selectedReceipt.receipt_number : ''"></div>
-                            <div class="text-[11px] text-slate-500 font-mono" x-text="selectedReceipt ? selectedReceipt.created_at : ''"></div>
+                        <div class="inline-block px-3 py-1 bg-slate-100 border border-slate-300 rounded-lg text-xs font-bold text-slate-700">
+                            سند استلام نقدية
                         </div>
                     </div>
 
                     <!-- Receipt Amount Box -->
-                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 flex items-center justify-between">
+                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 sm:p-4 flex items-center justify-between">
                         <div>
                             <span class="text-xs text-slate-500 block font-bold">المبلغ المقبوض:</span>
-                            <div class="text-2xl font-black font-mono text-emerald-700 mt-0.5">
+                            <div class="text-xl sm:text-2xl font-black font-mono text-emerald-700 mt-0.5">
                                 <span x-text="selectedReceipt ? selectedReceipt.amount : '0.00'"></span>
-                                <span class="text-sm font-bold text-slate-600">جنيه مصري (EGP)</span>
+                                <span class="text-xs sm:text-sm font-bold text-slate-600">جنيه مصري (EGP)</span>
                             </div>
                         </div>
-                        <div class="w-12 h-12 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600">
-                            <span class="material-symbols-outlined text-2xl">payments</span>
+                        <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600">
+                            <span class="material-symbols-outlined text-xl sm:text-2xl">payments</span>
                         </div>
                     </div>
 
@@ -883,20 +931,20 @@
                     <table class="w-full text-xs text-right border-collapse">
                         <tbody>
                             <tr class="border-b border-slate-200">
-                                <td class="py-2.5 px-3 font-bold text-slate-500 w-1/3 bg-slate-50">استلمنا من السيد / العميل:</td>
-                                <td class="py-2.5 px-3 font-extrabold text-slate-900 text-sm" x-text="selectedReceipt && selectedReceipt.customer ? selectedReceipt.customer.name : 'عميل نقدي'"></td>
+                                <td class="py-2 px-2.5 font-bold text-slate-500 w-1/3 bg-slate-50">استلمنا من السيد / العميل:</td>
+                                <td class="py-2 px-2.5 font-extrabold text-slate-900 text-xs sm:text-sm" x-text="selectedReceipt && selectedReceipt.customer ? selectedReceipt.customer.name : 'عميل نقدي'"></td>
                             </tr>
                             <tr class="border-b border-slate-200">
-                                <td class="py-2.5 px-3 font-bold text-slate-500 bg-slate-50">رقم الهاتف:</td>
-                                <td class="py-2.5 px-3 font-mono text-slate-700" x-text="selectedReceipt && selectedReceipt.customer ? selectedReceipt.customer.phone : '—'"></td>
+                                <td class="py-2 px-2.5 font-bold text-slate-500 bg-slate-50">رقم الهاتف:</td>
+                                <td class="py-2 px-2.5 font-mono text-slate-700" x-text="selectedReceipt && selectedReceipt.customer ? selectedReceipt.customer.phone : '—'"></td>
                             </tr>
                             <tr class="border-b border-slate-200">
-                                <td class="py-2.5 px-3 font-bold text-slate-500 bg-slate-50">وذلك عن / البيان:</td>
-                                <td class="py-2.5 px-3 text-slate-800 leading-relaxed" x-text="selectedReceipt ? selectedReceipt.notes : 'سداد دفعة نقدية من الحساب'"></td>
+                                <td class="py-2 px-2.5 font-bold text-slate-500 bg-slate-50">وذلك عن / البيان:</td>
+                                <td class="py-2 px-2.5 text-slate-800 leading-relaxed" x-text="selectedReceipt ? selectedReceipt.notes : 'سداد دفعة نقدية من الحساب'"></td>
                             </tr>
                             <tr class="border-b border-slate-200">
-                                <td class="py-2.5 px-3 font-bold text-slate-500 bg-slate-50">رصيد العميل بعد العملية:</td>
-                                <td class="py-2.5 px-3 font-mono font-bold text-slate-900" x-text="selectedReceipt && selectedReceipt.customer ? (parseFloat(selectedReceipt.customer.balance) > 0 ? selectedReceipt.customer.balance + ' ج.م (عليه)' : (parseFloat(selectedReceipt.customer.balance) < 0 ? selectedReceipt.customer.balance + ' ج.م (له رصيد زائد)' : '0.00 ج.م (خالص تماماً)')) : '0.00 ج.م'"></td>
+                                <td class="py-2 px-2.5 font-bold text-slate-500 bg-slate-50">رصيد العميل بعد العملية:</td>
+                                <td class="py-2 px-2.5 font-mono font-bold text-slate-900" x-text="selectedReceipt && selectedReceipt.customer ? (parseFloat(selectedReceipt.customer.balance) > 0 ? selectedReceipt.customer.balance + ' ج.م (عليه)' : (parseFloat(selectedReceipt.customer.balance) < 0 ? selectedReceipt.customer.balance + ' ج.م (له رصيد زائد)' : '0.00 ج.م (خالص تماماً)')) : '0.00 ج.م'"></td>
                             </tr>
                         </tbody>
                     </table>
@@ -915,14 +963,14 @@
                 </div>
 
                 <!-- Action Buttons -->
-                <div class="flex items-center gap-3 pt-2">
+                <div class="flex flex-col sm:flex-row gap-2.5 sm:gap-3 pt-2">
                     <button @click="printReceiptVoucher()"
-                        class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white py-3 rounded-2xl font-bold shadow-apple-sm text-xs sm:text-sm flex items-center justify-center gap-2 apple-button active:scale-95">
-                        <span class="material-symbols-outlined text-[18px]">print</span>
-                        طباعة سند القبض 🖨️
+                        class="w-full sm:flex-1 bg-emerald-600 hover:bg-emerald-500 text-white py-3 px-4 rounded-2xl font-bold shadow-apple-sm text-xs sm:text-sm flex items-center justify-center gap-2 apple-button active:scale-95 cursor-pointer">
+                        <span class="material-symbols-outlined text-lg">print</span>
+                        <span>طباعة سند القبض</span>
                     </button>
                     <button @click="showReceiptModal = false"
-                        class="px-6 bg-apple-surface-subtle border border-apple-border py-3 rounded-2xl text-apple-secondary hover:text-apple-text text-xs sm:text-sm font-bold active:scale-95">
+                        class="w-full sm:w-auto px-6 bg-apple-surface-subtle border border-apple-border py-2.5 sm:py-3 rounded-2xl text-apple-secondary hover:text-apple-text text-xs sm:text-sm font-bold active:scale-95 cursor-pointer">
                         إغلاق
                     </button>
                 </div>
@@ -965,7 +1013,7 @@
                 .then(data => {
                     this.isSyncingToCloud = false;
                     if (data.success) {
-                        alert(`🎉 ممتاز! تم مزامنة ${data.synced_count} فاتورة محلية مع موقع السيرفر السحابي (PythonAnywhere) بنجاح!`);
+                        alert(`تم بنجاح! تم مزامنة ${data.synced_count} فاتورة محلية مع موقع السيرفر السحابي (PythonAnywhere) بنجاح.`);
                         window.location.reload();
                     } else {
                         alert(data.error || 'فشلت المزامنة مع السيرفر السحابي');

@@ -47,14 +47,14 @@
                    class="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 px-4 py-3 rounded-2xl font-bold hover:bg-emerald-500 hover:text-white transition-all flex items-center justify-center gap-1.5 text-xs sm:text-sm shadow-sm"
                    title="تصدير جميع ديون العملاء لملف Excel">
                     <span class="material-symbols-outlined text-[18px]">download</span>
-                    ديون العملاء Excel 📊
+                    ديون العملاء Excel
                 </a>
 
                 <a href="{% url 'ledger:export_suppliers_excel' %}" 
                    class="bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border border-indigo-500/30 px-4 py-3 rounded-2xl font-bold hover:bg-indigo-500 hover:text-white transition-all flex items-center justify-center gap-1.5 text-xs sm:text-sm shadow-sm"
                    title="تصدير جميع مستحقات الموردين لملف Excel">
                     <span class="material-symbols-outlined text-[18px]">download</span>
-                    مستحقات الموردين Excel 📊
+                    مستحقات الموردين Excel
                 </a>
 
                 <button @click="partyType = 'customer'; showAddPartyModal = true" 
@@ -122,7 +122,7 @@
                 <div class="flex items-center justify-between text-[11px] text-on-surface-variant/80 pt-2 border-t border-white/5">
                     <span>حالة المركز المالي</span>
                     {% if net_balance >= 0 %}
-                        <span class="font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-md">فائض مستحقات ✓</span>
+                        <span class="font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-md">فائض مستحقات</span>
                     {% else %}
                         <span class="font-bold text-error bg-error/10 px-2 py-0.5 rounded-md">عجز / ديون توريد</span>
                     {% endif %}
@@ -288,14 +288,14 @@
                                         {% if cust.balance > 5000 %}
                                             <div class="inline-flex flex-col items-start">
                                                 <span class="font-extrabold font-mono text-error text-base">{{ cust.balance|floatformat:2 }} ج.م</span>
-                                                <span class="text-[10px] bg-error/15 text-error px-2 py-0.5 rounded border border-error/30 font-bold mt-0.5">⚠️ دين مرتفع</span>
+                                                <span class="text-[10px] bg-error/15 text-error px-2 py-0.5 rounded border border-error/30 font-bold mt-0.5">دين مرتفع</span>
                                                 {% if cust.due_date %}
                                                     {% if cust.is_overdue %}
-                                                        <span class="text-[10px] bg-rose-500/20 text-rose-400 px-2 py-0.5 rounded border border-rose-500/40 font-bold mt-1 animate-pulse">🚨 متأخر منذ {{ cust.days_overdue }} يوم ({{ cust.due_date|date:"Y-m-d" }})</span>
+                                                        <span class="text-[10px] bg-rose-500/20 text-rose-400 px-2 py-0.5 rounded border border-rose-500/40 font-bold mt-1 animate-pulse">متأخر منذ {{ cust.days_overdue }} يوم ({{ cust.due_date|date:"Y-m-d" }})</span>
                                                     {% elif cust.is_due_today %}
-                                                        <span class="text-[10px] bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded border border-amber-500/40 font-bold mt-1">🔔 مستحق اليوم ({{ cust.due_date|date:"Y-m-d" }})</span>
+                                                        <span class="text-[10px] bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded border border-amber-500/40 font-bold mt-1">مستحق اليوم ({{ cust.due_date|date:"Y-m-d" }})</span>
                                                     {% else %}
-                                                        <span class="text-[10px] bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded border border-blue-500/40 font-bold mt-1">📅 الاستحقاق: {{ cust.due_date|date:"Y-m-d" }}</span>
+                                                        <span class="text-[10px] bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded border border-blue-500/40 font-bold mt-1">الاستحقاق: {{ cust.due_date|date:"Y-m-d" }}</span>
                                                     {% endif %}
                                                 {% endif %}
                                             </div>
@@ -305,11 +305,11 @@
                                                 <span class="text-[10px] bg-tertiary/15 text-tertiary px-2 py-0.5 rounded border border-tertiary/30 font-bold mt-0.5">عليه دين</span>
                                                 {% if cust.due_date %}
                                                     {% if cust.is_overdue %}
-                                                        <span class="text-[10px] bg-rose-500/20 text-rose-400 px-2 py-0.5 rounded border border-rose-500/40 font-bold mt-1 animate-pulse">🚨 متأخر منذ {{ cust.days_overdue }} يوم ({{ cust.due_date|date:"Y-m-d" }})</span>
+                                                        <span class="text-[10px] bg-rose-500/20 text-rose-400 px-2 py-0.5 rounded border border-rose-500/40 font-bold mt-1 animate-pulse">متأخر منذ {{ cust.days_overdue }} يوم ({{ cust.due_date|date:"Y-m-d" }})</span>
                                                     {% elif cust.is_due_today %}
-                                                        <span class="text-[10px] bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded border border-amber-500/40 font-bold mt-1">🔔 مستحق اليوم ({{ cust.due_date|date:"Y-m-d" }})</span>
+                                                        <span class="text-[10px] bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded border border-amber-500/40 font-bold mt-1">مستحق اليوم ({{ cust.due_date|date:"Y-m-d" }})</span>
                                                     {% else %}
-                                                        <span class="text-[10px] bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded border border-blue-500/40 font-bold mt-1">📅 الاستحقاق: {{ cust.due_date|date:"Y-m-d" }}</span>
+                                                        <span class="text-[10px] bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded border border-blue-500/40 font-bold mt-1">الاستحقاق: {{ cust.due_date|date:"Y-m-d" }}</span>
                                                     {% endif %}
                                                 {% endif %}
                                             </div>
@@ -431,11 +431,11 @@
                                                 <span class="text-[10px] bg-error/15 text-error px-2 py-0.5 rounded border border-error/30 font-bold mt-0.5">مستحق له علينا</span>
                                                 {% if sup.due_date %}
                                                     {% if sup.is_overdue %}
-                                                        <span class="text-[10px] bg-rose-500/20 text-rose-400 px-2 py-0.5 rounded border border-rose-500/40 font-bold mt-1 animate-pulse">🚨 متأخر منذ {{ sup.days_overdue }} يوم ({{ sup.due_date|date:"Y-m-d" }})</span>
+                                                        <span class="text-[10px] bg-rose-500/20 text-rose-400 px-2 py-0.5 rounded border border-rose-500/40 font-bold mt-1 animate-pulse">متأخر منذ {{ sup.days_overdue }} يوم ({{ sup.due_date|date:"Y-m-d" }})</span>
                                                     {% elif sup.is_due_today %}
-                                                        <span class="text-[10px] bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded border border-amber-500/40 font-bold mt-1">🔔 مستحق اليوم ({{ sup.due_date|date:"Y-m-d" }})</span>
+                                                        <span class="text-[10px] bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded border border-amber-500/40 font-bold mt-1">مستحق اليوم ({{ sup.due_date|date:"Y-m-d" }})</span>
                                                     {% else %}
-                                                        <span class="text-[10px] bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded border border-blue-500/40 font-bold mt-1">📅 الاستحقاق: {{ sup.due_date|date:"Y-m-d" }}</span>
+                                                        <span class="text-[10px] bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded border border-blue-500/40 font-bold mt-1">الاستحقاق: {{ sup.due_date|date:"Y-m-d" }}</span>
                                                     {% endif %}
                                                 {% endif %}
                                             </div>
@@ -876,8 +876,8 @@
                 <!-- Initial Balance -->
                 <div class="bg-slate-800/80 border border-slate-700 rounded-2xl p-4 space-y-2">
                     <label class="block text-xs font-bold text-slate-100">
-                        <span x-show="partyType === 'customer'">💰 الديون المستحقة الحالية (رصيد شكك مبدئي)</span>
-                        <span x-show="partyType === 'supplier'" style="display:none">💰 المستحقات له علينا (دين مبدئي)</span>
+                        <span x-show="partyType === 'customer'">الديون المستحقة الحالية (رصيد شكك مبدئي)</span>
+                        <span x-show="partyType === 'supplier'" style="display:none">المستحقات له علينا (دين مبدئي)</span>
                     </label>
                     <p class="text-[10px] text-slate-400">اتركه 0.00 إذا كان الحساب نظيفاً وبدون ديون سابقة</p>
                     <div class="flex items-center gap-2">
@@ -888,7 +888,7 @@
                 </div>
 
                 <div>
-                    <label class="block text-xs font-bold text-on-surface-variant mb-1.5">📅 موعد استحقاق السداد (اختياري)</label>
+                    <label class="block text-xs font-bold text-on-surface-variant mb-1.5">موعد استحقاق السداد (اختياري)</label>
                     <input type="date" name="due_date"
                            class="w-full bg-surface-container-high border border-white/10 rounded-xl py-2.5 px-3.5 focus:outline-none focus:border-primary text-right text-xs text-on-surface font-semibold shadow-inner">
                 </div>
@@ -915,7 +915,7 @@
                         <span class="material-symbols-outlined text-xl">savings</span>
                     </div>
                     <div>
-                        <h3 class="text-base font-extrabold text-emerald-400">⚡ إنعاش الخزينة / إيداع نقدية بالدرج</h3>
+                        <h3 class="text-base font-extrabold text-emerald-400">إنعاش الخزينة / إيداع نقدية بالدرج</h3>
                         <p class="text-[11px] text-slate-400">توريد سيولة شخصية، سلفة للمحل، أو تغطية عجز المشتريات</p>
                     </div>
                 </div>
@@ -941,7 +941,7 @@
                 </div>
 
                 <div class="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl text-xs text-emerald-300">
-                    💡 المبلغ سيضاف مباشرة إلى <strong>النقدية الفعلية بالدرج</strong> ويقوم بتغطية أي رصيد سالب فوراً.
+                    المبلغ سيضاف مباشرة إلى <strong>النقدية الفعلية بالدرج</strong> ويقوم بتغطية أي رصيد سالب فوراً.
                 </div>
 
                 <div class="flex gap-3 pt-2">

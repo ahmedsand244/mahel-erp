@@ -265,7 +265,7 @@
                     class="w-full bg-blue-500/10 hover:bg-blue-600 hover:text-white text-blue-600 dark:text-blue-400 border border-blue-500/30 py-2.5 rounded-2xl text-xs font-extrabold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-sm disabled:opacity-50"
                     title="مزامنة شاملة لكافة المنتجات والعملاء والموردين والفواتير والمصروفات">
                 <span class="material-symbols-outlined text-base" :class="isUniversalSyncing ? 'animate-spin' : ''">cloud_sync</span>
-                <span x-text="isUniversalSyncing ? 'جارِ المزامنة الشاملة...' : (isCloudLive ? 'السيرفر الحي 🟢' : 'مزامنة شاملة لكل شيء ⚡☁️')"></span>
+                <span x-text="isUniversalSyncing ? 'جارِ المزامنة الشاملة...' : (isCloudLive ? 'السيرفر الحي' : 'مزامنة شاملة لكل شيء')"></span>
             </button>
         </div>
 
@@ -466,7 +466,7 @@
                             {% empty %}
                                 <div class="p-6 text-center text-xs text-slate-400 dark:text-slate-500 italic space-y-1">
                                     <span class="material-symbols-outlined text-2xl text-emerald-500 block">verified</span>
-                                    <span>لا توجد تنبيهات عاجلة حالياً 👍</span>
+                                    <span>لا توجد تنبيهات عاجلة حالياً</span>
                                 </div>
                             {% endfor %}
                         </div>
@@ -780,7 +780,7 @@
                             {% empty %}
                                 <div class="p-8 text-center text-xs text-slate-400 dark:text-slate-500 italic space-y-2">
                                     <span class="material-symbols-outlined text-3xl text-emerald-500 block">verified</span>
-                                    <span>لا توجد تنبيهات عاجلة حالياً 👍</span>
+                                    <span>لا توجد تنبيهات عاجلة حالياً</span>
                                 </div>
                             {% endfor %}
                         </div>
@@ -817,7 +817,7 @@
                         class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-apple-surface-subtle border border-apple-border text-xs font-bold text-apple-secondary hover:text-primary hover:border-primary/40 transition-all duration-300 shadow-apple-sm active:scale-95 cursor-pointer"
                         title="تحديث البيانات فوراً للربط مع السحابة والمزامنة">
                     <span class="material-symbols-outlined text-base">refresh</span>
-                    <span>تحديث البيانات 🔄</span>
+                    <span>تحديث البيانات</span>
                 </button>
 
                 <!-- Font Scale Control - Desktop Header -->
@@ -920,7 +920,7 @@
                     if (this.isUniversalSyncing) return;
 
                     if (this.isCloudLive) {
-                        alert('🟢 أنت بالفعل تعمل مباشرة على السيرفر السحابي الحي!\n\nكافة المنتجات، العملاء، والمبيعات تُحفظ وتُحدث فورياً ومباشرة على قاعدة بيانات السيرفر.');
+                        alert('أنت بالفعل تعمل مباشرة على السيرفر السحابي الحي!\n\nكافة المنتجات، العملاء، والمبيعات تُحفظ وتُحدث فورياً ومباشرة على قاعدة بيانات السيرفر.');
                         return;
                     }
 
@@ -934,12 +934,12 @@
                         this.isUniversalSyncing = false;
                         if (data.success) {
                             const s = data.stats || {};
-                            alert(`🎉 تم بنجاح! اكتملت المزامنة الشاملة لكافة البيانات مع السحابة:\n\n` +
-                                  `📦 المنتجات والمخزون: ${s.products || 0}\n` +
-                                  `👥 العملاء والشكك: ${s.customers || 0}\n` +
-                                  `🏭 الموردين: ${s.suppliers || 0}\n` +
-                                  `🧾 فواتير المبيعات: ${s.invoices || 0}\n` +
-                                  `💰 المصروفات: ${s.expenses || 0}\n\n` +
+                            alert(`اكتملت المزامنة الشاملة لكافة البيانات مع السحابة بنجاح:\n\n` +
+                                  `• المنتجات والمخزون: ${s.products || 0}\n` +
+                                  `• العملاء والشكك: ${s.customers || 0}\n` +
+                                  `• الموردين: ${s.suppliers || 0}\n` +
+                                  `• فواتير المبيعات: ${s.invoices || 0}\n` +
+                                  `• المصروفات: ${s.expenses || 0}\n\n` +
                                   `أصبحت كافة بيانات جهازك مطابقة 100% مع موقعك السحابي!`);
                             window.location.reload();
                         } else {

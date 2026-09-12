@@ -51,27 +51,31 @@
                 <span class="text-xs font-bold text-apple-secondary whitespace-nowrap ml-1 shrink-0">تحديد فترة الجرد:</span>
                 
                 <a href="?period=all" 
-                   class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 active:scale-95"
+                   class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 active:scale-95 flex items-center gap-1.5"
                    :class="'{{ selected_period }}' === 'all' ? 'bg-primary text-white shadow-apple-sm' : 'bg-apple-surface-subtle text-apple-secondary hover:text-apple-text border border-apple-border'">
-                    كل الفترات (من البداية)
+                    <span class="material-symbols-outlined text-[16px]">history</span>
+                    <span>كل الفترات (من البداية)</span>
                 </a>
 
                 <a href="?period=today" 
-                   class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 active:scale-95"
+                   class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 active:scale-95 flex items-center gap-1.5"
                    :class="'{{ selected_period }}' === 'today' ? 'bg-primary text-white shadow-apple-sm' : 'bg-apple-surface-subtle text-apple-secondary hover:text-apple-text border border-apple-border'">
-                    جرد اليوم ☀️
+                    <span class="material-symbols-outlined text-[16px] text-amber-500">wb_sunny</span>
+                    <span>جرد اليوم</span>
                 </a>
 
                 <a href="?period=yesterday" 
-                   class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 active:scale-95"
+                   class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 active:scale-95 flex items-center gap-1.5"
                    :class="'{{ selected_period }}' === 'yesterday' ? 'bg-primary text-white shadow-apple-sm' : 'bg-apple-surface-subtle text-apple-secondary hover:text-apple-text border border-apple-border'">
-                    جرد أمس 🌙
+                    <span class="material-symbols-outlined text-[16px] text-indigo-400">bedtime</span>
+                    <span>جرد أمس</span>
                 </a>
 
                 <a href="?period=this_month" 
-                   class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 active:scale-95"
+                   class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 active:scale-95 flex items-center gap-1.5"
                    :class="'{{ selected_period }}' === 'this_month' ? 'bg-primary text-white shadow-apple-sm' : 'bg-apple-surface-subtle text-apple-secondary hover:text-apple-text border border-apple-border'">
-                    جرد هذا الشهر 📅
+                    <span class="material-symbols-outlined text-[16px] text-emerald-500">calendar_month</span>
+                    <span>جرد هذا الشهر</span>
                 </a>
             </div>
 
@@ -168,6 +172,59 @@
                 <span>{{ total_products_count }} صنف بالمخزن</span>
                 <span>•</span>
                 <span class="text-primary font-bold">بيع: {{ inventory_retail_val|floatformat:2 }}</span>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- INTERACTIVE CHARTS & FINANCIAL ANALYTICS SECTION (رسوم بيانية تفاعلية وديناميكية) -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8">
+        
+        <!-- 1. Daily Revenue & Expenses Trend Chart (Line/Bar Combo Chart - Col Span 8) -->
+        <div class="lg:col-span-8 glass-card rounded-2xl sm:rounded-3xl p-5 sm:p-6 border border-apple-border space-y-4">
+            <div class="flex flex-wrap items-center justify-between border-b border-apple-border pb-3 gap-2">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-10 h-10 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+                        <span class="material-symbols-outlined text-xl">show_chart</span>
+                    </div>
+                    <div>
+                        <h3 class="text-sm sm:text-base font-black text-apple-text">اتجاهات المبيعات والمصروفات والأرباح</h3>
+                        <p class="text-[11px] text-apple-secondary">مقارنة بصرية بيانية بين حجم الإيرادات والتكاليف وصافي الأرباح المحققة</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="inline-flex items-center gap-1 text-[11px] font-bold text-primary bg-primary/10 px-3 py-1 rounded-full border border-primary/20">
+                        <span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+                        تحليل تفاعلي
+                    </span>
+                </div>
+            </div>
+            
+            <div class="h-64 sm:h-80 w-full relative">
+                <canvas id="reportsTrendChart"></canvas>
+            </div>
+        </div>
+
+        <!-- 2. Cost & Expense Structure Doughnut Chart (Col Span 4) -->
+        <div class="lg:col-span-4 glass-card rounded-2xl sm:rounded-3xl p-5 sm:p-6 border border-apple-border space-y-4 flex flex-col justify-between">
+            <div class="flex items-center justify-between border-b border-apple-border pb-3">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-10 h-10 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500">
+                        <span class="material-symbols-outlined text-xl">pie_chart</span>
+                    </div>
+                    <div>
+                        <h3 class="text-sm sm:text-base font-black text-apple-text">هيكل التكاليف والمصروفات</h3>
+                        <p class="text-[11px] text-apple-secondary">توزيع بنود الصرف وتكلفة البضاعة</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="h-60 sm:h-72 w-full relative flex items-center justify-center">
+                <canvas id="reportsBreakdownChart"></canvas>
+            </div>
+
+            <div class="text-center pt-2 border-t border-apple-border">
+                <span class="text-[11px] text-apple-secondary">إجمالي التكاليف والمصروفات: <strong class="font-mono text-apple-text">{{ total_costs_all|floatformat:2 }} ج.م</strong></span>
             </div>
         </div>
 
@@ -461,4 +518,182 @@
     </div>
 
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const isDark = document.documentElement.classList.contains('dark');
+    const textColor = isDark ? '#94a3b8' : '#64748b';
+    const gridColor = isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.05)';
+
+    // 1. Sales, Expenses & Profit Trend Chart
+    const trendLabels = JSON.parse('{{ chart_trend_labels_json|safe }}');
+    const trendSales = JSON.parse('{{ chart_trend_sales_json|safe }}');
+    const trendExpenses = JSON.parse('{{ chart_trend_expenses_json|safe }}');
+    const trendProfits = JSON.parse('{{ chart_trend_profits_json|safe }}');
+
+    const trendCanvas = document.getElementById('reportsTrendChart');
+    if (trendCanvas && trendLabels && trendLabels.length > 0) {
+        const ctx = trendCanvas.getContext('2d');
+        
+        // Gradients
+        const salesGradient = ctx.createLinearGradient(0, 0, 0, 280);
+        salesGradient.addColorStop(0, 'rgba(16, 185, 129, 0.25)');
+        salesGradient.addColorStop(1, 'rgba(16, 185, 129, 0.0)');
+
+        const expGradient = ctx.createLinearGradient(0, 0, 0, 280);
+        expGradient.addColorStop(0, 'rgba(239, 68, 68, 0.20)');
+        expGradient.addColorStop(1, 'rgba(239, 68, 68, 0.0)');
+
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: trendLabels,
+                datasets: [
+                    {
+                        label: 'إيرادات المبيعات (ج.م)',
+                        data: trendSales,
+                        borderColor: '#10b981',
+                        backgroundColor: salesGradient,
+                        fill: true,
+                        tension: 0.35,
+                        borderWidth: 2.5,
+                        pointRadius: 3,
+                        pointHoverRadius: 6,
+                        pointBackgroundColor: '#10b981',
+                    },
+                    {
+                        label: 'التكاليف والمصروفات (ج.م)',
+                        data: trendExpenses,
+                        borderColor: '#ef4444',
+                        backgroundColor: expGradient,
+                        fill: true,
+                        tension: 0.35,
+                        borderWidth: 2,
+                        borderDash: [4, 4],
+                        pointRadius: 2.5,
+                        pointHoverRadius: 5,
+                        pointBackgroundColor: '#ef4444',
+                    },
+                    {
+                        label: 'صافي الربح (ج.م)',
+                        data: trendProfits,
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'transparent',
+                        borderWidth: 2,
+                        tension: 0.35,
+                        pointRadius: 3,
+                        pointHoverRadius: 6,
+                        pointBackgroundColor: '#3b82f6',
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false,
+                },
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        rtl: true,
+                        labels: {
+                            font: { family: 'Cairo, sans-serif', size: 11, weight: 'bold' },
+                            color: textColor,
+                            usePointStyle: true,
+                            padding: 12
+                        }
+                    },
+                    tooltip: {
+                        rtl: true,
+                        titleFont: { family: 'Cairo, sans-serif', size: 12 },
+                        bodyFont: { family: 'Cairo, sans-serif', size: 11 },
+                        padding: 10,
+                        callbacks: {
+                            label: function(context) {
+                                return context.dataset.label + ': ' + Number(context.parsed.y).toLocaleString('ar-EG', { minimumFractionDigits: 2 }) + ' ج.م';
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { color: gridColor },
+                        ticks: { font: { family: 'monospace', size: 10 }, color: textColor }
+                    },
+                    y: {
+                        grid: { color: gridColor },
+                        ticks: {
+                            font: { family: 'monospace', size: 10 },
+                            color: textColor,
+                            callback: function(value) { return value.toLocaleString() + ' ج.م'; }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // 2. Cost & Expense Structure Doughnut Chart
+    const breakdownLabels = JSON.parse('{{ chart_breakdown_labels_json|safe }}');
+    const breakdownValues = JSON.parse('{{ chart_breakdown_values_json|safe }}');
+
+    const breakdownCanvas = document.getElementById('reportsBreakdownChart');
+    if (breakdownCanvas && breakdownValues && breakdownValues.some(v => v > 0)) {
+        const ctx2 = breakdownCanvas.getContext('2d');
+        new Chart(ctx2, {
+            type: 'doughnut',
+            data: {
+                labels: breakdownLabels,
+                datasets: [{
+                    data: breakdownValues,
+                    backgroundColor: [
+                        '#3b82f6',
+                        '#f59e0b',
+                        '#ec4899',
+                        '#8b5cf6',
+                        '#06b6d4',
+                        '#10b981',
+                        '#64748b'
+                    ],
+                    borderWidth: 2,
+                    borderColor: isDark ? '#1e293b' : '#ffffff',
+                    hoverOffset: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        rtl: true,
+                        labels: {
+                            font: { family: 'Cairo, sans-serif', size: 10, weight: 'bold' },
+                            color: textColor,
+                            usePointStyle: true,
+                            padding: 10
+                        }
+                    },
+                    tooltip: {
+                        rtl: true,
+                        titleFont: { family: 'Cairo, sans-serif', size: 12 },
+                        bodyFont: { family: 'Cairo, sans-serif', size: 11 },
+                        callbacks: {
+                            label: function(context) {
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const val = context.parsed;
+                                const pct = total > 0 ? ((val / total) * 100).toFixed(1) : 0;
+                                return `${context.label}: ${val.toLocaleString('ar-EG', { minimumFractionDigits: 2 })} ج.م (${pct}%)`;
+                            }
+                        }
+                    }
+                },
+                cutout: '62%'
+            }
+        });
+    }
+});
+</script>
 {% endblock %}

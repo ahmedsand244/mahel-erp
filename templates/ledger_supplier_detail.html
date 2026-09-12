@@ -48,7 +48,7 @@
                     </div>
                 {% else %}
                     <div class="bg-primary/10 border border-primary/30 rounded-2xl px-8 py-4">
-                        <p class="text-xs text-primary font-bold mb-1">الحساب مسدد ✓</p>
+                        <p class="text-xs text-primary font-bold mb-1">الحساب مسدد</p>
                         <p class="text-3xl font-bold font-mono text-primary">{{ supplier.balance|floatformat:2 }}</p>
                         <p class="text-sm text-primary/70">ج.م</p>
                     </div>
@@ -63,7 +63,7 @@
                     <div class="flex items-center gap-3">
                         <span class="material-symbols-outlined text-rose-500 text-3xl shrink-0">warning</span>
                         <div>
-                            <h4 class="text-sm font-extrabold text-rose-400">🚨 تنبيه استحقاق سداد للمورد متأخر!</h4>
+                            <h4 class="text-sm font-extrabold text-rose-400">تنبيه استحقاق سداد للمورد متأخر!</h4>
                             <p class="text-xs text-rose-200 mt-0.5 font-medium">
                                 موعد سداد مستحقات المورد كان: <span class="font-mono font-bold text-white">{{ supplier.due_date|date:"Y-m-d" }}</span> — متأخر عن السداد منذ <span class="font-extrabold underline text-white">{{ supplier.days_overdue }} يوم</span>
                             </p>
@@ -75,7 +75,7 @@
                     <div class="flex items-center gap-3">
                         <span class="material-symbols-outlined text-amber-500 text-3xl shrink-0 animate-bounce">notifications_active</span>
                         <div>
-                            <h4 class="text-sm font-extrabold text-amber-400">🔔 موعد سداد مستحقات المورد اليوم!</h4>
+                            <h4 class="text-sm font-extrabold text-amber-400">موعد سداد مستحقات المورد اليوم!</h4>
                             <p class="text-xs text-amber-200 mt-0.5 font-medium">
                                 تاريخ الاستحقاق المحدد للمورد هو اليوم: <span class="font-mono font-bold text-white">{{ supplier.due_date|date:"Y-m-d" }}</span>
                             </p>
@@ -117,7 +117,7 @@
             <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
                  x-show="showPayModal" style="display:none">
                 <div class="glass-card rounded-2xl p-8 max-w-sm w-full space-y-4 text-right">
-                    <h3 class="text-xl font-bold text-on-surface border-b border-white/10 pb-2">💳 سداد لـ {{ supplier.name }}</h3>
+                    <h3 class="text-xl font-bold text-on-surface border-b border-white/10 pb-2">سداد لـ {{ supplier.name }}</h3>
                     <p class="text-xs text-on-surface-variant">المستحق: <span class="text-error font-bold font-mono">{{ supplier.balance|floatformat:2 }} ج.م</span></p>
                     <form method="post" action="{% url 'ledger:pay_supplier' %}" class="space-y-3 text-sm">
                         {% csrf_token %}
@@ -144,7 +144,7 @@
             <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
                  x-show="showDebtModal" style="display:none">
                 <div class="glass-card rounded-2xl p-8 max-w-sm w-full space-y-4 text-right">
-                    <h3 class="text-xl font-bold text-error border-b border-error/30 pb-2">📦 إضافة بضاعة آجل من {{ supplier.name }}</h3>
+                    <h3 class="text-xl font-bold text-error border-b border-error/30 pb-2">إضافة بضاعة آجل من {{ supplier.name }}</h3>
                     <form method="post" action="{% url 'ledger:add_supplier_debt' supplier.id %}" class="space-y-3 text-sm">
                         {% csrf_token %}
                         <div>

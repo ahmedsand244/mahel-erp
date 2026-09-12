@@ -19,11 +19,11 @@
             <div class="flex items-center gap-2">
                 <span x-show="isOnline" class="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 text-xs px-3 py-1.5 rounded-full font-bold flex items-center gap-1.5">
                     <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                    <span>متصل بالسيرفر (أونلاين) 🟢</span>
+                    <span>متصل بالسيرفر (أونلاين)</span>
                 </span>
                 <span x-show="!isOnline" class="bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 text-xs px-3 py-1.5 rounded-full font-bold flex items-center gap-1.5">
                     <span class="w-2 h-2 rounded-full bg-amber-500"></span>
-                    <span>يعمل بدون إنترنت (أوفلاين متاح للبيع) 🟡</span>
+                    <span>يعمل بدون إنترنت (أوفلاين متاح للبيع)</span>
                 </span>
             </div>
 
@@ -32,11 +32,11 @@
                     <button type="button" @click="syncOfflineInvoices()" :disabled="isSyncing || !isOnline"
                             class="bg-primary/20 hover:bg-primary text-primary hover:text-white border border-primary/30 px-3 py-1.5 rounded-full font-bold text-xs transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shadow-apple-sm">
                         <span class="material-symbols-outlined text-sm" :class="isSyncing ? 'animate-spin' : ''">sync</span>
-                        <span x-text="isSyncing ? 'جارِ المزامنة...' : ('مزامنة ' + pendingSyncCount + ' فواتير أوفلاين ⚡')"></span>
+                        <span x-text="isSyncing ? 'جارِ المزامنة...' : ('مزامنة ' + pendingSyncCount + ' فواتير أوفلاين ')"></span>
                     </button>
                 </template>
                 <template x-if="pendingSyncCount === 0 && isOnline">
-                    <span class="text-xs text-apple-secondary font-medium hidden sm:inline">جميع الفواتير متزامنة مع السحاب ✅</span>
+                    <span class="text-xs text-apple-secondary font-medium hidden sm:inline">جميع الفواتير متزامنة مع السحاب</span>
                 </template>
             </div>
         </div>
@@ -57,7 +57,7 @@
                         class="bg-primary/15 hover:bg-primary text-primary hover:text-white border border-primary/30 px-4 py-3 rounded-2xl font-bold transition-all flex items-center gap-2 shrink-0 text-xs sm:text-sm active:scale-95 cursor-pointer shadow-apple-sm"
                         title="مسح الباركوود بكاميرا الموبايل أو الحاسوب">
                     <span class="material-symbols-outlined text-xl animate-pulse">photo_camera</span>
-                    <span>مسح بالباركود 📷</span>
+                    <span>مسح بالباركود</span>
                 </button>
             </div>
         </div>
@@ -354,7 +354,7 @@
                    class="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-3 rounded-2xl text-sm font-bold shadow-lg flex items-center justify-center gap-2 transition-all"
                    x-show="successOrderId">
                     <span class="material-symbols-outlined text-lg">share</span>
-                    <span>مشاركة الفاتورة عبر الواتساب 🔗</span>
+                    <span>مشاركة الفاتورة عبر الواتساب</span>
                 </a>
                 <button class="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 py-3 rounded-2xl text-xs sm:text-sm font-bold transition-all"
                         @click="closeSuccessModal()">
@@ -378,14 +378,14 @@
                 </button>
             </div>
 
-            <p class="text-xs text-slate-300 font-medium">وجّه كاميرا الموبايل نحو ملصق الباركود وسيتم التعرف عليه وإضافته للسلة فوراً 👍</p>
+            <p class="text-xs text-slate-300 font-medium">وجّه كاميرا الموبايل نحو ملصق الباركود وسيتم التعرف عليه وإضافته للسلة فوراً </p>
 
             <!-- Video Camera Frame Container -->
             <div id="barcode-camera-reader" class="w-full rounded-2xl overflow-hidden border-2 border-primary/50 bg-black min-h-[240px]"></div>
 
             <!-- Fallback Image File Upload Scanner -->
             <div class="pt-2 border-t border-slate-800 space-y-2">
-                <label class="block text-xs font-bold text-slate-300">أو يمكنك اختيار/رفع صورة الباركود من الجهاز 📷</label>
+                <label class="block text-xs font-bold text-slate-300">أو يمكنك اختيار/رفع صورة الباركود من الجهاز </label>
                 <input type="file" accept="image/*" @change="scanBarcodeFromFile($event)"
                        class="w-full text-xs text-slate-300 file:mr-2 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-primary/20 file:text-primary hover:file:bg-primary/30 cursor-pointer border border-slate-700 rounded-xl p-1 bg-slate-800">
             </div>
@@ -405,7 +405,7 @@
             <div class="flex items-center justify-between border-b border-slate-700/60 pb-3">
                 <h3 class="text-base font-bold text-amber-400 flex items-center gap-2">
                     <span class="material-symbols-outlined text-xl">price_change</span>
-                    مراعاة في السعر / فصال العميل 🏷️
+                    مراعاة في السعر / فصال العميل
                 </h3>
                 <button type="button" @click="showPriceEditModal = false" class="text-slate-400 hover:text-white p-1 rounded-full hover:bg-slate-800 transition-colors">
                     <span class="material-symbols-outlined">close</span>
@@ -446,7 +446,7 @@
                                 @click="applyCustomPrice()" 
                                 :disabled="parseFloat(tempPriceInput) < editingItem.cost || !tempPriceInput || parseFloat(tempPriceInput) <= 0"
                                 class="flex-1 bg-gradient-to-r from-amber-500 to-amber-600 disabled:opacity-40 disabled:cursor-not-allowed text-slate-950 font-extrabold py-3 rounded-xl text-xs sm:text-sm shadow-lg shadow-amber-500/20 active:scale-95 transition-all">
-                            تأكيد السعر المتفق عليه 👍
+                            تأكيد السعر المتفق عليه
                         </button>
                         <button type="button" 
                                 @click="resetOriginalPrice()" 
@@ -586,7 +586,7 @@
                         this.onBarcodeScanned(decodedText);
                     })
                     .catch(err => {
-                        alert("⚠️ لم نتمكن من قراءة الباركود من هذه الصورة. يرجى التأكد من وضوح الصورة وتجربة صورة أخرى.");
+                        alert(" لم نتمكن من قراءة الباركود من هذه الصورة. يرجى التأكد من وضوح الصورة وتجربة صورة أخرى.");
                     });
             },
 
@@ -604,10 +604,10 @@
                     if (navigator.vibrate) navigator.vibrate(100);
                     this.addToCart(matchedProd);
                     this.stopCameraScanner();
-                    alert(`✅ تم التعرف على الباركود: [${matchedProd.name}] وإضافته لسلة البيع بنجاح!`);
+                    alert(` تم التعرف على الباركود: [${matchedProd.name}] وإضافته لسلة البيع بنجاح!`);
                 } else {
                     this.stopCameraScanner();
-                    alert(`🔍 تم البحث عن الباركود: [${code}] — يمكنك مراجعة شاشة المنتجات المفلترة.`);
+                    alert(` تم البحث عن الباركود: [${code}] — يمكنك مراجعة شاشة المنتجات المفلترة.`);
                 }
             },
             showAddCustomerModal: false,
@@ -702,7 +702,7 @@
                 }
                 const cost = parseFloat(this.editingItem.cost || 0);
                 if (cost > 0 && newPrice < cost) {
-                    alert(`⚠️ تنبيه: لا يمكن البيع بأقل من سعر التكلفة والشراء (${cost.toFixed(2)} ج.م)!`);
+                    alert(` تنبيه: لا يمكن البيع بأقل من سعر التكلفة والشراء (${cost.toFixed(2)} ج.م)!`);
                     return;
                 }
                 this.editingItem.price = newPrice;
@@ -839,7 +839,7 @@
                 })
                 .catch(err => {
                     // Fallback to offline invoice storage only if server is completely unreachable (e.g. mobile app without WiFi)
-                    this.saveOfflineInvoice(payload, 'تم حفظ الفاتورة محلياً بأمان (أوفلاين) نظراً لتعذر الاتصال بالسيرفر! ستُرفع تلقائياً عند توفر الاتصال ⚡');
+                    this.saveOfflineInvoice(payload, 'تم حفظ الفاتورة محلياً بأمان (أوفلاين) نظراً لتعذر الاتصال بالسيرفر! ستُرفع تلقائياً عند توفر الاتصال ');
                 });
             },
 
@@ -918,7 +918,7 @@
                     if (data.success) {
                         localStorage.removeItem('mahel_pending_invoices');
                         this.updatePendingCount();
-                        alert(`🎉 ممتاز! تم مزامنة ${data.synced_count || pending.length} فاتورة مسجلة بدون نت مع السيرفر السحابي بنجاح!`);
+                        alert(` ممتاز! تم مزامنة ${data.synced_count || pending.length} فاتورة مسجلة بدون نت مع السيرفر السحابي بنجاح!`);
                     } else {
                         console.warn('Sync response error:', data.error);
                     }

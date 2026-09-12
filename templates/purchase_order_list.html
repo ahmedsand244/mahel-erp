@@ -72,7 +72,7 @@
                 <a href="{% url 'inventory:purchase_order_create' %}?auto_pull=true" 
                    class="bg-error hover:bg-error/90 text-white font-bold px-3.5 py-2 rounded-xl text-xs flex items-center gap-1.5 shadow-sm transition-all active:scale-95 shrink-0 whitespace-nowrap">
                     <span class="material-symbols-outlined text-sm">local_shipping</span>
-                    <span>سحب كل النواقص لطلب 🚚</span>
+                    <span>سحب كل النواقص لطلب</span>
                 </a>
             </div>
         </div>
@@ -108,11 +108,11 @@
                     <!-- Stock Status Badge -->
                     {% if item.stock_quantity <= 0 %}
                         <span class="px-2 py-0.5 rounded-lg text-[10px] font-black bg-error text-white whitespace-nowrap shrink-0 shadow-sm">
-                            نفذت (0) ⛔
+                            نفذت (0)
                         </span>
                     {% else %}
                         <span class="px-2 py-0.5 rounded-lg text-[10px] font-black bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30 whitespace-nowrap shrink-0">
-                            منخفض ({{ item.stock_quantity }}) ⚠️
+                            منخفض ({{ item.stock_quantity }}) 
                         </span>
                     {% endif %}
                 </div>
@@ -154,7 +154,7 @@
         {% else %}
         <div class="p-8 text-center text-xs text-apple-secondary space-y-2">
             <span class="material-symbols-outlined text-3xl text-emerald-500 block">verified</span>
-            <p class="font-bold text-slate-700 dark:text-slate-200">ممتاز! لا توجد أصناف ناقصة أو واصلة للحد الأدنى حالياً 👍</p>
+            <p class="font-bold text-slate-700 dark:text-slate-200">ممتاز! لا توجد أصناف ناقصة أو واصلة للحد الأدنى حالياً </p>
             <p class="text-[11px]">جميع البضائع في مخزنك فوق حد الأمان والتنبيه.</p>
         </div>
         {% endif %}
@@ -313,15 +313,15 @@
                         <td class="p-4 text-center whitespace-nowrap">
                             {% if order.status == 'draft' %}
                                 <span class="status-pill-yellow px-3 py-1 text-xs font-bold whitespace-nowrap inline-flex items-center gap-1">
-                                    📝 مسودة
+                                    مسودة
                                 </span>
                             {% elif order.status == 'sent' %}
                                 <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-primary/10 text-primary border border-primary/20 whitespace-nowrap">
-                                    🚀 تم الإرسال للشركة
+                                    تم الإرسال للشركة
                                 </span>
                             {% elif order.status == 'received' %}
                                 <span class="status-pill-green px-3 py-1 text-xs font-bold whitespace-nowrap inline-flex items-center gap-1">
-                                    ✅ تم الاستلام بالمخزن
+                                    تم الاستلام بالمخزن
                                 </span>
                             {% else %}
                                 <span class="status-pill-red px-3 py-1 text-xs font-bold whitespace-nowrap inline-flex items-center gap-1">

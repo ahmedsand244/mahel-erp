@@ -38,7 +38,7 @@
                class="bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 px-4 py-2.5 rounded-xl font-bold hover:bg-amber-500 hover:text-white transition-all flex items-center gap-1.5 text-xs sm:text-sm shadow-sm"
                title="تصميم وطباعة ملصقات الباركود للمنتجات">
                 <span class="material-symbols-outlined text-[18px]">label</span>
-                طباعة الباركود 🏷️
+                <span>طباعة الباركود</span>
             </a>
 
             <!-- تصدير إلى Excel -->
@@ -46,7 +46,7 @@
                class="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 px-4 py-2.5 rounded-xl font-bold hover:bg-emerald-500 hover:text-white transition-all flex items-center gap-1.5 text-xs sm:text-sm shadow-sm"
                title="تصدير جميع بيانات المخزن إلى ملف Excel">
                 <span class="material-symbols-outlined text-[18px]">download</span>
-                تصدير Excel 📊
+                <span>تصدير Excel</span>
             </a>
 
             <!-- استيراد من Excel -->
@@ -54,7 +54,7 @@
                     class="bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/30 px-4 py-2.5 rounded-xl font-bold hover:bg-blue-500 hover:text-white transition-all flex items-center gap-1.5 text-xs sm:text-sm shadow-sm"
                     title="رفع ملف Excel لاستيراد المنتجات دفعة واحدة">
                 <span class="material-symbols-outlined text-[18px]">upload_file</span>
-                استيراد من Excel 📥
+                <span>استيراد من Excel</span>
             </button>
 
             <!-- زر النواقص والحد الأدنى الأنيق الذكي -->
@@ -74,14 +74,14 @@
             <button @click="showBulkPriceModal = true" 
                     class="bg-tertiary/20 text-tertiary border border-tertiary/30 px-4 py-2.5 rounded-xl font-bold hover:bg-tertiary hover:text-on-tertiary transition-all flex items-center gap-1.5 text-xs sm:text-sm shadow-sm">
                 <span class="material-symbols-outlined text-[18px]">trending_up</span>
-                تعديل الأسعار %
+                <span>تعديل الأسعار %</span>
             </button>
 
             <!-- زر إضافة منتج جديد -->
             <button @click="showAddModal = true" 
                     class="bg-primary text-on-primary px-5 py-2.5 rounded-xl font-bold hover:brightness-110 transition-all shadow-[0_4px_14px_0_rgba(16,185,129,0.39)] flex items-center gap-1.5 text-xs sm:text-sm">
                 <span class="material-symbols-outlined text-[18px]">add</span>
-                إضافة منتج
+                <span>إضافة منتج</span>
             </button>
         </div>
     </header>
@@ -99,10 +99,11 @@
 
         <!-- Category filter pills & Category Management Button -->
         <div class="flex items-center gap-2 overflow-x-auto pb-2 lg:pb-0 w-full lg:w-auto text-xs">
-            <button class="px-3 py-1.5 rounded-lg transition-all whitespace-nowrap font-bold"
+            <button class="px-3 py-1.5 rounded-lg transition-all whitespace-nowrap font-bold flex items-center gap-1"
                     :class="selectedCategory === '' ? 'bg-primary text-on-primary shadow-md' : 'bg-white/5 text-on-surface-variant hover:bg-white/10'"
                     @click="selectedCategory = ''">
-                الكل 📦
+                <span class="material-symbols-outlined text-[16px]">inventory_2</span>
+                <span>الكل</span>
             </button>
             {% for cat in categories %}
                 <button class="px-3 py-1.5 rounded-lg transition-all whitespace-nowrap font-semibold border border-white/5"
@@ -113,9 +114,9 @@
             {% endfor %}
             <button @click="showCategoryModal = true"
                     class="px-3 py-1.5 rounded-lg bg-brand-500/20 text-brand-400 hover:bg-brand-500 hover:text-white transition-all font-extrabold flex items-center gap-1 border border-brand-500/30 whitespace-nowrap"
-                    title="إضافة تصنيف أو فئة جديدة لشركتك">
-                <span class="material-symbols-outlined text-[16px]">edit_note</span>
-                <span>إدارة الفئات 🏷️</span>
+                    title="إضافة وتعديل تصنيفات وفئات المنتجات">
+                <span class="material-symbols-outlined text-[16px]">sell</span>
+                <span>إدارة الفئات</span>
             </button>
         </div>
     </div>
@@ -161,7 +162,7 @@
                         <td class="p-4">
                             <div class="font-bold text-on-background text-base">{{ p.name }}</div>
                             <span class="inline-block mt-1 text-[11px] px-2 py-0.5 rounded bg-white/5 text-on-surface-variant border border-white/5">
-                                {{ p.get_category_display }}
+                                {{ p.category }}
                             </span>
                         </td>
                         <!-- SKU والباركود -->
@@ -226,7 +227,7 @@
                                             name: '{{ p.name|escapejs }}',
                                             sku: '{{ p.sku|default:''|escapejs }}',
                                             barcode: '{{ p.barcode|default:''|escapejs }}',
-                                            category: '{{ p.category }}',
+                                            category: '{{ p.category|escapejs }}',
                                             purchase_price: ('{{ p.purchase_price|unlocalize }}').replace(',', '.'),
                                             selling_price: ('{{ p.selling_price|unlocalize }}').replace(',', '.'),
                                             stock_quantity: '{{ p.stock_quantity|unlocalize }}',
@@ -401,10 +402,16 @@
                 </div>
 
                 <div>
-                    <label class="block text-xs font-bold text-slate-200 mb-1">التصنيف / الفئة</label>
+                    <div class="flex items-center justify-between mb-1">
+                        <label class="block text-xs font-bold text-slate-200">التصنيف / الفئة</label>
+                        <button type="button" @click="showCategoryModal = true" class="text-[11px] text-brand-400 hover:text-brand-300 font-bold flex items-center gap-1 cursor-pointer">
+                            <span class="material-symbols-outlined text-sm">tune</span>
+                            إدارة الفئات
+                        </button>
+                    </div>
                     <select name="category" x-model="currentEditProduct.category" class="w-full bg-slate-800 border border-slate-700 rounded-xl py-2.5 px-3.5 text-xs text-slate-100 focus:outline-none focus:border-primary text-right font-bold">
-                        {% for code, label in category_choices %}
-                            <option value="{{ code }}" class="bg-slate-900 text-slate-100">{{ label }}</option>
+                        {% for cat in categories %}
+                            <option value="{{ cat.name }}" class="bg-slate-900 text-slate-100">{{ cat.name }}</option>
                         {% endfor %}
                     </select>
                 </div>
@@ -468,8 +475,9 @@
                 </button>
             </div>
             
-            <p class="text-xs text-slate-300 leading-relaxed bg-slate-800/80 p-3 rounded-2xl border border-slate-700 font-medium">
-                💡 تتيح لك هذه الأداة رفع أو تعديل أسعار البضاعة بنسبة مئوية (مثال: <span class="text-amber-400 font-bold">+5%</span> أو <span class="text-amber-400 font-bold">+10%</span> أو <span class="text-amber-400 font-bold">+15%</span>) وتطبيقها أوتوماتيكياً.
+            <p class="text-xs text-slate-300 leading-relaxed bg-slate-800/80 p-3 rounded-2xl border border-slate-700 font-medium flex items-start gap-2">
+                <span class="material-symbols-outlined text-amber-400 text-base shrink-0 mt-0.5">lightbulb</span>
+                <span>تتيح لك هذه الأداة رفع أو تعديل أسعار البضاعة بنسبة مئوية (مثال: <span class="text-amber-400 font-bold">+5%</span> أو <span class="text-amber-400 font-bold">+10%</span> أو <span class="text-amber-400 font-bold">+15%</span>) وتطبيقها أوتوماتيكياً.</span>
             </p>
 
             <form method="post" action="{% url 'inventory:bulk_price_adjust' %}" class="space-y-4 text-sm" id="bulkPriceForm">
@@ -525,8 +533,8 @@
                     <div x-show="scopeType === 'category'" class="mt-3" style="display:none;">
                         <label class="block text-[11px] text-slate-300 mb-1">اختر الفئة المستهدفة</label>
                         <select name="category" class="w-full bg-slate-800 border border-slate-700 rounded-xl py-2 px-3 text-slate-100 text-xs font-bold focus:outline-none">
-                            {% for code, label in category_choices %}
-                                <option value="{{ code }}" class="bg-slate-900 text-slate-100">{{ label }}</option>
+                            {% for cat in categories %}
+                                <option value="{{ cat.name }}" class="bg-slate-900 text-slate-100">{{ cat.name }}</option>
                             {% endfor %}
                         </select>
                     </div>
@@ -550,8 +558,9 @@
          x-show="showSinglePriceModal">
         <div class="bg-slate-900 text-slate-100 rounded-3xl p-6 sm:p-8 max-w-sm w-full space-y-4 text-right shadow-2xl border border-slate-700" dir="rtl" @click.away="showSinglePriceModal = false">
             <div class="flex items-center justify-between border-b border-amber-500/30 pb-3">
-                <h3 class="text-lg font-extrabold text-amber-400">
-                    📈 تعديل سعر منتج محدد (%)
+                <h3 class="text-lg font-extrabold text-amber-400 flex items-center gap-2">
+                    <span class="material-symbols-outlined text-lg">trending_up</span>
+                    <span>تعديل سعر منتج محدد (%)</span>
                 </h3>
                 <button type="button" @click="showSinglePriceModal = false" class="text-slate-400 hover:text-white p-1 rounded-full hover:bg-slate-800 transition-colors">
                     <span class="material-symbols-outlined">close</span>
@@ -593,7 +602,7 @@
             <div class="flex items-center justify-between border-b border-blue-500/30 pb-3">
                 <h3 class="text-xl font-extrabold text-blue-400 flex items-center gap-2">
                     <span class="material-symbols-outlined">upload_file</span>
-                    استيراد منتجات دفعة واحدة (Excel)
+                    <span>استيراد منتجات دفعة واحدة (Excel)</span>
                 </h3>
                 <button @click="showExcelImportModal = false" class="text-slate-400 hover:text-white p-1 rounded-full hover:bg-slate-800 transition-colors">
                     <span class="material-symbols-outlined">close</span>
@@ -628,8 +637,9 @@
                 </div>
 
                 <div class="flex gap-3 pt-3">
-                    <button type="submit" class="flex-1 bg-gradient-to-r from-blue-600 to-blue-500 text-white py-3 rounded-xl font-bold hover:brightness-110 shadow-lg shadow-blue-500/25 text-sm">
-                        بدء استيراد المنتجات للمخزن 🚀
+                    <button type="submit" class="flex-1 bg-gradient-to-r from-blue-600 to-blue-500 text-white py-3 rounded-xl font-bold hover:brightness-110 shadow-lg shadow-blue-500/25 text-sm flex items-center justify-center gap-2">
+                        <span class="material-symbols-outlined text-lg">rocket_launch</span>
+                        <span>بدء استيراد المنتجات للمخزن</span>
                     </button>
                     <button type="button" @click="showExcelImportModal = false" class="px-5 bg-white/5 hover:bg-white/10 border border-white/10 py-3 rounded-xl text-slate-300 font-bold text-sm">
                         إلغاء
@@ -641,12 +651,13 @@
 
     <!-- Modal: إدارة وتعديل الفئات والتصنيفات -->
     <div x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md p-4"
-         x-show="showCategoryModal">
+         x-show="showCategoryModal"
+         x-data="{ editingCatId: null, editingName: '' }">
         <div class="bg-slate-900 text-slate-100 rounded-3xl p-6 sm:p-8 max-w-md w-full space-y-5 text-right shadow-2xl border border-slate-700 max-h-[85vh] overflow-y-auto" dir="rtl" @click.away="showCategoryModal = false">
             <div class="flex items-center justify-between border-b border-slate-700/60 pb-3">
                 <h3 class="text-xl font-extrabold text-brand-400 flex items-center gap-2">
                     <span class="material-symbols-outlined text-2xl">category</span>
-                    إدارة فئات وتصنيفات المنتجات 🏷️
+                    <span>إدارة فئات وتصنيفات المنتجات</span>
                 </h3>
                 <button type="button" @click="showCategoryModal = false" class="text-slate-400 hover:text-white p-1 rounded-full hover:bg-slate-800 transition-colors">
                     <span class="material-symbols-outlined">close</span>
@@ -666,22 +677,50 @@
                 </div>
             </form>
 
-            <!-- قائمة الفئات الحالية مع إمكانية الحذف -->
+            <!-- قائمة الفئات الحالية مع إمكانية التعديل (أيقونة القلم) والحذف -->
             <div class="space-y-2">
                 <h4 class="text-xs font-bold text-slate-400">الفئات المتاحة حالياً في نظامك ({{ categories|length }}):</h4>
                 <div class="divide-y divide-slate-800 bg-slate-950/60 rounded-2xl border border-slate-800 overflow-hidden max-h-60 overflow-y-auto">
                     {% for cat in categories %}
-                        <div class="flex items-center justify-between p-3 text-xs hover:bg-white/5 transition-colors">
-                            <span class="font-bold text-slate-200 flex items-center gap-2">
-                                <span class="w-2 h-2 rounded-full bg-brand-400"></span>
-                                {{ cat.name }}
-                            </span>
-                            <form method="post" action="{% url 'inventory:category_delete' cat.id %}" onsubmit="return confirm('هل أنت متأكد من حذف الفئة ({{ cat.name|escapejs }})؟');" class="inline">
-                                {% csrf_token %}
-                                <button type="submit" class="p-1.5 rounded-lg hover:bg-red-500/20 text-red-400 transition-colors flex items-center justify-center" title="حذف الفئة">
-                                    <span class="material-symbols-outlined text-base">delete</span>
-                                </button>
-                            </form>
+                        <div class="p-3 text-xs hover:bg-white/5 transition-colors">
+                            <!-- وضع العرض العادي -->
+                            <div x-show="editingCatId !== {{ cat.id }}" class="flex items-center justify-between">
+                                <span class="font-bold text-slate-200 flex items-center gap-2">
+                                    <span class="w-2 h-2 rounded-full bg-brand-400"></span>
+                                    {{ cat.name }}
+                                </span>
+                                <div class="flex items-center gap-1">
+                                    <!-- أيقونة قلم لتعديل الفئة -->
+                                    <button type="button" 
+                                            @click="editingCatId = {{ cat.id }}; editingName = '{{ cat.name|escapejs }}'" 
+                                            class="p-1.5 rounded-lg hover:bg-brand-500/20 text-brand-400 transition-colors flex items-center justify-center cursor-pointer" 
+                                            title="تعديل اسم الفئة">
+                                        <span class="material-symbols-outlined text-base">edit</span>
+                                    </button>
+                                    <!-- زر حذف الفئة -->
+                                    <form method="post" action="{% url 'inventory:category_delete' cat.id %}" onsubmit="return confirm('هل أنت متأكد من حذف الفئة ({{ cat.name|escapejs }})؟');" class="inline">
+                                        {% csrf_token %}
+                                        <button type="submit" class="p-1.5 rounded-lg hover:bg-red-500/20 text-red-400 transition-colors flex items-center justify-center cursor-pointer" title="حذف الفئة">
+                                            <span class="material-symbols-outlined text-base">delete</span>
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+
+                            <!-- وضع التعديل الفوري بالاسم الجديد -->
+                            <div x-show="editingCatId === {{ cat.id }}" style="display: none;" class="w-full">
+                                <form method="post" action="{% url 'inventory:category_edit' cat.id %}" class="flex items-center gap-1.5 w-full">
+                                    {% csrf_token %}
+                                    <input type="text" name="name" x-model="editingName" required 
+                                           class="flex-1 bg-slate-900 border border-brand-500 rounded-xl py-1.5 px-3 text-xs text-slate-100 focus:outline-none font-bold">
+                                    <button type="submit" class="p-1.5 rounded-lg bg-brand-500 hover:bg-brand-600 text-white flex items-center justify-center shadow-sm cursor-pointer" title="حفظ الاسم الجديد">
+                                        <span class="material-symbols-outlined text-base">check</span>
+                                    </button>
+                                    <button type="button" @click="editingCatId = null" class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center cursor-pointer" title="إلغاء التعديل">
+                                        <span class="material-symbols-outlined text-base">close</span>
+                                    </button>
+                                </form>
+                            </div>
                         </div>
                     {% empty %}
                         <div class="p-4 text-center text-slate-500 italic text-xs">لا توجد فئات حالية. أضف فئتك الأولى بالأعلى!</div>

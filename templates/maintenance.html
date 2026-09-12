@@ -110,7 +110,7 @@
                                     class="px-2.5 py-1 rounded-lg text-[11px] font-black border transition-all flex items-center gap-1 cursor-pointer active:scale-95 shadow-sm"
                                     title="اختيار عميل نقدي سريع فوراً بدون تسجيل">
                                 <span class="material-symbols-outlined text-[14px]">bolt</span>
-                                <span>عميل سريع ⚡</span>
+                                <span>عميل سريع</span>
                             </button>
 
                             <!-- Add New Customer Toggle Button -->
@@ -197,7 +197,7 @@
                                 <!-- Option Quick Customer at top of list -->
                                 <div class="p-2.5 text-xs hover:bg-primary/20 cursor-pointer flex justify-between items-center transition-colors font-bold text-amber-500 bg-amber-500/5"
                                      @click="selectQuickCustomer(); isCustomerDropdownOpen = false;">
-                                    <span>⚡ عميل نقدي سريع (افتراضي)</span>
+                                    <span>عميل نقدي سريع (افتراضي)</span>
                                     <span class="text-[10px] opacity-75">بدون تسجيل</span>
                                 </div>
 
@@ -392,8 +392,8 @@ function maintenanceApp() {
         ],
 
         getSelectedCustomerLabel() {
-            if (this.selectedCustomerId === 'quick') return '⚡ عميل نقدي سريع';
-            if (this.selectedCustomerId === 'new') return this.newCustomerName ? `عميل جديد: ${this.newCustomerName}` : '➕ كتابة بيانات عميل جديد';
+            if (this.selectedCustomerId === 'quick') return 'عميل نقدي سريع';
+            if (this.selectedCustomerId === 'new') return this.newCustomerName ? `عميل جديد: ${this.newCustomerName}` : 'كتابة بيانات عميل جديد';
             if (!this.selectedCustomerId) return 'اختر العميل...';
             const c = this.customers.find(x => x.id == this.selectedCustomerId);
             return c ? c.name : 'اختر العميل...';

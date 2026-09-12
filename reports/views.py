@@ -1,3 +1,4 @@
+import json
 from django.views.generic import TemplateView, View
 from django.shortcuts import redirect
 from django.contrib import messages
@@ -92,6 +93,102 @@ class ReportsProfitLossView(TemplateView):
         # 4. Saved Store Audits Archive
         context['saved_audits'] = StoreAudit.objects.all().order_by('-created_at')
 
+        # 5. Interactive Dynamic Charts Data (اتجاهات المبيعات والمصروفات وهيكل التكاليف)
+        if start_date and end_date:
+            range_start = start_date
+            range_end = end_date
+            if range_start == range_end:
+                range_start = range_end - datetime.timedelta(days=6)
+        elif start_date:
+            range_start = start_date
+            range_end = today
+        else:
+            range_start = today - datetime.timedelta(days=13)
+            range_end = today
+
+        days_count = (range_end - range_start).days + 1
+        if days_count > 60:
+            step = max(1, days_count // 30)
+            date_list = [range_start + datetime.timedelta(days=i) for i in range(0, days_count, step)]
+            if date_list[-1] != range_end:
+                date_list.append(range_end)
+        else:
+            date_list = [range_start + datetime.timedelta(days=i) for i in range(days_count)]
+
+        daily_orders = {
+            row['created_at__date']: row
+            for row in Order.objects.filter(created_at__date__gte=range_start, created_at__date__lte=range_end)
+                                    .values('created_at__date')
+                                    .annotate(sales=Sum('total_amount'), cogs=Sum('cost_of_goods_sold'))
+        }
+        daily_expenses = {
+            row['created_at__date']: row['total_exp']
+            for row in Expense.objects.filter(created_at__date__gte=range_start, created_at__date__lte=range_end)
+                                      .values('created_at__date')
+                                      .annotate(total_exp=Sum('amount'))
+        }
+
+        trend_labels = []
+        trend_sales = []
+        trend_expenses = []
+        trend_profits = []
+
+        for d in date_list:
+            trend_labels.append(d.strftime('%m/%d'))
+            d_order = daily_orders.get(d, {})
+            d_sales = float(d_order.get('sales') or Decimal('0.00'))
+            d_cogs = float(d_order.get('cogs') or Decimal('0.00'))
+            d_exp = float(daily_expenses.get(d) or Decimal('0.00'))
+            d_total_costs = d_cogs + d_exp
+            d_profit = d_sales - d_total_costs
+
+            trend_sales.append(round(d_sales, 2))
+            trend_expenses.append(round(d_total_costs, 2))
+            trend_profits.append(round(d_profit, 2))
+
+        # Expenses Structure Breakdown
+        exp_qs = Expense.objects.all()
+        if start_date:
+            exp_qs = exp_qs.filter(created_at__date__gte=start_date)
+        if end_date:
+            exp_qs = exp_qs.filter(created_at__date__lte=end_date)
+
+        category_labels_dict = dict(Expense.CATEGORY_CHOICES)
+        exp_breakdown = exp_qs.values('category').annotate(cat_sum=Sum('amount'))
+        
+        breakdown_labels = ['تكلفة بضاعة مباعة (COGS)']
+        breakdown_values = [float(pnl['cogs'] or 0)]
+
+        if pnl['parts_cost'] > 0:
+            breakdown_labels.append('تكلفة قطع صيانة')
+            breakdown_values.append(float(pnl['parts_cost']))
+
+        for item in exp_breakdown:
+            c_name = category_labels_dict.get(item['category'], item['category'])
+            c_val = float(item['cat_sum'] or 0)
+            if c_val > 0:
+                breakdown_labels.append(c_name)
+                breakdown_values.append(c_val)
+
+        # Revenue Streams Breakdown
+        rev_labels = ['مبيعات المحل (POS)']
+        rev_values = [float(pnl['gross_sales'] or 0)]
+        if pnl['labor_fees'] > 0:
+            rev_labels.append('مصنعيات الورشة')
+            rev_values.append(float(pnl['labor_fees']))
+        if pnl['parts_sell'] > 0:
+            rev_labels.append('قطع غيار الصيانة')
+            rev_values.append(float(pnl['parts_sell']))
+
+        context['chart_trend_labels_json'] = json.dumps(trend_labels, ensure_ascii=False)
+        context['chart_trend_sales_json'] = json.dumps(trend_sales)
+        context['chart_trend_expenses_json'] = json.dumps(trend_expenses)
+        context['chart_trend_profits_json'] = json.dumps(trend_profits)
+        context['chart_breakdown_labels_json'] = json.dumps(breakdown_labels, ensure_ascii=False)
+        context['chart_breakdown_values_json'] = json.dumps(breakdown_values)
+        context['chart_rev_labels_json'] = json.dumps(rev_labels, ensure_ascii=False)
+        context['chart_rev_values_json'] = json.dumps(rev_values)
+
         return context
 
 
@@ -147,5 +244,5 @@ class SaveAuditView(View):
             notes=notes
         )
 
-        messages.success(request, f"✅ تم اعتماد وحفظ '{audit.title}' بنجاح في أرشيف الجردات السابقة!")
+        messages.success(request, f"تم اعتماد وحفظ '{audit.title}' بنجاح في أرشيف الجردات السابقة.")
         return redirect('reports:reports_view')

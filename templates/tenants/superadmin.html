@@ -100,7 +100,7 @@
                         @click="showCreateModal = true"
                         class="hidden sm:inline-flex px-4 py-2 rounded-2xl text-xs font-black bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-md shadow-blue-500/20 transition-all active:scale-95 items-center gap-1.5 cursor-pointer">
                     <span class="material-symbols-outlined text-base">add_business</span>
-                    <span>➕ إنشاء شركة جديدة</span>
+                    <span>إنشاء شركة جديدة</span>
                 </button>
 
                 <a href="/" class="px-3.5 py-2 rounded-2xl text-xs font-black text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 transition-all flex items-center gap-1">
@@ -331,8 +331,8 @@
                                     {% elif tenant.plan == 'basic' %}bg-sky-50 text-sky-700 border border-sky-200
                                     {% else %}bg-indigo-50 text-indigo-700 border border-indigo-200{% endif %}">
                                     {% if tenant.plan == 'trial' %}⏳ تجربة 14 يوم
-                                    {% elif tenant.plan == 'basic' %}⚡ أساسية
-                                    {% else %}🚀 Pro احترافية{% endif %}
+                                    {% elif tenant.plan == 'basic' %}أساسية
+                                    {% else %}Pro احترافية{% endif %}
                                 </span>
                             </td>
 
@@ -345,11 +345,11 @@
                                     {% if item.days_left is not None %}
                                         {% if item.days_left < 0 %}
                                             <span class="text-[10px] font-black text-rose-600 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">
-                                                منتهي منذ {{ item.days_left|stringformat:"+d"|slice:"1:" }} يوم ⛔
+                                                منتهي منذ {{ item.days_left|stringformat:"+d"|slice:"1:" }} يوم 
                                             </span>
                                         {% elif item.days_left <= 7 %}
                                             <span class="text-[10px] font-black text-amber-600 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 animate-pulse">
-                                                متبقي {{ item.days_left }} يوم فقط ⚠️
+                                                متبقي {{ item.days_left }} يوم فقط 
                                             </span>
                                         {% else %}
                                             <span class="text-[10px] font-bold text-emerald-600">
@@ -456,12 +456,12 @@
                                         <button type="submit" 
                                                 title="{% if tenant.is_active %}إيقاف الشركة عن العمل{% else %}تفعيل الشركة{% endif %}"
                                                 class="px-2.5 py-1.5 rounded-xl text-xs font-black border transition-all cursor-pointer {% if tenant.is_active %}bg-rose-50 text-rose-600 border-rose-200 hover:bg-rose-100{% else %}bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100{% endif %}">
-                                            {% if tenant.is_active %}إيقاف ⛔{% else %}تفعيل ✅{% endif %}
+                                            {% if tenant.is_active %}إيقاف{% else %}تفعيل{% endif %}
                                         </button>
                                     </form>
 
                                     <!-- Delete Tenant -->
-                                    <form method="post" class="inline" onsubmit="return confirm('⚠️ هل أنت متأكد تماماً من حذف شركة ({{ tenant.name|escapejs }}) وكافة بياناتها؟ لا يمكن التراجع!');">
+                                    <form method="post" class="inline" onsubmit="return confirm(' هل أنت متأكد تماماً من حذف شركة ({{ tenant.name|escapejs }}) وكافة بياناتها؟ لا يمكن التراجع!');">
                                         {% csrf_token %}
                                         <input type="hidden" name="tenant_id" value="{{ tenant.id }}">
                                         <input type="hidden" name="action" value="delete_tenant">
@@ -504,7 +504,7 @@
                         <span class="px-2.5 py-1 rounded-full text-xs font-black shrink-0
                             {% if tenant.is_active %}bg-emerald-50 text-emerald-700 border border-emerald-200
                             {% else %}bg-rose-50 text-rose-700 border border-rose-200{% endif %}">
-                            {% if tenant.is_active %}مفعّلة ✅{% else %}موقوفة ⛔{% endif %}
+                            {% if tenant.is_active %}مفعّلة{% else %}موقوفة{% endif %}
                         </span>
                     </div>
 
@@ -688,7 +688,7 @@
                     </button>
                     <button type="submit" 
                             class="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black shadow-md shadow-blue-600/20 transition-all cursor-pointer">
-                        إنشاء وتفعيل الشركة الآن 🚀
+                        إنشاء وتفعيل الشركة الآن
                     </button>
                 </div>
             </form>

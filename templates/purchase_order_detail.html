@@ -224,7 +224,7 @@ function sendWhatsApp(phone, orderId, orderNum, supplierName, items, notes) {
 
     // Direct link to downloadable/printable PDF document
     const pdfUrl = `${window.location.origin}/inventory/orders/${orderId}/public/?print=1`;
-    message += `\n📄 *رابط عرض وتحميل أمر التوريد PDF رسمياً:*\n${pdfUrl}\n`;
+    message += `\n *رابط عرض وتحميل أمر التوريد PDF رسمياً:*\n${pdfUrl}\n`;
     message += `\nشاكرين تعاونكم السريع معنا.`;
 
     const encodedText = encodeURIComponent(message);

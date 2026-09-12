@@ -96,10 +96,10 @@
               let cleanPhone = this.phoneInput.replace(/\D/g, '');
               if (cleanPhone.startsWith('0')) cleanPhone = cleanPhone.substring(1);
               let fullPhone = this.countryCode + cleanPhone;
-              let text = '📋 *مطالبة ورصيد كشف حساب من مؤسسة النماء*\n' +
-                         '👤 العميل: {{ customer.name }}\n' +
-                         '💰 رصيد الدين المستحق حالياً: {{ customer.balance }} ج.م\n\n' +
-                         '🔗 مراجعة كشف الحساب بالتفصيل من الرابط الرسمي:\n' + window.location.href;
+              let text = ' *مطالبة ورصيد كشف حساب من مؤسسة النماء*\n' +
+                         ' العميل: {{ customer.name }}\n' +
+                         ' رصيد الدين المستحق حالياً: {{ customer.balance }} ج.م\n\n' +
+                         ' مراجعة كشف الحساب بالتفصيل من الرابط الرسمي:\n' + window.location.href;
               return 'https://api.whatsapp.com/send?phone=' + fullPhone + '&text=' + encodeURIComponent(text);
           }
       }">
@@ -144,9 +144,9 @@
                 <h1 class="text-2xl sm:text-3xl font-black text-emerald-400 tracking-tight">مؤسسة النماء ERP</h1>
                 <p class="text-xs text-slate-400 font-semibold">قسم إدارة الديون والشكك المالي</p>
                 <div class="text-[11px] text-slate-400 flex items-center gap-2 mt-1">
-                    <span>📱 01012345678</span>
+                    <span> 01012345678</span>
                     <span>•</span>
-                    <span>📍 الطريق الصحراوي الرئيسي</span>
+                    <span> الطريق الصحراوي الرئيسي</span>
                 </div>
             </div>
             
@@ -197,11 +197,11 @@
                                 <td class="p-3.5">
                                     {% if tx.transaction_type == 'pay_received' %}
                                         <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                                            💵 تحصيل دفعة كاش
+                                             تحصيل دفعة كاش
                                         </span>
                                     {% else %}
                                         <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-red-500/20 text-red-400 border border-red-500/30">
-                                            📦 إضافة دين آجل
+                                             إضافة دين آجل
                                         </span>
                                     {% endif %}
                                 </td>
@@ -247,22 +247,22 @@
                 <div>
                     <label class="block font-bold text-slate-300 mb-1.5">اختر الدولة / مفتاح الخط الدولي:</label>
                     <select x-model="countryCode" class="w-full bg-[#1c2b3c] border border-white/10 rounded-xl p-3 text-white font-bold text-xs focus:border-emerald-400 focus:outline-none">
-                        <option value="20">🇪🇬 مصر (+20)</option>
-                        <option value="966">🇸🇦 السعودية (+966)</option>
-                        <option value="971">🇦🇪 الإمارات (+971)</option>
-                        <option value="965">🇰🇼 الكويت (+965)</option>
-                        <option value="974">🇶🇦 قطر (+974)</option>
-                        <option value="968">🇴🇲 عمان (+968)</option>
-                        <option value="973">🇧🇭 البحرين (+973)</option>
-                        <option value="962">🇯🇴 الأردن (+962)</option>
-                        <option value="964">🇮🇶 العراق (+964)</option>
-                        <option value="249">🇸🇩 السودان (+249)</option>
-                        <option value="218">🇱🇾 ليبيا (+218)</option>
-                        <option value="212">🇲🇦 المغرب (+212)</option>
-                        <option value="213">🇩🇿 الجزائر (+213)</option>
-                        <option value="216">🇹🇳 تونس (+216)</option>
-                        <option value="1">🇺🇸 أمريكا / كندا (+1)</option>
-                        <option value="44">🇬🇧 المملكة المتحدة (+44)</option>
+                        <option value="20"> مصر (+20)</option>
+                        <option value="966"> السعودية (+966)</option>
+                        <option value="971"> الإمارات (+971)</option>
+                        <option value="965"> الكويت (+965)</option>
+                        <option value="974"> قطر (+974)</option>
+                        <option value="968"> عمان (+968)</option>
+                        <option value="973"> البحرين (+973)</option>
+                        <option value="962"> الأردن (+962)</option>
+                        <option value="964"> العراق (+964)</option>
+                        <option value="249"> السودان (+249)</option>
+                        <option value="218"> ليبيا (+218)</option>
+                        <option value="212"> المغرب (+212)</option>
+                        <option value="213"> الجزائر (+213)</option>
+                        <option value="216"> تونس (+216)</option>
+                        <option value="1"> أمريكا / كندا (+1)</option>
+                        <option value="44"> المملكة المتحدة (+44)</option>
                     </select>
                 </div>
 

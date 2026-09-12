@@ -15,12 +15,12 @@ from ledger.models import Supplier, Transaction
 
 def get_tenant_categories(tenant):
     """جلب فئات المنتجات للشركة وإعادة إنشاء فئات افتراضية أولية إذا كانت فارغة."""
-    categories = Category.objects.filter(tenant=tenant).order_by('name')
+    categories = Category.all_objects.filter(tenant=tenant).order_by('name')
     if not categories.exists():
         default_names = ['أسمدة ومخصبات زراعية', 'مبيدات حشرية وفطرية', 'قطع غيار مواقير ورش', 'معدات وآلات زراعية', 'زيوت وشحومات', 'عام / متنوع']
         for dname in default_names:
-            Category.objects.create(name=dname, tenant=tenant)
-        categories = Category.objects.filter(tenant=tenant).order_by('name')
+            Category.all_objects.create(name=dname, tenant=tenant)
+        categories = Category.all_objects.filter(tenant=tenant).order_by('name')
     return categories
 
 
@@ -933,25 +933,82 @@ class BarcodeGeneratorView(TemplateView):
 
 
 class CategoryCreateView(View):
-    def post(self, request):
+    def post(self, request, *args, **kwargs):
         name = request.POST.get('name', '').strip()
+        is_ajax = request.headers.get('x-requested-with') == 'XMLHttpRequest' or 'application/json' in request.headers.get('Accept', '')
         if name:
             tenant = getattr(request, 'tenant', None)
             category, created = Category.objects.get_or_create(name=name, tenant=tenant)
             if created:
-                messages.success(request, f'🎉 تم إضافة الفئة "{name}" بنجاح.')
+                msg = f'تم إضافة الفئة "{name}" بنجاح.'
+                messages.success(request, msg)
+                if is_ajax:
+                    return JsonResponse({'success': True, 'id': category.id, 'name': category.name, 'message': msg})
             else:
-                messages.info(request, f'الفئة "{name}" موجودة بالفعل.')
+                msg = f'الفئة "{name}" موجودة بالفعل.'
+                messages.info(request, msg)
+                if is_ajax:
+                    return JsonResponse({'success': False, 'error': msg}, status=400)
         else:
-            messages.error(request, 'الرجاء إدخال اسم الفئة.')
+            msg = 'الرجاء إدخال اسم الفئة.'
+            messages.error(request, msg)
+            if is_ajax:
+                return JsonResponse({'success': False, 'error': msg}, status=400)
+        return redirect(request.META.get('HTTP_REFERER', 'inventory:inventory_list'))
+
+
+class CategoryUpdateView(View):
+    def post(self, request, pk, *args, **kwargs):
+        category = get_object_or_404(Category.all_objects, pk=pk)
+        new_name = request.POST.get('name', '').strip()
+        is_ajax = request.headers.get('x-requested-with') == 'XMLHttpRequest' or 'application/json' in request.headers.get('Accept', '')
+        if new_name:
+            old_name = category.name
+            category.name = new_name
+            category.save()
+
+            # Synchronize all products belonging to this tenant with the updated category
+            tenant = getattr(request, 'tenant', None) or category.tenant
+            updated_count = Product.all_objects.filter(tenant=tenant, category=old_name).update(category=new_name)
+
+            # Also check if any products had legacy choice codes
+            LEGACY_CHOICE_MAP = {
+                'fertilizers': 'أسمدة ومخصبات زراعية',
+                'pesticides': 'مبيدات حشرية وفطرية',
+                'spare_parts': 'قطع غيار مواقير ورش',
+                'equipment': 'معدات وآلات زراعية',
+                'oils': 'زيوت وشحومات',
+                'general': 'عام / متنوع',
+            }
+            for code, lbl in LEGACY_CHOICE_MAP.items():
+                if lbl == old_name or code == old_name:
+                    updated_count += Product.all_objects.filter(tenant=tenant, category=code).update(category=new_name)
+
+            msg = f'تم تحديث اسم الفئة إلى "{new_name}" وتحديث كافة المنتجات المرتبطة بنجاح.'
+            messages.success(request, msg)
+            if is_ajax:
+                return JsonResponse({'success': True, 'id': category.id, 'name': new_name, 'updated_products': updated_count, 'message': msg})
+        else:
+            msg = 'الرجاء إدخال اسم الفئة الجديد.'
+            messages.error(request, msg)
+            if is_ajax:
+                return JsonResponse({'success': False, 'error': msg}, status=400)
         return redirect(request.META.get('HTTP_REFERER', 'inventory:inventory_list'))
 
 
 class CategoryDeleteView(View):
-    def post(self, request, pk):
-        category = get_object_or_404(Category, pk=pk)
+    def post(self, request, pk, *args, **kwargs):
+        category = get_object_or_404(Category.all_objects, pk=pk)
         name = category.name
+        tenant = getattr(request, 'tenant', None) or category.tenant
         category.delete()
-        messages.success(request, f'🗑️ تم حذف الفئة "{name}" بنجاح.')
+        # Set products that had this category to default 'عام / متنوع'
+        Product.all_objects.filter(tenant=tenant, category=name).update(category='عام / متنوع')
+        msg = f'تم حذف الفئة "{name}" بنجاح.'
+        messages.success(request, msg)
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest' or 'application/json' in request.headers.get('Accept', ''):
+            return JsonResponse({'success': True, 'message': msg})
         return redirect(request.META.get('HTTP_REFERER', 'inventory:inventory_list'))
+
+
 
