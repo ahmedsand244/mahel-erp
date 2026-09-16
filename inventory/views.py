@@ -1014,33 +1014,57 @@ class CategoryDeleteView(View):
 class COGSRestockDataView(View):
     """
     إعادة طلب البضاعة المباعة تلقائياً بناءً على تكلفة البضاعة المباعة (COGS).
-    يجلب قائمة المنتجات المباعة خلال الفترة المطلوبة مع إجمالي الكمية المباعة وتكلفتها،
-    ويعيد JSON جاهزاً لعرضه في لوحة COGS Restock.
+    يجلب قائمة المنتجات المباعة خلال الفترة المطلوبة مع خصم الكميات التي تم طلبها أو استلامها بالفعل
+    في طلبات شراء سابقة خلال نفس الفترة، بحيث لا تظهر الأصناف التي تم تغطيتها وإعادة طلبها.
     """
     def get(self, request, *args, **kwargs):
         from pos.models import OrderItem
-        from django.db.models import Sum, Count
+        from inventory.models import PurchaseOrderItem
+        from django.db.models import Sum
+        import datetime
 
         period = request.GET.get('period', 'today')  # today / this_week / this_month / all
-        import datetime
         today = timezone.now().date()
 
-        date_filter = {}
+        date_filter_sales = {}
+        date_filter_po = {
+            'purchase_order__status__in': ['draft', 'sent', 'received'],
+            'product__isnull': False,
+        }
+
+        tenant = getattr(request, 'tenant', None)
+        if tenant:
+            date_filter_sales['order__tenant'] = tenant
+            date_filter_po['purchase_order__tenant'] = tenant
+
         if period == 'today':
-            date_filter = {'order__created_at__date': today}
+            date_filter_sales['order__created_at__date'] = today
+            date_filter_po['purchase_order__created_at__date'] = today
         elif period == 'this_week':
             week_start = today - datetime.timedelta(days=today.weekday())
-            date_filter = {'order__created_at__date__gte': week_start}
+            date_filter_sales['order__created_at__date__gte'] = week_start
+            date_filter_po['purchase_order__created_at__date__gte'] = week_start
         elif period == 'this_month':
-            date_filter = {
-                'order__created_at__date__gte': today.replace(day=1),
-                'order__created_at__date__lte': today,
-            }
-        # 'all' => no filter
+            month_start = today.replace(day=1)
+            date_filter_sales['order__created_at__date__gte'] = month_start
+            date_filter_sales['order__created_at__date__lte'] = today
+            date_filter_po['purchase_order__created_at__date__gte'] = month_start
+            date_filter_po['purchase_order__created_at__date__lte'] = today
+        # 'all' => no date filter
 
+        # 1. Fetch quantities already ordered in purchase orders for this period
+        ordered_qs = (
+            PurchaseOrderItem.objects
+            .filter(**date_filter_po)
+            .values('product__id')
+            .annotate(total_ordered=Sum('quantity_requested'))
+        )
+        ordered_map = {row['product__id']: int(row['total_ordered'] or 0) for row in ordered_qs}
+
+        # 2. Fetch sold items in this period
         qs = (
             OrderItem.objects
-            .filter(**date_filter)
+            .filter(**date_filter_sales)
             .select_related('product', 'product__default_supplier')
             .values(
                 'product__id',
@@ -1061,22 +1085,35 @@ class COGSRestockDataView(View):
         items = []
         grand_cogs = Decimal('0.00')
         for row in qs:
-            if not row['product__id']:
+            prod_id = row['product__id']
+            if not prod_id:
                 continue
-            cogs_val = Decimal(str(row['total_cogs'] or '0.00'))
+
+            total_qty_sold = int(row['total_qty_sold'] or 0)
+            already_ordered = ordered_map.get(prod_id, 0)
+
+            # Calculate remaining quantity that still needs to be re-ordered
+            net_needed = total_qty_sold - already_ordered
+            if net_needed <= 0:
+                # All sold units have already been re-ordered / restocked!
+                continue
+
             purchase_price = Decimal(str(row['product__purchase_price'] or '0.00'))
+            cogs_val = purchase_price * Decimal(str(net_needed))
             grand_cogs += cogs_val
+
             items.append({
-                'product_id': row['product__id'],
+                'product_id': prod_id,
                 'product_name': row['product__name'],
                 'product_sku': row['product__sku'] or '',
-                'qty_sold': int(row['total_qty_sold'] or 0),
+                'qty_sold': total_qty_sold,
+                'already_ordered': already_ordered,
                 'purchase_price': float(purchase_price),
                 'total_cogs': float(cogs_val),
                 'current_stock': row['product__stock_quantity'],
                 'supplier_id': row['product__default_supplier__id'],
                 'supplier_name': row['product__default_supplier__name'] or '',
-                'restock_qty': int(row['total_qty_sold'] or 0),  # Default = same qty sold
+                'restock_qty': net_needed,  # Default to remaining net needed
             })
 
         return JsonResponse({
@@ -1109,11 +1146,13 @@ class COGSRestockCreateOrderView(View):
                 today_str = timezone.now().strftime('%Y%m%d')
                 random_suffix = str(uuid.uuid4().hex[:4]).upper()
                 order_number = f"COGS-{today_str}-{random_suffix}"
+                tenant = getattr(request, 'tenant', None)
 
                 order = PurchaseOrder.objects.create(
                     order_number=order_number,
                     notes=notes,
                     status='draft',
+                    tenant=tenant,
                 )
 
                 item_supplier_ids = set()
@@ -1156,6 +1195,7 @@ class COGSRestockCreateOrderView(View):
             })
         except Exception as e:
             return JsonResponse({'success': False, 'error': f'حدث خطأ: {str(e)}'}, status=400)
+
 
 
 
