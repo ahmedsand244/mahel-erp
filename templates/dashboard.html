@@ -469,10 +469,91 @@
 
         </div>
 
-        <!-- Left Column: Smart Alerts Widget & Debt Balances (Col Span 1) -->
+        <!-- Left Column: System Audit Activity Feed, Smart Alerts Widget & Debt Balances (Col Span 1) -->
         <div class="space-y-8">
             
-            <!-- 1. Stock Alerts Widget -->
+            <!-- 1. Live System Audit & Activity Log Widget (NEW) -->
+            <div class="glass-card rounded-3xl p-5 sm:p-6 border border-purple-500/25 bg-gradient-to-b from-purple-500/5 via-transparent to-transparent space-y-4 shadow-apple-sm">
+                <div class="flex justify-between items-center border-b border-apple-border pb-3.5">
+                    <div class="flex items-center gap-2">
+                        <div class="relative flex items-center justify-center">
+                            <span class="w-2.5 h-2.5 rounded-full bg-purple-500 animate-ping absolute"></span>
+                            <span class="w-2.5 h-2.5 rounded-full bg-purple-500"></span>
+                        </div>
+                        <div>
+                            <h3 class="text-sm sm:text-base font-bold text-apple-text flex items-center gap-1.5">
+                                <span>أحدث حركات النظام والنشاطات</span>
+                            </h3>
+                            <p class="text-[10px] text-apple-secondary">تتبع فوري ومباشر لجميع العمليات</p>
+                        </div>
+                    </div>
+                    <a href="{% url 'dashboard:audit_log' %}" class="px-2.5 py-1 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 text-purple-600 dark:text-purple-400 border border-purple-500/25 text-[11px] font-bold flex items-center gap-1 transition-all active:scale-95 whitespace-nowrap shadow-sm">
+                        <span>عرض الأرشيف الكامل</span>
+                        <span class="material-symbols-outlined text-[13px]">arrow_back</span>
+                    </a>
+                </div>
+
+                <!-- Vertical Scrollable Feed -->
+                <div class="max-h-[420px] overflow-y-auto space-y-2.5 pl-1 custom-scrollbar">
+                    {% for act in recent_audit_logs %}
+                        <div class="p-3 rounded-2xl border transition-all hover:bg-apple-surface-subtle space-y-1.5
+                            {% if act.severity == 'danger' %}bg-red-500/5 border-red-500/25
+                            {% elif act.severity == 'warning' %}bg-amber-500/5 border-amber-500/25
+                            {% else %}bg-apple-surface-subtle/70 border-apple-border{% endif %}">
+                            
+                            <!-- Line 1: User Name & Action Type Badge -->
+                            <div class="flex items-center justify-between gap-2">
+                                <div class="flex items-center gap-1.5 min-w-0">
+                                    <div class="w-5 h-5 rounded-full bg-apple-surface border border-apple-border flex items-center justify-center font-bold text-[9px] text-apple-text shrink-0">
+                                        {{ act.user_display|slice:":2"|upper }}
+                                    </div>
+                                    <span class="font-bold text-xs text-apple-text truncate">{{ act.user_display }}</span>
+                                </div>
+                                <div class="flex items-center gap-1 shrink-0">
+                                    <span class="px-1.5 py-0.5 rounded-md text-[9px] font-bold border
+                                        {% if act.module == 'pos' %}bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20
+                                        {% elif act.module == 'inventory' %}bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20
+                                        {% elif act.module == 'purchase_orders' %}bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/20
+                                        {% elif act.module == 'maintenance' %}bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20
+                                        {% elif act.module == 'cash' %}bg-teal-500/10 text-teal-600 dark:text-teal-400 border-teal-500/20
+                                        {% elif act.module == 'expenses' %}bg-pink-500/10 text-pink-600 dark:text-pink-400 border-pink-500/20
+                                        {% else %}bg-apple-surface text-apple-secondary border-apple-border{% endif %}">
+                                        {{ act.get_module_display }}
+                                    </span>
+                                    <span class="px-1.5 py-0.5 rounded-md text-[9px] font-black border
+                                        {% if act.severity == 'danger' %}bg-red-500/15 text-red-600 dark:text-red-400 border-red-500/25
+                                        {% elif act.severity == 'warning' %}bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/25
+                                        {% else %}bg-apple-surface text-apple-text border-apple-border{% endif %}">
+                                        {{ act.get_action_type_display }}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <!-- Line 2: Event Description -->
+                            <p class="text-[11px] sm:text-xs font-semibold text-apple-text leading-snug">{{ act.description }}</p>
+
+                            <!-- Line 3: Device & Timestamp Footer -->
+                            <div class="flex items-center justify-between text-[10px] text-apple-secondary pt-1 border-t border-apple-border/40">
+                                <span class="flex items-center gap-1 font-medium">
+                                    <span class="material-symbols-outlined text-[12px]">
+                                        {% if 'iPhone' in act.device_info or 'Android Phone' in act.device_info %}smartphone
+                                        {% elif 'iPad' in act.device_info or 'Tablet' in act.device_info %}tablet
+                                        {% else %}computer{% endif %}
+                                    </span>
+                                    <span>{{ act.device_info|default:"سيرفر" }}</span>
+                                </span>
+                                <span class="font-mono font-bold text-apple-secondary">{{ act.created_at|date:"h:i A" }}</span>
+                            </div>
+                        </div>
+                    {% empty %}
+                        <div class="p-6 text-center text-apple-secondary italic text-xs">
+                            لا توجد حركات مسجلة حالياً
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- 2. Stock Alerts Widget -->
             <div class="glass-card rounded-3xl p-6 border border-error/20 bg-error/5 space-y-4">
                 <div class="flex justify-between items-center border-b border-apple-border pb-4">
                     <h3 class="text-base font-bold text-error flex items-center gap-2">

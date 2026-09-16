@@ -59,6 +59,16 @@ class CollectPaymentView(View):
             if notes:
                 tx.notes = notes
                 tx.save(update_fields=['notes'])
+
+            from dashboard.audit import log_activity
+            log_activity(
+                request,
+                module='cash',
+                action_type='cash_operation',
+                description=f"تحصيل دفعة نقدية من العميل '{cust.name}' بقيمة {amt_dec:,.2f} ج.م (الرصيد المتبقي: {cust.balance:,.2f} ج.م)",
+                severity='info'
+            )
+
             messages.success(request, f"✅ تم تحصيل {amt_dec} ج.م من العميل '{cust.name}' — الرصيد المتبقي: {cust.balance} ج.م")
         except Exception as e:
             messages.error(request, f"فشلت عملية التحصيل: {str(e)}")
@@ -82,6 +92,16 @@ class PaySupplierView(View):
             if notes:
                 tx.notes = notes
                 tx.save(update_fields=['notes'])
+
+            from dashboard.audit import log_activity
+            log_activity(
+                request,
+                module='cash',
+                action_type='cash_operation',
+                description=f"سداد دفعة نقدية للمورد '{sup.name}' بقيمة {amt_dec:,.2f} ج.م (المتبقي له: {sup.balance:,.2f} ج.م)",
+                severity='info'
+            )
+
             messages.success(request, f"✅ تم سداد {amt_dec} ج.م للمورد '{sup.name}' — الرصيد المتبقي: {sup.balance} ج.م")
         except Exception as e:
             messages.error(request, f"فشلت عملية السداد: {str(e)}")
@@ -235,6 +255,14 @@ class DepositCashView(View):
         try:
             amt_dec = Decimal(str(amount))
             deposit_cash_to_drawer(amt_dec, notes=notes)
+            from dashboard.audit import log_activity
+            log_activity(
+                request,
+                module='cash',
+                action_type='cash_operation',
+                description=f"إيداع نقدي بالخزينة والدرج بقيمة {amt_dec:,.2f} ج.م - البيان: {notes or 'توريد نقدية وسيولة'}",
+                severity='info'
+            )
             messages.success(request, f"⚡ تم إيداع {amt_dec} ج.م وإنعاش النقدية الفعلية بالدرج والخزينة بنجاح!")
         except Exception as e:
             messages.error(request, f"فشلت عملية الإيداع: {str(e)}")
@@ -254,6 +282,14 @@ class WithdrawCashView(View):
         try:
             amt_dec = Decimal(str(amount))
             withdraw_cash_from_drawer(amt_dec, notes=notes)
+            from dashboard.audit import log_activity
+            log_activity(
+                request,
+                module='cash',
+                action_type='cash_operation',
+                description=f"سحب نقدي ومصروفات نقدية من الخزينة بقيمة {amt_dec:,.2f} ج.م - البيان: {notes or 'مسحوبات نقدية'}",
+                severity='danger'
+            )
             messages.success(request, f"💸 تم تسجيل سحب نقدي {amt_dec} ج.م من الخزينة بنجاح!")
         except Exception as e:
             messages.error(request, f"فشلت عملية السحب: {str(e)}")

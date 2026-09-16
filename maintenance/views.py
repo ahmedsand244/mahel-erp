@@ -61,6 +61,14 @@ class MaintenanceKanbanView(ListView):
                 device_name=device_name,
                 labor_fees=Decimal(str(labor_fees))
             )
+            from dashboard.audit import log_activity
+            log_activity(
+                request,
+                module='maintenance',
+                action_type='create',
+                description=f"فتح تذكرة صيانة جديدة #{t.ticket_number} للمعدة '{device_name}' (العميل: {customer.name} - مصنعية مبدئية: {labor_fees} ج.م)",
+                severity='info'
+            )
             messages.success(request, f"🎉 تم فتح تذكرة الصيانة #{t.ticket_number} للعميل '{customer.name}' للمعدة '{device_name}' بنجاح!")
         except Exception as e:
             messages.error(request, f"خطأ أثناء فتح تذكرة الصيانة: {str(e)}")
@@ -75,6 +83,14 @@ class UpdateTicketStatusView(View):
         if new_status in dict(MaintenanceTicket.STATUS_CHOICES):
             ticket.status = new_status
             ticket.save()
+            from dashboard.audit import log_activity
+            log_activity(
+                request,
+                module='maintenance',
+                action_type='status_change',
+                description=f"تغيير حالة تذكرة الصيانة #{ticket.ticket_number} إلى '{ticket.get_status_display()}' (المعدة: {ticket.device_name})",
+                severity='info'
+            )
             messages.success(request, f"تم تحديث حالة التذكرة #{ticket.ticket_number} إلى '{ticket.get_status_display()}'")
             return JsonResponse({'success': True})
         return JsonResponse({'success': False, 'error': 'حالة غير صحيحة'}, status=400)
@@ -88,6 +104,14 @@ class AddPartsToTicketView(View):
 
         try:
             part = add_maintenance_part(ticket.id, product_id, qty)
+            from dashboard.audit import log_activity
+            log_activity(
+                request,
+                module='maintenance',
+                action_type='update',
+                description=f"استهلاك وتركيب قطعة الغيار '{part.product.name}' (الكمية: {qty}) لتذكرة الصيانة #{ticket.ticket_number}",
+                severity='info'
+            )
             messages.success(request, f"تم تركيب قطعة الغيار '{part.product.name}' (الكمية: {qty}) للتذكرة #{ticket.ticket_number} بنجاح!")
         except ValueError as e:
             messages.error(request, f"فشلت عملية إضافة قطعة الغيار: {str(e)}")
@@ -95,3 +119,4 @@ class AddPartsToTicketView(View):
             messages.error(request, f"حدث خطأ أثناء تركيب القطعة: {str(e)}")
 
         return redirect('maintenance:kanban')
+

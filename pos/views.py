@@ -76,6 +76,17 @@ class POSCheckoutAjaxView(View):
                 customer_id=customer_id
             )
 
+            from dashboard.audit import log_activity
+            pay_display = order.get_payment_method_display()
+            cust_name = order.customer.name if order.customer else "عميل نقدي"
+            log_activity(
+                request,
+                module='pos',
+                action_type='create',
+                description=f"إصدار فاتورة بيع #{order.order_number} بقيمة {order.total_amount:,.2f} ج.م ({pay_display}) - العميل: {cust_name} ({len(cart)} أصناف)",
+                severity='info'
+            )
+
             return JsonResponse({
                 'success': True,
                 'order_id': order.id,
@@ -138,6 +149,15 @@ class AddCustomerAjaxView(View):
                 address=address,
                 notes=notes,
                 balance=initial_balance
+            )
+
+            from dashboard.audit import log_activity
+            log_activity(
+                request,
+                module='ledger',
+                action_type='create',
+                description=f"إضافة عميل جديد: '{customer.name}' من الشاشة السريعة (رصيد مبدئي: {customer.balance:,.2f} ج.م)",
+                severity='info'
             )
 
             return JsonResponse({
@@ -460,6 +480,16 @@ class ExportInvoicesExcelView(View):
             response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
             response['Content-Disposition'] = 'attachment; filename="Elnamaa_Sales_Invoices.xlsx"'
             wb.save(response)
+
+            from dashboard.audit import log_activity
+            log_activity(
+                request,
+                module='reports',
+                action_type='export',
+                description=f"تصدير فواتير المبيعات إلى ملف Excel ({orders.count()} فاتورة)",
+                severity='info'
+            )
+
             return response
 
         except Exception as e:

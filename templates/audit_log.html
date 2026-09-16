@@ -1,0 +1,408 @@
+{% extends 'base.html' %}
+
+{% block title %}سجل نشاطات وحركات النظام - النماء ERP{% endblock %}
+
+{% block content %}
+<div class="space-y-6 sm:space-y-8 w-full max-w-full overflow-hidden" dir="rtl">
+
+    <!-- Header Section -->
+    <header class="glass-card p-5 sm:p-8 rounded-2xl lg:rounded-3xl border border-apple-border relative overflow-hidden">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 sm:gap-6">
+            <div class="space-y-1">
+                <div class="flex items-center gap-3">
+                    <div class="p-3 bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 rounded-2xl shadow-apple-sm">
+                        <span class="material-symbols-outlined text-2xl sm:text-3xl">policy</span>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2.5">
+                            <h1 class="text-xl sm:text-2xl lg:text-3xl font-black text-apple-text tracking-tight">سجل نشاطات وحركات النظام</h1>
+                            <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/25 font-mono">
+                                Audit Log
+                            </span>
+                        </div>
+                        <p class="text-xs sm:text-sm text-apple-secondary mt-0.5">أرشيف رقابي فوري ومفصل يوثق "من قام بماذا، ومتى، ومن أي جهاز وعنوان IP"</p>
+                    </div>
+                </div>
+            </div>
+            <div class="flex items-center gap-2.5 w-full md:w-auto shrink-0 flex-wrap">
+                <a href="{% url 'dashboard:audit_log' %}" class="bg-apple-surface-subtle hover:bg-apple-surface text-apple-text border border-apple-border px-4 py-2.5 rounded-2xl text-xs font-bold flex items-center gap-2 transition-all active:scale-95 shadow-apple-sm">
+                    <span class="material-symbols-outlined text-base">refresh</span>
+                    <span>تحديث السجل</span>
+                </a>
+                <a href="{% url 'dashboard:dashboard_view' %}" class="bg-primary text-white font-bold px-4 py-2.5 rounded-2xl text-xs flex items-center gap-2 transition-all active:scale-95 apple-button shadow-apple-sm">
+                    <span class="material-symbols-outlined text-base">dashboard</span>
+                    <span>لوحة التحكم</span>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Top KPI Stats Grid -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
+        <!-- 1. Total Logs -->
+        <div class="glass-card p-4 sm:p-5 rounded-2xl lg:rounded-3xl border border-apple-border flex flex-col justify-between shadow-apple-sm">
+            <div class="flex justify-between items-start mb-2">
+                <span class="text-xs font-bold text-apple-secondary uppercase tracking-wider">إجمالي الحركات</span>
+                <span class="material-symbols-outlined text-purple-500 text-xl">history</span>
+            </div>
+            <div class="flex items-baseline gap-2">
+                <span class="text-2xl sm:text-3xl font-black font-mono text-apple-text tracking-tight">{{ total_logs_count }}</span>
+                <span class="text-xs text-apple-secondary font-medium">حركة مسجلة</span>
+            </div>
+        </div>
+
+        <!-- 2. Today Logs -->
+        <div class="glass-card p-4 sm:p-5 rounded-2xl lg:rounded-3xl border border-apple-border flex flex-col justify-between shadow-apple-sm">
+            <div class="flex justify-between items-start mb-2">
+                <span class="text-xs font-bold text-emerald-500 uppercase tracking-wider">حركات اليوم</span>
+                <span class="material-symbols-outlined text-emerald-500 text-xl">today</span>
+            </div>
+            <div class="flex items-baseline gap-2">
+                <span class="text-2xl sm:text-3xl font-black font-mono text-apple-text tracking-tight">{{ today_logs_count }}</span>
+                <span class="text-xs text-apple-secondary font-medium">حركة اليوم</span>
+            </div>
+        </div>
+
+        <!-- 3. Sensitive & Dangerous Operations -->
+        <div class="glass-card p-4 sm:p-5 rounded-2xl lg:rounded-3xl border border-apple-border flex flex-col justify-between shadow-apple-sm">
+            <div class="flex justify-between items-start mb-2">
+                <span class="text-xs font-bold text-red-500 uppercase tracking-wider">حركات حساسة ورقابية</span>
+                <span class="material-symbols-outlined text-red-500 text-xl">security</span>
+            </div>
+            <div class="flex items-baseline gap-2">
+                <span class="text-2xl sm:text-3xl font-black font-mono text-red-500 tracking-tight">{{ sensitive_logs_count }}</span>
+                <span class="text-xs text-apple-secondary font-medium">تعديل أسعار / حذف / سحب</span>
+            </div>
+        </div>
+
+        <!-- 4. Active Users -->
+        <div class="glass-card p-4 sm:p-5 rounded-2xl lg:rounded-3xl border border-apple-border flex flex-col justify-between shadow-apple-sm">
+            <div class="flex justify-between items-start mb-2">
+                <span class="text-xs font-bold text-blue-500 uppercase tracking-wider">المستخدمين النشطين</span>
+                <span class="material-symbols-outlined text-blue-500 text-xl">group</span>
+            </div>
+            <div class="flex items-baseline gap-2">
+                <span class="text-2xl sm:text-3xl font-black font-mono text-apple-text tracking-tight">{{ active_users_count }}</span>
+                <span class="text-xs text-apple-secondary font-medium">موظفين ومستخدمين</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters & Search Toolbar -->
+    <div class="glass-card rounded-2xl lg:rounded-3xl p-5 sm:p-6 border border-apple-border space-y-4"
+         x-data="{ showAdvanced: {{ 'true' if current_period or current_start_date or current_user != 'all' or current_action_type != 'all' else 'false' }} }">
+        
+        <form method="get" action="" class="space-y-4">
+            <!-- Row 1: Search, Module, Severity, Submit -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                <!-- Search Input -->
+                <div class="relative lg:col-span-2">
+                    <input type="text" name="q" value="{{ current_q }}"
+                           placeholder="بحث في البيان، الموظف، المتصفح، أو عنوان IP..."
+                           class="w-full bg-apple-surface-subtle border border-apple-border rounded-2xl py-2.5 px-4 pr-10 text-xs sm:text-sm text-apple-text focus:outline-none focus:border-primary transition-all shadow-apple-sm">
+                    <span class="material-symbols-outlined absolute right-3 top-2.5 text-apple-secondary text-lg">search</span>
+                    {% if current_q %}
+                        <a href="{% url 'dashboard:audit_log' %}" class="absolute left-3 top-2.5 text-apple-secondary hover:text-error text-xs" title="مسح البحث">
+                            <span class="material-symbols-outlined text-base">close</span>
+                        </a>
+                    {% endif %}
+                </div>
+
+                <!-- Module / Section Filter -->
+                <div>
+                    <select name="module" class="w-full bg-apple-surface-subtle border border-apple-border rounded-2xl py-2.5 px-3.5 text-xs sm:text-sm text-apple-text font-bold focus:outline-none focus:border-primary transition-all shadow-apple-sm">
+                        <option value="all" {% if current_module == 'all' %}selected{% endif %}>جميع الأقسام</option>
+                        {% for mod_key, mod_label in module_choices %}
+                            <option value="{{ mod_key }}" {% if current_module == mod_key %}selected{% endif %}>{{ mod_label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Severity Filter -->
+                <div>
+                    <select name="severity" class="w-full bg-apple-surface-subtle border border-apple-border rounded-2xl py-2.5 px-3.5 text-xs sm:text-sm text-apple-text font-bold focus:outline-none focus:border-primary transition-all shadow-apple-sm">
+                        <option value="all" {% if current_severity == 'all' %}selected{% endif %}>كافة مستويات الأهمية</option>
+                        <option value="sensitive" {% if current_severity == 'sensitive' %}selected{% endif %}>⚠️ الحركات الحساسة والخطيرة فقط</option>
+                        <option value="danger" {% if current_severity == 'danger' %}selected{% endif %}>🚨 عمليات الحذف والتعديل الجذري (Danger)</option>
+                        <option value="warning" {% if current_severity == 'warning' %}selected{% endif %}>⚡ تنبيهات وتعديلات (Warning)</option>
+                        <option value="info" {% if current_severity == 'info' %}selected{% endif %}>ℹ️ حركات عادية (Info)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Row 2: Advanced filters (User, Action Type, Period) -->
+            <div x-show="showAdvanced" x-collapse class="pt-3 border-t border-apple-border space-y-3">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <!-- User Filter -->
+                    <div>
+                        <label class="block text-xs font-bold text-apple-secondary mb-1">الموظف / المستخدم:</label>
+                        <select name="user" class="w-full bg-apple-surface-subtle border border-apple-border rounded-2xl py-2 px-3 text-xs text-apple-text font-bold focus:outline-none focus:border-primary">
+                            <option value="all">كل المستخدمين</option>
+                            {% for u_name in users_list %}
+                                <option value="{{ u_name }}" {% if current_user == u_name %}selected{% endif %}>{{ u_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Action Type Filter -->
+                    <div>
+                        <label class="block text-xs font-bold text-apple-secondary mb-1">نوع الحركة / الإجراء:</label>
+                        <select name="action_type" class="w-full bg-apple-surface-subtle border border-apple-border rounded-2xl py-2 px-3 text-xs text-apple-text font-bold focus:outline-none focus:border-primary">
+                            <option value="all">كل الإجراءات</option>
+                            {% for act_key, act_label in action_choices %}
+                                <option value="{{ act_key }}" {% if current_action_type == act_key %}selected{% endif %}>{{ act_label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Period Filter -->
+                    <div>
+                        <label class="block text-xs font-bold text-apple-secondary mb-1">الفترة الزمنية السريعة:</label>
+                        <select name="period" class="w-full bg-apple-surface-subtle border border-apple-border rounded-2xl py-2 px-3 text-xs text-apple-text font-bold focus:outline-none focus:border-primary">
+                            <option value="">كل الفترات</option>
+                            <option value="today" {% if current_period == 'today' %}selected{% endif %}>اليوم</option>
+                            <option value="yesterday" {% if current_period == 'yesterday' %}selected{% endif %}>أمس</option>
+                            <option value="this_week" {% if current_period == 'this_week' %}selected{% endif %}>هذا الأسبوع</option>
+                            <option value="this_month" {% if current_period == 'this_month' %}selected{% endif %}>هذا الشهر</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Custom Date Range -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                    <div>
+                        <label class="block text-[11px] font-bold text-apple-secondary mb-1">من تاريخ:</label>
+                        <input type="date" name="start_date" value="{{ current_start_date }}"
+                               class="w-full bg-apple-surface-subtle border border-apple-border rounded-xl py-1.5 px-3 text-xs text-apple-text">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-apple-secondary mb-1">إلى تاريخ:</label>
+                        <input type="date" name="end_date" value="{{ current_end_date }}"
+                               class="w-full bg-apple-surface-subtle border border-apple-border rounded-xl py-1.5 px-3 text-xs text-apple-text">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Submit & Toggle Buttons -->
+            <div class="flex items-center justify-between gap-2 pt-2">
+                <button type="button" @click="showAdvanced = !showAdvanced"
+                        class="text-xs font-bold text-primary hover:underline flex items-center gap-1 cursor-pointer">
+                    <span class="material-symbols-outlined text-base" x-text="showAdvanced ? 'expand_less' : 'tune'"></span>
+                    <span x-text="showAdvanced ? 'إخفاء الفلاتر المتقدمة' : 'فلاتر متقدمة (الموظف، التاريخ، نوع الحركة)'"></span>
+                </button>
+
+                <div class="flex items-center gap-2">
+                    {% if current_q or current_module != 'all' or current_severity != 'all' or current_user != 'all' or current_action_type != 'all' or current_period or current_start_date %}
+                        <a href="{% url 'dashboard:audit_log' %}" class="bg-apple-surface-subtle hover:bg-apple-surface text-apple-secondary px-4 py-2 rounded-xl text-xs font-bold transition-all">
+                            إلغاء الفلاتر
+                        </a>
+                    {% endif %}
+                    <button type="submit" class="bg-primary text-white font-bold px-5 py-2 rounded-xl text-xs shadow-apple-sm hover:shadow-apple-md transition-all active:scale-95 apple-button flex items-center gap-1.5">
+                        <span class="material-symbols-outlined text-base">filter_list</span>
+                        <span>تطبيق الفلترة</span>
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Audit Logs Main Container -->
+    <div class="glass-card rounded-2xl lg:rounded-3xl overflow-hidden border border-apple-border shadow-apple-sm">
+
+        <!-- Desktop Table View (sm and up) -->
+        <div class="hidden sm:block overflow-x-auto">
+            <table class="apple-table min-w-full">
+                <thead>
+                    <tr>
+                        <th class="p-3.5 text-right whitespace-nowrap">المستخدم / الموظف</th>
+                        <th class="p-3.5 text-center whitespace-nowrap">القسم</th>
+                        <th class="p-3.5 text-center whitespace-nowrap">نوع الإجراء</th>
+                        <th class="p-3.5 text-right">تفاصيل وبيان الحركة</th>
+                        <th class="p-3.5 text-center whitespace-nowrap">الجهاز والمتصفح</th>
+                        <th class="p-3.5 text-center whitespace-nowrap">عنوان IP</th>
+                        <th class="p-3.5 text-center whitespace-nowrap">التاريخ والوقت</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-apple-border text-xs sm:text-sm">
+                    {% for log in logs %}
+                        <tr class="hover:bg-apple-surface-subtle transition-colors {% if log.severity == 'danger' %}bg-red-500/5{% elif log.severity == 'warning' %}bg-amber-500/5{% endif %}">
+                            <!-- User -->
+                            <td class="p-3.5">
+                                <div class="flex items-center gap-2.5">
+                                    <div class="w-8 h-8 rounded-full bg-apple-surface-subtle border border-apple-border flex items-center justify-center font-bold text-xs text-apple-text shrink-0">
+                                        {{ log.user_display|slice:":2"|upper }}
+                                    </div>
+                                    <div class="min-w-0">
+                                        <p class="font-bold text-apple-text truncate">{{ log.user_display }}</p>
+                                        {% if log.user_email %}
+                                            <p class="text-[10px] text-apple-secondary truncate font-mono">{{ log.user_email }}</p>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </td>
+
+                            <!-- Module -->
+                            <td class="p-3.5 text-center whitespace-nowrap">
+                                <span class="px-2.5 py-1 rounded-xl text-[11px] font-bold border
+                                    {% if log.module == 'pos' %}bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25
+                                    {% elif log.module == 'inventory' %}bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/25
+                                    {% elif log.module == 'purchase_orders' %}bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/25
+                                    {% elif log.module == 'maintenance' %}bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/25
+                                    {% elif log.module == 'ledger' %}bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/25
+                                    {% elif log.module == 'expenses' %}bg-pink-500/10 text-pink-600 dark:text-pink-400 border-pink-500/25
+                                    {% elif log.module == 'cash' %}bg-teal-500/10 text-teal-600 dark:text-teal-400 border-teal-500/25
+                                    {% elif log.module == 'auth' %}bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/25
+                                    {% elif log.module == 'backup' %}bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/25
+                                    {% else %}bg-apple-surface-subtle text-apple-secondary border-apple-border{% endif %}">
+                                    {{ log.get_module_display }}
+                                </span>
+                            </td>
+
+                            <!-- Action Type / Severity -->
+                            <td class="p-3.5 text-center whitespace-nowrap">
+                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[11px] font-black border
+                                    {% if log.severity == 'danger' %}bg-red-500/15 text-red-600 dark:text-red-400 border-red-500/30
+                                    {% elif log.severity == 'warning' %}bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30
+                                    {% else %}bg-apple-surface-subtle text-apple-text border-apple-border{% endif %}">
+                                    {% if log.severity == 'danger' %}
+                                        <span class="material-symbols-outlined text-xs text-red-500">warning</span>
+                                    {% elif log.severity == 'warning' %}
+                                        <span class="material-symbols-outlined text-xs text-amber-500">info</span>
+                                    {% endif %}
+                                    <span>{{ log.get_action_type_display }}</span>
+                                </span>
+                            </td>
+
+                            <!-- Description -->
+                            <td class="p-3.5">
+                                <p class="text-xs sm:text-sm font-semibold text-apple-text leading-relaxed">{{ log.description }}</p>
+                            </td>
+
+                            <!-- Device & Browser -->
+                            <td class="p-3.5 text-center whitespace-nowrap">
+                                <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-apple-surface-subtle border border-apple-border text-[11px] text-apple-secondary font-medium">
+                                    <span class="material-symbols-outlined text-sm">
+                                        {% if 'iPhone' in log.device_info or 'Android Phone' in log.device_info %}smartphone
+                                        {% elif 'iPad' in log.device_info or 'Tablet' in log.device_info %}tablet
+                                        {% elif 'Windows' in log.device_info or 'PC' in log.device_info or 'Mac' in log.device_info or 'Linux' in log.device_info %}computer
+                                        {% else %}devices{% endif %}
+                                    </span>
+                                    <span>{{ log.device_info|default:"غير محدد" }}</span>
+                                </div>
+                            </td>
+
+                            <!-- IP Address -->
+                            <td class="p-3.5 text-center whitespace-nowrap">
+                                <span class="font-mono text-[11px] text-apple-secondary bg-apple-surface-subtle px-2 py-0.5 rounded-lg border border-apple-border/70">
+                                    {{ log.ip_address|default:"127.0.0.1" }}
+                                </span>
+                            </td>
+
+                            <!-- Date & Time -->
+                            <td class="p-3.5 text-center whitespace-nowrap">
+                                <div class="flex flex-col items-center">
+                                    <span class="font-mono text-xs font-bold text-apple-text">{{ log.created_at|date:"Y/m/d" }}</span>
+                                    <span class="font-mono text-[11px] text-apple-secondary">{{ log.created_at|date:"h:i:s A" }}</span>
+                                </div>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="7" class="p-12 text-center text-apple-secondary">
+                                <div class="flex flex-col items-center justify-center gap-3">
+                                    <span class="material-symbols-outlined text-5xl text-apple-secondary/50">history_toggle_off</span>
+                                    <p class="text-base font-semibold text-apple-text">لا توجد حركات مسجلة مطابقة للبحث</p>
+                                    <p class="text-xs text-apple-secondary">حاول تغيير خيارات الفلترة أو إلغاء كلمة البحث.</p>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Mobile Responsive Card Feed (< sm) -->
+        <div class="sm:hidden divide-y divide-apple-border">
+            {% for log in logs %}
+                <div class="p-4 space-y-2.5 transition-colors {% if log.severity == 'danger' %}bg-red-500/5{% elif log.severity == 'warning' %}bg-amber-500/5{% endif %}">
+                    <!-- Row 1: Employee, Module Badge, and Severity Badge -->
+                    <div class="flex items-center justify-between gap-2 flex-wrap">
+                        <div class="flex items-center gap-2 min-w-0">
+                            <div class="w-6 h-6 rounded-full bg-apple-surface-subtle border border-apple-border flex items-center justify-center font-bold text-[10px] text-apple-text shrink-0">
+                                {{ log.user_display|slice:":2"|upper }}
+                            </div>
+                            <span class="font-bold text-xs text-apple-text truncate">{{ log.user_display }}</span>
+                        </div>
+                        <div class="flex items-center gap-1.5 shrink-0">
+                            <span class="px-2 py-0.5 rounded-lg text-[10px] font-bold border
+                                {% if log.module == 'pos' %}bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25
+                                {% elif log.module == 'inventory' %}bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/25
+                                {% elif log.module == 'purchase_orders' %}bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/25
+                                {% elif log.module == 'maintenance' %}bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/25
+                                {% elif log.module == 'ledger' %}bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/25
+                                {% elif log.module == 'expenses' %}bg-pink-500/10 text-pink-600 dark:text-pink-400 border-pink-500/25
+                                {% elif log.module == 'cash' %}bg-teal-500/10 text-teal-600 dark:text-teal-400 border-teal-500/25
+                                {% elif log.module == 'auth' %}bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/25
+                                {% else %}bg-apple-surface-subtle text-apple-secondary border-apple-border{% endif %}">
+                                {{ log.get_module_display }}
+                            </span>
+                            <span class="px-2 py-0.5 rounded-lg text-[10px] font-black border
+                                {% if log.severity == 'danger' %}bg-red-500/15 text-red-600 dark:text-red-400 border-red-500/30
+                                {% elif log.severity == 'warning' %}bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30
+                                {% else %}bg-apple-surface-subtle text-apple-text border-apple-border{% endif %}">
+                                {{ log.get_action_type_display }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Row 2: Event Description -->
+                    <p class="text-xs font-semibold text-apple-text leading-snug">{{ log.description }}</p>
+
+                    <!-- Row 3: Device & Timestamp Footer -->
+                    <div class="flex items-center justify-between text-[10px] text-apple-secondary pt-1 border-t border-apple-border/50">
+                        <div class="flex items-center gap-1 font-medium">
+                            <span class="material-symbols-outlined text-xs">
+                                {% if 'iPhone' in log.device_info or 'Android Phone' in log.device_info %}smartphone
+                                {% elif 'iPad' in log.device_info or 'Tablet' in log.device_info %}tablet
+                                {% else %}computer{% endif %}
+                            </span>
+                            <span>{{ log.device_info|default:"غير محدد" }}</span>
+                            <span class="text-apple-secondary/50">•</span>
+                            <span class="font-mono">{{ log.ip_address|default:"127.0.0.1" }}</span>
+                        </div>
+                        <span class="font-mono font-bold text-apple-secondary">{{ log.created_at|date:"m/d h:i A" }}</span>
+                    </div>
+                </div>
+            {% empty %}
+                <div class="p-8 text-center text-apple-secondary">
+                    <p class="text-xs font-bold text-apple-text">لا توجد حركات مسجلة</p>
+                </div>
+            {% endfor %}
+        </div>
+
+        <!-- Pagination -->
+        {% if is_paginated %}
+            <div class="p-4 sm:p-5 border-t border-apple-border flex items-center justify-between gap-2 flex-wrap">
+                <div class="text-xs text-apple-secondary font-medium">
+                    عرض الصفحة <span class="font-bold text-apple-text">{{ page_obj.number }}</span> من إجمالي <span class="font-bold text-apple-text">{{ page_obj.paginator.num_pages }}</span>
+                </div>
+                <div class="flex items-center gap-1.5">
+                    {% if page_obj.has_previous %}
+                        <a href="?page={{ page_obj.previous_page_number }}{% if current_q %}&q={{ current_q }}{% endif %}{% if current_module != 'all' %}&module={{ current_module }}{% endif %}{% if current_severity != 'all' %}&severity={{ current_severity }}{% endif %}{% if current_user != 'all' %}&user={{ current_user }}{% endif %}{% if current_period %}&period={{ current_period }}{% endif %}"
+                           class="px-3 py-1.5 rounded-xl bg-apple-surface-subtle hover:bg-apple-surface border border-apple-border text-xs font-bold text-apple-text transition-all active:scale-95">
+                            السابق
+                        </a>
+                    {% endif %}
+                    {% if page_obj.has_next %}
+                        <a href="?page={{ page_obj.next_page_number }}{% if current_q %}&q={{ current_q }}{% endif %}{% if current_module != 'all' %}&module={{ current_module }}{% endif %}{% if current_severity != 'all' %}&severity={{ current_severity }}{% endif %}{% if current_user != 'all' %}&user={{ current_user }}{% endif %}{% if current_period %}&period={{ current_period }}{% endif %}"
+                           class="px-3 py-1.5 rounded-xl bg-primary text-white text-xs font-bold transition-all active:scale-95 apple-button shadow-apple-sm">
+                            التالي
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}

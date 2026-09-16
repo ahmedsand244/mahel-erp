@@ -92,6 +92,8 @@ class RegisterView(View):
         # Auto-login
         login(request, user)
         request.session['tenant_id'] = tenant.id
+        from dashboard.audit import log_activity
+        log_activity(request, module='auth', action_type='create', description=f"إنشاء وتسجيل حساب شركة جديد '{company_name}' باسم المستخدم '{username}'", severity='info', user=user, tenant=tenant)
         messages.success(request, f'🎉 مرحباً! تم إنشاء حساب شركة "{company_name}" بنجاح. فترة التجربة 14 يوم مجاناً.')
         return redirect(f'/t/{slug}/')
 
@@ -113,12 +115,14 @@ class TenantLoginView(View):
         return render(request, self.template_name)
 
     def post(self, request):
+        from dashboard.audit import log_activity
         username = request.POST.get('username', '').strip()
         password = request.POST.get('password', '')
 
         user = authenticate(request, username=username, password=password)
         if user:
             login(request, user)
+            log_activity(request, module='auth', action_type='login', description=f"تسجيل دخول ناجح للمستخدم '{user.username}'", severity='info', user=user)
             next_url = request.GET.get('next')
             if next_url:
                 return redirect(next_url)
@@ -130,6 +134,7 @@ class TenantLoginView(View):
                 return redirect(f'/t/{membership.tenant.slug}/')
             return redirect('/register/')
         else:
+            log_activity(request, module='auth', action_type='login', description=f"محاولة تسجيل دخول فاشلة باسم المستخدم: '{username}'", severity='warning')
             messages.error(request, 'اسم المستخدم أو كلمة المرور غير صحيحة.')
             return render(request, self.template_name, {'username': username})
 
@@ -139,6 +144,9 @@ class TenantLoginView(View):
 # ─────────────────────────────────────────────────
 class TenantLogoutView(View):
     def get(self, request):
+        from dashboard.audit import log_activity
+        if request.user.is_authenticated:
+            log_activity(request, module='auth', action_type='logout', description=f"تسجيل خروج للمستخدم '{request.user.username}'", severity='info')
         logout(request)
         request.session.flush()
         return redirect('/login/')

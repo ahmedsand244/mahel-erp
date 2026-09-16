@@ -354,6 +354,12 @@
                         <span class="text-sm xl:text-base font-semibold">النسخ الاحتياطي والأمان</span>
                     </a>
                 </li>
+                <li class="w-full">
+                    <a class="flex items-center gap-3.5 xl:gap-4 px-4 xl:px-5 py-3 xl:py-3.5 rounded-2xl w-full transition-all app-nav-item {% if '/audit-log/' in request.path %}active{% endif %}" href="{% if request.tenant %}/t/{{ request.tenant.slug }}{% endif %}/dashboard/audit-log/">
+                        <span class="material-symbols-outlined text-xl">policy</span>
+                        <span class="text-sm xl:text-base font-semibold">سجل نشاطات النظام</span>
+                    </a>
+                </li>
             </ul>
         </nav>
 
@@ -561,6 +567,11 @@
                 <a class="flex items-center gap-3.5 px-4 py-3.5 rounded-2xl w-full transition-all app-nav-item {% if '/backup/' in request.path %}active{% endif %}" href="{% if request.tenant %}/t/{{ request.tenant.slug }}{% endif %}/dashboard/backup/">
                     <span class="material-symbols-outlined text-xl">shield</span>
                     <span class="text-sm sm:text-base font-semibold">النسخ الاحتياطي والأمان</span>
+                </a>
+
+                <a class="flex items-center gap-3.5 px-4 py-3.5 rounded-2xl w-full transition-all app-nav-item {% if '/audit-log/' in request.path %}active{% endif %}" href="{% if request.tenant %}/t/{{ request.tenant.slug }}{% endif %}/dashboard/audit-log/">
+                    <span class="material-symbols-outlined text-xl">policy</span>
+                    <span class="text-sm sm:text-base font-semibold">سجل نشاطات النظام</span>
                 </a>
 
 

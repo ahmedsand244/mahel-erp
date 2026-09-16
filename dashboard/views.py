@@ -9,6 +9,7 @@ from maintenance.models import MaintenanceTicket
 from inventory.models import Product, StockAlert
 from expenses.models import Expense
 from ledger.models import Customer, Supplier, Transaction
+from dashboard.models import AuditLog
 from core_project.services import get_profit_and_loss
 
 class DashboardView(TemplateView):
@@ -144,6 +145,10 @@ class DashboardView(TemplateView):
         context['top_names_json'] = json.dumps(top_names)
         context['top_quantities_json'] = json.dumps(top_quantities)
         context['payment_dist_json'] = json.dumps([cash_val, visa_val, deferred_val])
+
+        # 7. Recent System Audit & Activity Logs
+        from dashboard.models import AuditLog
+        context['recent_audit_logs'] = AuditLog.objects.select_related('user').order_by('-created_at')[:8]
 
         return context
 
@@ -379,12 +384,137 @@ from core_project.gdrive_service import perform_gdrive_upload
 class UploadToGoogleDriveBackupView(View):
     """رفع نسخة احتياطية من قاعدة البيانات مباشرة إلى Google Drive"""
     def post(self, request, *args, **kwargs):
+        from dashboard.audit import log_activity
         success, message = perform_gdrive_upload()
         if success:
             messages.success(request, message)
+            log_activity(request, module='backup', action_type='export', description="رفع نسخة احتياطية بنجاح إلى Google Drive", severity='info')
         else:
             messages.error(request, message)
+            log_activity(request, module='backup', action_type='export', description=f"فشل رفع النسخة الاحتياطية إلى Google Drive: {message}", severity='warning')
         return redirect('dashboard:backup_manage')
+
+
+from django.views.generic import ListView
+
+class AuditLogListView(ListView):
+    """
+    صفحة الأرشيف الكامل لسجل النشاطات والحركات الرقابي (System Audit Log & Activity Tracker).
+    تتيح استعراض وبحث وفلترة كافة الإجراءات مع تفاصيل دقيقة عن الجهاز، المتصفح، الـ IP، ونوع الحركة.
+    """
+    model = AuditLog
+    template_name = "audit_log.html"
+    context_object_name = "logs"
+    paginate_by = 35
+
+    def get_queryset(self):
+        from dashboard.models import AuditLog
+        qs = AuditLog.objects.select_related('user').all()
+
+        # 1. Text Search (بحث في تفاصيل الحدث، اسم المستخدم، البريد، أو الـ IP أو الجهاز)
+        q = self.request.GET.get('q', '').strip()
+        if q:
+            qs = qs.filter(
+                Q(description__icontains=q) |
+                Q(user_display__icontains=q) |
+                Q(user_email__icontains=q) |
+                Q(ip_address__icontains=q) |
+                Q(device_info__icontains=q)
+            )
+
+        # 2. Module Filter (القسم)
+        module = self.request.GET.get('module', '').strip()
+        if module and module != 'all':
+            qs = qs.filter(module=module)
+
+        # 3. Action Type Filter (نوع الإجراء)
+        action_type = self.request.GET.get('action_type', '').strip()
+        if action_type and action_type != 'all':
+            qs = qs.filter(action_type=action_type)
+
+        # 4. Severity Filter (مستوى الأهمية / الحركات الحساسة)
+        severity = self.request.GET.get('severity', '').strip()
+        if severity == 'danger':
+            qs = qs.filter(severity='danger')
+        elif severity == 'warning':
+            qs = qs.filter(severity='warning')
+        elif severity == 'sensitive':
+            qs = qs.filter(severity__in=['warning', 'danger'])
+        elif severity == 'info':
+            qs = qs.filter(severity='info')
+
+        # 5. User Filter (المستخدم)
+        user_val = self.request.GET.get('user', '').strip()
+        if user_val and user_val != 'all':
+            if user_val.isdigit():
+                qs = qs.filter(user_id=int(user_val))
+            else:
+                qs = qs.filter(user_display=user_val)
+
+        # 6. Date Filter (الفترة الزمنية)
+        period = self.request.GET.get('period', '').strip()
+        start_date = self.request.GET.get('start_date', '').strip()
+        end_date = self.request.GET.get('end_date', '').strip()
+
+        from django.utils import timezone
+        import datetime
+        today = timezone.now().date()
+
+        if period == 'today':
+            qs = qs.filter(created_at__date=today)
+        elif period == 'yesterday':
+            yesterday = today - datetime.timedelta(days=1)
+            qs = qs.filter(created_at__date=yesterday)
+        elif period == 'this_week':
+            week_start = today - datetime.timedelta(days=today.weekday())
+            qs = qs.filter(created_at__date__gte=week_start)
+        elif period == 'this_month':
+            month_start = today.replace(day=1)
+            qs = qs.filter(created_at__date__gte=month_start)
+        else:
+            if start_date:
+                qs = qs.filter(created_at__date__gte=start_date)
+            if end_date:
+                qs = qs.filter(created_at__date__lte=end_date)
+
+        return qs.order_by('-created_at')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        from dashboard.models import AuditLog
+        all_logs = AuditLog.objects.all()
+
+        from django.utils import timezone
+        today = timezone.now().date()
+
+        # Summary KPIs
+        context['total_logs_count'] = all_logs.count()
+        context['today_logs_count'] = all_logs.filter(created_at__date=today).count()
+        context['danger_logs_count'] = all_logs.filter(severity='danger').count()
+        context['sensitive_logs_count'] = all_logs.filter(severity__in=['warning', 'danger']).count()
+        context['active_users_count'] = all_logs.values('user_display').distinct().count()
+
+        # Filter choices
+        context['module_choices'] = AuditLog.MODULE_CHOICES
+        context['action_choices'] = AuditLog.ACTION_CHOICES
+        context['severity_choices'] = AuditLog.SEVERITY_CHOICES
+        
+        # Unique list of user names for filter
+        user_names = all_logs.exclude(user_display='').values_list('user_display', flat=True).distinct()
+        context['users_list'] = sorted(list(set(user_names)))
+
+        # Preserved query parameters
+        context['current_q'] = self.request.GET.get('q', '')
+        context['current_module'] = self.request.GET.get('module', 'all')
+        context['current_action_type'] = self.request.GET.get('action_type', 'all')
+        context['current_severity'] = self.request.GET.get('severity', 'all')
+        context['current_user'] = self.request.GET.get('user', 'all')
+        context['current_period'] = self.request.GET.get('period', '')
+        context['current_start_date'] = self.request.GET.get('start_date', '')
+        context['current_end_date'] = self.request.GET.get('end_date', '')
+
+        return context
+
 
 
 

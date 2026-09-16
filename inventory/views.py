@@ -55,8 +55,17 @@ class ProductCreateView(CreateView):
     def form_valid(self, form):
         if form.cleaned_data.get('barcode') == '':
             form.instance.barcode = None
+        response = super().form_valid(form)
+        from dashboard.audit import log_activity
+        log_activity(
+            self.request,
+            module='inventory',
+            action_type='create',
+            description=f"إضافة منتج جديد: '{form.instance.name}' (SKU: {form.instance.sku}) بسعر بيع {form.instance.selling_price} ج.م ومخزون {form.instance.stock_quantity} قطعة",
+            severity='info'
+        )
         messages.success(self.request, f"تمت إضافة المنتج '{form.instance.name}' بنجاح إلى المخزن!")
-        return super().form_valid(form)
+        return response
 
     def form_invalid(self, form):
         error_msg = "; ".join([f"{', '.join(errs)}" for field, errs in form.errors.items()])
@@ -73,8 +82,17 @@ class ProductUpdateView(UpdateView):
     def form_valid(self, form):
         if form.cleaned_data.get('barcode') == '':
             form.instance.barcode = None
+        response = super().form_valid(form)
+        from dashboard.audit import log_activity
+        log_activity(
+            self.request,
+            module='inventory',
+            action_type='update',
+            description=f"تعديل بيانات المنتج: '{form.instance.name}' (سعر الشراء: {form.instance.purchase_price} | سعر البيع: {form.instance.selling_price} | المخزون: {form.instance.stock_quantity})",
+            severity='warning'
+        )
         messages.success(self.request, f"تم تحديث بيانات المنتج '{form.instance.name}' بنجاح!")
-        return super().form_valid(form)
+        return response
 
     def form_invalid(self, form):
         error_msg = "; ".join([f"{', '.join(errs)}" for field, errs in form.errors.items()])
@@ -88,6 +106,14 @@ class ProductDeleteView(View):
         name = product.name
         try:
             product.delete()
+            from dashboard.audit import log_activity
+            log_activity(
+                request,
+                module='inventory',
+                action_type='delete',
+                description=f"حذف المنتج: '{name}' من المخزن بالكامل",
+                severity='danger'
+            )
             messages.success(request, f"تم حذف المنتج '{name}' من المخزن بنجاح.")
         except Exception:
             messages.error(request, f"لا يمكن حذف المنتج '{name}' لأنه مرتبط بفواتير أو عمليات صيانة مسجلة.")
@@ -116,6 +142,15 @@ class QuickRestockView(View):
 
         # Mark alerts resolved for this product if any
         StockAlert.objects.filter(product=product, is_resolved=False).update(is_resolved=True)
+
+        from dashboard.audit import log_activity
+        log_activity(
+            request,
+            module='inventory',
+            action_type='stock_change',
+            description=f"تزويد رصيد سريع للمنتج: '{product.name}' بمقدار (+{added_qty} قطع) - الرصيد الحالي: {product.stock_quantity}",
+            severity='info'
+        )
 
         messages.success(
             request, 
@@ -169,6 +204,14 @@ class BulkPriceAdjustmentView(View):
 
         sign = "+" if pct > 0 else ""
         target_desc = "سعر البيع" if price_target == 'selling' else ("سعر الشراء" if price_target == 'purchase' else "سعر البيع والشراء")
+        from dashboard.audit import log_activity
+        log_activity(
+            request,
+            module='inventory',
+            action_type='price_change',
+            description=f"تعديل أسعار جماعي ({target_desc}) بنسبة ({sign}{pct}%) على {updated_count} منتج في المخزن",
+            severity='danger'
+        )
         messages.success(
             request,
             f"🚀 تم تحديث {target_desc} لـ {updated_count} منتج بنسبة ({sign}{pct}%) بنجاح!"
@@ -200,6 +243,14 @@ class SingleProductPriceAdjustmentView(View):
         
         product.save()
         sign = "+" if pct > 0 else ""
+        from dashboard.audit import log_activity
+        log_activity(
+            request,
+            module='inventory',
+            action_type='price_change',
+            description=f"تعديل سعر المنتج: '{product.name}' بنسبة ({sign}{pct}%) — سعر البيع الجديد: {product.selling_price} ج.م",
+            severity='warning'
+        )
         messages.success(request, f"تم تعديل سعر المنتج '{product.name}' بنسبة ({sign}{pct}%) — سعر البيع الجديد: {product.selling_price} ج.م")
         return redirect('inventory:inventory_list')
 
@@ -388,6 +439,16 @@ class PurchaseOrderBuilderView(View):
                                     notes=f'بضاعة مستلمة آجل — طلبية {order.order_number}'
                                 )
 
+            from dashboard.audit import log_activity
+            supp_name = order.supplier.name if order.supplier else f"{len(item_supplier_ids)} شركات"
+            log_activity(
+                request,
+                module='purchase_orders',
+                action_type='create',
+                description=f"إنشاء / حفظ طلب بضاعة للموردين #{order.order_number} ({supp_name}) - إجمالي التكلفة التقديرية: {order.total_estimated_cost:,.2f} ج.م",
+                severity='info'
+            )
+
             return JsonResponse({
                 'success': True,
                 'order_id': order.id,
@@ -518,6 +579,15 @@ class PurchaseOrderReceiveView(View):
                     f"تم استلام شحنة الطلبية ({order.order_number}) بنجاح! تم تزويد رصيد المخزون لـ ({updated_count}) صنف."
                 )
 
+            from dashboard.audit import log_activity
+            log_activity(
+                request,
+                module='purchase_orders',
+                action_type='receive_order',
+                description=f"استلام شحنة طلب البضاعة #{order.order_number} بالمخزن وتزويد رصيد ({updated_count}) صنف (القيمة: {actual_amount:,.2f} ج.م - {payment_method})",
+                severity='info'
+            )
+
         return redirect('inventory:purchase_order_detail', pk=order.id)
 
 
@@ -526,6 +596,14 @@ class PurchaseOrderDeleteView(View):
         order = get_object_or_404(PurchaseOrder, pk=pk)
         num = order.order_number
         order.delete()
+        from dashboard.audit import log_activity
+        log_activity(
+            request,
+            module='purchase_orders',
+            action_type='delete',
+            description=f"حذف طلب البضاعة #{num} من قائمة الطلبات",
+            severity='danger'
+        )
         messages.success(request, f"تم حذف طلب البضاعة '{num}' بنجاح.")
         return redirect('inventory:purchase_order_list')
 
@@ -1186,6 +1264,15 @@ class COGSRestockCreateOrderView(View):
                 if not order.supplier_id and len(item_supplier_ids) == 1:
                     order.supplier_id = list(item_supplier_ids)[0]
                     order.save(update_fields=['supplier_id'])
+
+            from dashboard.audit import log_activity
+            log_activity(
+                request,
+                module='purchase_orders',
+                action_type='create',
+                description=f"توليد أمر شراء تلقائي من تكلفة البضاعة المباعة (COGS Restock) #{order.order_number} ({len(items_data)} أصناف)",
+                severity='info'
+            )
 
             return JsonResponse({
                 'success': True,
