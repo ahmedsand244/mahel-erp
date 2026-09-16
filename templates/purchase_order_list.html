@@ -218,6 +218,257 @@
         </div>
     </div>
 
+    <!-- ─────────────────────────────────────────────────────────────
+         COGS-Based Auto Restock Panel
+         ───────────────────────────────────────────────────────────── -->
+    <div id="cogs-restock"
+         class="glass-card rounded-2xl lg:rounded-3xl overflow-hidden border border-emerald-500/25 bg-gradient-to-b from-emerald-500/5 to-transparent"
+         x-data="cogsRestockPanel()"
+         x-init="init()">
+
+        <!-- Panel Header -->
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 p-5 sm:p-7 border-b border-apple-border">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-500 shrink-0">
+                    <span class="material-symbols-outlined text-2xl">autorenew</span>
+                </div>
+                <div>
+                    <h2 class="text-base sm:text-lg font-black text-apple-text flex items-center gap-2 flex-wrap">
+                        <span>إعادة طلب البضاعة المباعة تلقائياً</span>
+                        <span class="px-2.5 py-0.5 rounded-full text-xs bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25 font-mono font-bold" x-text="itemsCount + ' صنف'"></span>
+                    </h2>
+                    <p class="text-xs text-apple-secondary mt-0.5">يربط مبالغ تكلفة البضاعة المباعة (COGS) مباشرةً بقائمة إعادة الطلب لضمان استمرارية رأس المال التجاري</p>
+                </div>
+            </div>
+            <!-- Toggle collapse -->
+            <button @click="panelOpen = !panelOpen"
+                    class="shrink-0 p-2 bg-apple-surface-subtle hover:bg-apple-surface border border-apple-border rounded-xl transition-all active:scale-95">
+                <span class="material-symbols-outlined text-apple-secondary text-lg transition-transform duration-200"
+                      :class="panelOpen ? 'rotate-180' : ''"
+                      >expand_more</span>
+            </button>
+        </div>
+
+        <!-- Collapsible Body -->
+        <div x-show="panelOpen" x-collapse>
+            <div class="p-5 sm:p-7 space-y-5">
+
+                <!-- Period Filter Pills -->
+                <div class="flex items-center gap-2 flex-wrap">
+                    <span class="text-xs font-bold text-apple-secondary">الفترة الزمنية:</span>
+                    <template x-for="p in periods" :key="p.value">
+                        <button @click="setPeriod(p.value)"
+                                :class="period === p.value
+                                    ? 'bg-emerald-500 text-white shadow-apple-sm'
+                                    : 'bg-apple-surface-subtle text-apple-secondary hover:text-apple-text border border-apple-border'"
+                                class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap active:scale-95"
+                                x-text="p.label">
+                        </button>
+                    </template>
+                </div>
+
+                <!-- Loading State -->
+                <div x-show="loading" class="flex items-center justify-center py-10 gap-3 text-apple-secondary">
+                    <div class="w-5 h-5 border-2 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin"></div>
+                    <span class="text-sm font-medium">جاري تحليل بيانات المبيعات وحساب تكلفة البضاعة المباعة...</span>
+                </div>
+
+                <!-- Empty State -->
+                <div x-show="!loading && items.length === 0" class="py-10 text-center space-y-2">
+                    <span class="material-symbols-outlined text-4xl text-apple-secondary/50 block">inventory_2</span>
+                    <p class="text-sm font-semibold text-apple-text">لا توجد مبيعات مسجلة في هذه الفترة</p>
+                    <p class="text-xs text-apple-secondary">حاول تغيير الفترة الزمنية أو التأكد من تسجيل فواتير المبيعات.</p>
+                </div>
+
+                <!-- Items Table -->
+                <div x-show="!loading && items.length > 0" class="space-y-4">
+
+                    <!-- Select All & Summary bar -->
+                    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3.5 bg-apple-surface-subtle rounded-2xl border border-apple-border">
+                        <label class="flex items-center gap-2.5 cursor-pointer select-none">
+                            <input type="checkbox" @change="toggleSelectAll($event.target.checked)"
+                                   :checked="selectedAll"
+                                   class="w-4 h-4 accent-emerald-500 rounded cursor-pointer">
+                            <span class="text-xs font-bold text-apple-text">تحديد الكل / إلغاء الكل</span>
+                            <span class="text-xs text-apple-secondary font-mono" x-text="'(' + selectedCount + ' محدد)'"></span>
+                        </label>
+                        <div class="flex items-center gap-3 flex-wrap">
+                            <div class="text-xs text-apple-secondary">
+                                إجمالي COGS المحدد:
+                                <span class="font-mono font-black text-emerald-500 text-sm" x-text="selectedCOGS.toLocaleString('ar-EG', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' ج.م'"></span>
+                            </div>
+                            <div class="text-xs text-apple-secondary">
+                                إجمالي تكلفة إعادة الطلب:
+                                <span class="font-mono font-black text-primary text-sm" x-text="selectedRestockCost.toLocaleString('ar-EG', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' ج.م'"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Desktop Table -->
+                    <div class="hidden sm:block apple-table-container shadow-apple-sm border border-apple-border">
+                        <table class="apple-table min-w-[700px]">
+                            <thead>
+                                <tr>
+                                    <th class="p-3 w-10"></th>
+                                    <th class="p-3 text-right">المنتج</th>
+                                    <th class="p-3 text-center whitespace-nowrap">كمية مُباعة</th>
+                                    <th class="p-3 text-center whitespace-nowrap">إجمالي COGS</th>
+                                    <th class="p-3 text-center whitespace-nowrap">سعر الشراء</th>
+                                    <th class="p-3 text-center whitespace-nowrap">الرصيد الحالي</th>
+                                    <th class="p-3 text-center whitespace-nowrap">كمية إعادة الطلب</th>
+                                    <th class="p-3 text-center whitespace-nowrap">تكلفة إعادة الطلب</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-apple-border text-sm">
+                                <template x-for="(item, idx) in items" :key="item.product_id">
+                                    <tr class="hover:bg-apple-surface-subtle transition-all"
+                                        :class="item.selected ? 'bg-emerald-500/5' : ''">
+                                        <td class="p-3 text-center">
+                                            <input type="checkbox" x-model="item.selected"
+                                                   @change="onItemSelect()"
+                                                   class="w-4 h-4 accent-emerald-500 rounded cursor-pointer">
+                                        </td>
+                                        <td class="p-3">
+                                            <div class="flex flex-col">
+                                                <span class="font-bold text-apple-text text-xs" x-text="item.product_name"></span>
+                                                <span class="font-mono text-[11px] text-apple-secondary" x-text="item.product_sku"></span>
+                                                <span class="text-[11px] text-apple-secondary/70" x-show="item.supplier_name" x-text="'المورد: ' + item.supplier_name"></span>
+                                            </div>
+                                        </td>
+                                        <td class="p-3 text-center">
+                                            <span class="font-mono font-black text-apple-text" x-text="item.qty_sold + ' قطعة'"></span>
+                                        </td>
+                                        <td class="p-3 text-center">
+                                            <span class="font-mono font-bold text-emerald-600 dark:text-emerald-400" x-text="item.total_cogs.toLocaleString('ar-EG', {minimumFractionDigits:2}) + ' ج.م'"></span>
+                                        </td>
+                                        <td class="p-3 text-center">
+                                            <span class="font-mono text-xs text-apple-secondary" x-text="item.purchase_price.toLocaleString('ar-EG', {minimumFractionDigits:2}) + ' ج.م'"></span>
+                                        </td>
+                                        <td class="p-3 text-center">
+                                            <span class="font-mono text-xs"
+                                                  :class="item.current_stock <= 0 ? 'text-error font-black' : item.current_stock < item.qty_sold ? 'text-amber-500 font-bold' : 'text-apple-text'"
+                                                  x-text="item.current_stock + ' قطعة'"></span>
+                                        </td>
+                                        <td class="p-3 text-center">
+                                            <input type="number"
+                                                   x-model.number="item.restock_qty"
+                                                   @input="onItemSelect()"
+                                                   min="1"
+                                                   :disabled="!item.selected"
+                                                   class="w-20 text-center font-mono font-black text-xs py-1.5 px-2 rounded-xl border border-apple-border bg-apple-surface focus:outline-none focus:border-emerald-500 disabled:opacity-40 transition-all">
+                                        </td>
+                                        <td class="p-3 text-center">
+                                            <span class="font-mono font-bold text-primary text-xs"
+                                                  x-text="(item.restock_qty * item.purchase_price).toLocaleString('ar-EG', {minimumFractionDigits:2}) + ' ج.م'"></span>
+                                        </td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Mobile Card Layout -->
+                    <div class="sm:hidden space-y-3">
+                        <template x-for="(item, idx) in items" :key="item.product_id">
+                            <div class="p-4 rounded-2xl border transition-all"
+                                 :class="item.selected ? 'bg-emerald-500/8 border-emerald-500/30' : 'bg-apple-surface border-apple-border'">
+                                <!-- Header -->
+                                <div class="flex items-start justify-between gap-2 mb-3">
+                                    <label class="flex items-start gap-2.5 cursor-pointer flex-1 min-w-0">
+                                        <input type="checkbox" x-model="item.selected" @change="onItemSelect()"
+                                               class="w-4 h-4 mt-0.5 accent-emerald-500 rounded cursor-pointer shrink-0">
+                                        <div class="min-w-0">
+                                            <p class="font-black text-xs text-apple-text truncate" x-text="item.product_name"></p>
+                                            <p class="font-mono text-[11px] text-apple-secondary" x-text="item.product_sku"></p>
+                                            <p class="text-[11px] text-apple-secondary/70" x-show="item.supplier_name" x-text="'المورد: ' + item.supplier_name"></p>
+                                        </div>
+                                    </label>
+                                    <span class="px-2 py-0.5 rounded-lg text-[10px] font-black bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25 whitespace-nowrap shrink-0"
+                                          x-text="item.total_cogs.toLocaleString('ar-EG', {minimumFractionDigits:2}) + ' ج.م'"></span>
+                                </div>
+                                <!-- Stats Grid -->
+                                <div class="grid grid-cols-2 gap-2 text-[11px] mb-3">
+                                    <div class="bg-apple-surface-subtle rounded-xl p-2.5 text-center">
+                                        <p class="text-apple-secondary mb-0.5">كمية مُباعة</p>
+                                        <p class="font-mono font-black text-apple-text" x-text="item.qty_sold + ' قطعة'"></p>
+                                    </div>
+                                    <div class="bg-apple-surface-subtle rounded-xl p-2.5 text-center">
+                                        <p class="text-apple-secondary mb-0.5">الرصيد الحالي</p>
+                                        <p class="font-mono font-black"
+                                           :class="item.current_stock <= 0 ? 'text-error' : 'text-apple-text'"
+                                           x-text="item.current_stock + ' قطعة'"></p>
+                                    </div>
+                                    <div class="bg-apple-surface-subtle rounded-xl p-2.5 text-center">
+                                        <p class="text-apple-secondary mb-0.5">سعر الشراء</p>
+                                        <p class="font-mono font-bold text-apple-text" x-text="item.purchase_price.toLocaleString('ar-EG', {minimumFractionDigits:2}) + ' ج.م'"></p>
+                                    </div>
+                                    <div class="bg-apple-surface-subtle rounded-xl p-2.5 text-center">
+                                        <p class="text-apple-secondary mb-0.5">تكلفة إعادة الطلب</p>
+                                        <p class="font-mono font-bold text-primary" x-text="(item.restock_qty * item.purchase_price).toLocaleString('ar-EG', {minimumFractionDigits:2}) + ' ج.م'"></p>
+                                    </div>
+                                </div>
+                                <!-- Quantity Input -->
+                                <div class="flex items-center gap-2">
+                                    <span class="text-[11px] font-bold text-apple-secondary shrink-0">كمية إعادة الطلب:</span>
+                                    <input type="number"
+                                           x-model.number="item.restock_qty"
+                                           @input="onItemSelect()"
+                                           min="1"
+                                           :disabled="!item.selected"
+                                           class="flex-1 text-center font-mono font-black text-xs py-1.5 px-2 rounded-xl border border-apple-border bg-apple-surface focus:outline-none focus:border-emerald-500 disabled:opacity-40 transition-all">
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+
+                    <!-- Financial Summary Banner -->
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 bg-gradient-to-l from-emerald-500/10 to-primary/5 rounded-2xl border border-emerald-500/20">
+                        <div class="text-center">
+                            <p class="text-[11px] text-apple-secondary font-medium mb-1">إجمالي COGS للمحدد</p>
+                            <p class="text-lg font-extrabold font-mono text-emerald-500" x-text="selectedCOGS.toLocaleString('ar-EG', {minimumFractionDigits:2}) + ' ج.م'"></p>
+                            <p class="text-[10px] text-apple-secondary mt-0.5">المبلغ المستحق إعادة ضخه في المخزون</p>
+                        </div>
+                        <div class="text-center border-t sm:border-t-0 sm:border-r sm:border-l border-emerald-500/20 pt-3 sm:pt-0 sm:px-4">
+                            <p class="text-[11px] text-apple-secondary font-medium mb-1">تكلفة إعادة الطلب التقديرية</p>
+                            <p class="text-lg font-extrabold font-mono text-primary" x-text="selectedRestockCost.toLocaleString('ar-EG', {minimumFractionDigits:2}) + ' ج.م'"></p>
+                            <p class="text-[10px] text-apple-secondary mt-0.5">بناءً على أسعار الشراء المسجلة</p>
+                        </div>
+                        <div class="text-center border-t sm:border-t-0 pt-3 sm:pt-0">
+                            <p class="text-[11px] text-apple-secondary font-medium mb-1">عدد الأصناف المحددة</p>
+                            <p class="text-lg font-extrabold font-mono text-apple-text" x-text="selectedCount + ' صنف'"></p>
+                            <p class="text-[10px] text-apple-secondary mt-0.5">ستُضاف لأمر الشراء الجديد</p>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                        <p class="text-xs text-apple-secondary" x-show="selectedCount === 0">
+                            <span class="material-symbols-outlined text-sm align-middle">info</span>
+                            حدد الأصناف التي تريد إعادة طلبها ثم اضغط على زر توليد أمر الشراء.
+                        </p>
+                        <div class="flex items-center gap-2.5 flex-wrap" x-show="selectedCount > 0">
+                            <span class="text-xs text-emerald-600 dark:text-emerald-400 font-bold">
+                                <span class="material-symbols-outlined text-sm align-middle">check_circle</span>
+                                <span x-text="selectedCount + ' صنف محدد جاهز للطلب'"></span>
+                            </span>
+                        </div>
+                        <button @click="generateOrder()"
+                                :disabled="selectedCount === 0 || generating"
+                                class="w-full sm:w-auto bg-emerald-500 hover:bg-emerald-600 disabled:opacity-40 disabled:cursor-not-allowed text-white font-black px-6 py-3 rounded-2xl flex items-center justify-center gap-2 transition-all shadow-apple-sm active:scale-95 text-sm">
+                            <template x-if="!generating">
+                                <span class="material-symbols-outlined text-lg">shopping_cart</span>
+                            </template>
+                            <template x-if="generating">
+                                <div class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                            </template>
+                            <span x-text="generating ? 'جاري إنشاء أمر الشراء...' : 'توليد أمر شراء فوري'"></span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Filters Toolbar & Container -->
     <div class="glass-card rounded-2xl lg:rounded-3xl overflow-hidden border border-apple-border space-y-4 p-4 sm:p-6">
         <!-- Filter Tabs & Supplier Selector -->
@@ -375,4 +626,128 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function cogsRestockPanel() {
+    return {
+        panelOpen: true,
+        loading: false,
+        generating: false,
+        period: 'today',
+        items: [],
+        itemsCount: 0,
+        selectedAll: false,
+        selectedCount: 0,
+        selectedCOGS: 0,
+        selectedRestockCost: 0,
+        periods: [
+            { value: 'today',      label: 'اليوم' },
+            { value: 'this_week',  label: 'هذا الأسبوع' },
+            { value: 'this_month', label: 'هذا الشهر' },
+            { value: 'all',        label: 'الكل' },
+        ],
+
+        init() {
+            this.fetchData();
+        },
+
+        fetchData() {
+            this.loading = true;
+            this.items = [];
+            this.itemsCount = 0;
+            this.recalcTotals();
+
+            const url = `{% url 'inventory:cogs_restock_data' %}?period=${this.period}`;
+            fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        // Mark all selected by default
+                        this.items = data.items.map(item => ({ ...item, selected: true }));
+                        this.itemsCount = data.items_count;
+                        this.recalcTotals();
+                    }
+                    this.loading = false;
+                })
+                .catch(() => { this.loading = false; });
+        },
+
+        setPeriod(val) {
+            this.period = val;
+            this.fetchData();
+        },
+
+        toggleSelectAll(checked) {
+            this.items.forEach(item => item.selected = checked);
+            this.selectedAll = checked;
+            this.recalcTotals();
+        },
+
+        onItemSelect() {
+            this.recalcTotals();
+            this.selectedAll = this.items.every(i => i.selected);
+        },
+
+        recalcTotals() {
+            let count = 0, cogs = 0, restockCost = 0;
+            this.items.forEach(item => {
+                if (item.selected) {
+                    count++;
+                    cogs += parseFloat(item.total_cogs) || 0;
+                    restockCost += (parseFloat(item.restock_qty) || 1) * (parseFloat(item.purchase_price) || 0);
+                }
+            });
+            this.selectedCount = count;
+            this.selectedCOGS = cogs;
+            this.selectedRestockCost = restockCost;
+        },
+
+        generateOrder() {
+            if (this.selectedCount === 0 || this.generating) return;
+
+            const selectedItems = this.items
+                .filter(i => i.selected)
+                .map(i => ({
+                    product_id: i.product_id,
+                    product_name: i.product_name,
+                    restock_qty: Math.max(1, parseInt(i.restock_qty) || 1),
+                    purchase_price: parseFloat(i.purchase_price) || 0,
+                    supplier_id: i.supplier_id || null,
+                }));
+
+            this.generating = true;
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value
+                || document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '';
+
+            fetch('{% url "inventory:cogs_restock_create" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                body: JSON.stringify({
+                    items: selectedItems,
+                    notes: `أمر شراء تلقائي (COGS Restock) — فترة: ${this.periods.find(p=>p.value===this.period)?.label || this.period}`,
+                }),
+            })
+            .then(r => r.json())
+            .then(data => {
+                this.generating = false;
+                if (data.success) {
+                    window.location.href = data.redirect_url;
+                } else {
+                    alert('خطأ أثناء إنشاء أمر الشراء: ' + (data.error || 'خطأ غير معروف'));
+                }
+            })
+            .catch(err => {
+                this.generating = false;
+                alert('حدث خطأ في الاتصال بالخادم. يرجى المحاولة مرة أخرى.');
+            });
+        },
+    };
+}
+</script>
 {% endblock %}

@@ -1011,4 +1011,151 @@ class CategoryDeleteView(View):
         return redirect(request.META.get('HTTP_REFERER', 'inventory:inventory_list'))
 
 
+class COGSRestockDataView(View):
+    """
+    إعادة طلب البضاعة المباعة تلقائياً بناءً على تكلفة البضاعة المباعة (COGS).
+    يجلب قائمة المنتجات المباعة خلال الفترة المطلوبة مع إجمالي الكمية المباعة وتكلفتها،
+    ويعيد JSON جاهزاً لعرضه في لوحة COGS Restock.
+    """
+    def get(self, request, *args, **kwargs):
+        from pos.models import OrderItem
+        from django.db.models import Sum, Count
+
+        period = request.GET.get('period', 'today')  # today / this_week / this_month / all
+        import datetime
+        today = timezone.now().date()
+
+        date_filter = {}
+        if period == 'today':
+            date_filter = {'order__created_at__date': today}
+        elif period == 'this_week':
+            week_start = today - datetime.timedelta(days=today.weekday())
+            date_filter = {'order__created_at__date__gte': week_start}
+        elif period == 'this_month':
+            date_filter = {
+                'order__created_at__date__gte': today.replace(day=1),
+                'order__created_at__date__lte': today,
+            }
+        # 'all' => no filter
+
+        qs = (
+            OrderItem.objects
+            .filter(**date_filter)
+            .select_related('product', 'product__default_supplier')
+            .values(
+                'product__id',
+                'product__name',
+                'product__sku',
+                'product__purchase_price',
+                'product__stock_quantity',
+                'product__default_supplier__id',
+                'product__default_supplier__name',
+            )
+            .annotate(
+                total_qty_sold=Sum('quantity'),
+                total_cogs=Sum('cost'),
+            )
+            .order_by('-total_cogs')
+        )
+
+        items = []
+        grand_cogs = Decimal('0.00')
+        for row in qs:
+            if not row['product__id']:
+                continue
+            cogs_val = Decimal(str(row['total_cogs'] or '0.00'))
+            purchase_price = Decimal(str(row['product__purchase_price'] or '0.00'))
+            grand_cogs += cogs_val
+            items.append({
+                'product_id': row['product__id'],
+                'product_name': row['product__name'],
+                'product_sku': row['product__sku'] or '',
+                'qty_sold': int(row['total_qty_sold'] or 0),
+                'purchase_price': float(purchase_price),
+                'total_cogs': float(cogs_val),
+                'current_stock': row['product__stock_quantity'],
+                'supplier_id': row['product__default_supplier__id'],
+                'supplier_name': row['product__default_supplier__name'] or '',
+                'restock_qty': int(row['total_qty_sold'] or 0),  # Default = same qty sold
+            })
+
+        return JsonResponse({
+            'success': True,
+            'period': period,
+            'items': items,
+            'grand_cogs': float(grand_cogs),
+            'items_count': len(items),
+        })
+
+
+class COGSRestockCreateOrderView(View):
+    """
+    إنشاء أمر شراء تلقائي من قائمة COGS Restock المختارة.
+    """
+    def post(self, request, *args, **kwargs):
+        try:
+            data = json.loads(request.body)
+        except json.JSONDecodeError:
+            return JsonResponse({'success': False, 'error': 'بيانات غير صحيحة'}, status=400)
+
+        items_data = data.get('items', [])
+        notes = data.get('notes', 'أمر شراء تلقائي بناءً على تكلفة البضاعة المباعة (COGS)')
+
+        if not items_data:
+            return JsonResponse({'success': False, 'error': 'يرجى تحديد صنف واحد على الأقل'}, status=400)
+
+        try:
+            with transaction.atomic():
+                today_str = timezone.now().strftime('%Y%m%d')
+                random_suffix = str(uuid.uuid4().hex[:4]).upper()
+                order_number = f"COGS-{today_str}-{random_suffix}"
+
+                order = PurchaseOrder.objects.create(
+                    order_number=order_number,
+                    notes=notes,
+                    status='draft',
+                )
+
+                item_supplier_ids = set()
+                for item in items_data:
+                    product_id = item.get('product_id')
+                    restock_qty = max(1, int(item.get('restock_qty', 1)))
+                    unit_cost = Decimal(str(item.get('purchase_price', 0)))
+                    supplier_id = item.get('supplier_id') or None
+
+                    prod_obj = Product.objects.filter(id=product_id).first() if product_id else None
+
+                    if supplier_id:
+                        try:
+                            item_supplier_ids.add(int(supplier_id))
+                        except (ValueError, TypeError):
+                            pass
+                    elif prod_obj and prod_obj.default_supplier_id:
+                        supplier_id = prod_obj.default_supplier_id
+                        item_supplier_ids.add(prod_obj.default_supplier_id)
+
+                    PurchaseOrderItem.objects.create(
+                        purchase_order=order,
+                        product=prod_obj,
+                        custom_item_name=prod_obj.name if prod_obj else item.get('product_name', 'صنف COGS'),
+                        supplier_id=supplier_id,
+                        quantity_requested=restock_qty,
+                        unit_cost=max(Decimal('0.00'), unit_cost),
+                    )
+
+                # Auto-assign supplier if single supplier
+                if not order.supplier_id and len(item_supplier_ids) == 1:
+                    order.supplier_id = list(item_supplier_ids)[0]
+                    order.save(update_fields=['supplier_id'])
+
+            return JsonResponse({
+                'success': True,
+                'order_id': order.id,
+                'order_number': order.order_number,
+                'redirect_url': str(reverse_lazy('inventory:purchase_order_detail', kwargs={'pk': order.id}))
+            })
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': f'حدث خطأ: {str(e)}'}, status=400)
+
+
 

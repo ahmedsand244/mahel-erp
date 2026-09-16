@@ -5,7 +5,8 @@ from .views import (
     PurchaseOrderListView, PurchaseOrderBuilderView, PurchaseOrderDetailView, PurchaseOrderReceiveView, PurchaseOrderDeleteView,
     ExportProductsExcelView, DownloadSampleProductsExcelView, ImportProductsExcelView, BarcodeGeneratorView,
     CategoryCreateView, CategoryUpdateView, CategoryDeleteView, QuickUpdateMinStockView,
-    AddSupplierAjaxView, PublicPurchaseOrderDetailView
+    AddSupplierAjaxView, PublicPurchaseOrderDetailView,
+    COGSRestockDataView, COGSRestockCreateOrderView,
 )
 
 app_name = 'inventory'
@@ -39,5 +40,7 @@ urlpatterns = [
     path('categories/add/', CategoryCreateView.as_view(), name='category_add'),
     path('categories/edit/<int:pk>/', CategoryUpdateView.as_view(), name='category_edit'),
     path('categories/delete/<int:pk>/', CategoryDeleteView.as_view(), name='category_delete'),
+    # COGS-Based Automatic Restock
+    path('orders/cogs-restock/data/', COGSRestockDataView.as_view(), name='cogs_restock_data'),
+    path('orders/cogs-restock/create/', COGSRestockCreateOrderView.as_view(), name='cogs_restock_create'),
 ]
-
