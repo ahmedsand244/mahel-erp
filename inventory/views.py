@@ -1091,17 +1091,26 @@ class CategoryDeleteView(View):
 
 class COGSRestockDataView(View):
     """
-    إعادة طلب البضاعة المباعة تلقائياً بناءً على تكلفة البضاعة المباعة (COGS).
-    يجلب قائمة المنتجات المباعة خلال الفترة المطلوبة مع خصم الكميات التي تم طلبها أو استلامها بالفعل
-    في طلبات شراء سابقة خلال نفس الفترة، بحيث لا تظهر الأصناف التي تم تغطيتها وإعادة طلبها.
+    ميزان تعويض المخزون وحماية رأس المال (Restock Balance & Capital Safety)
+    وإعادة طلب البضاعة المباعة تلقائياً بناءً على تكلفة البضاعة المباعة (COGS).
+    
+    يحسب:
+    1. المبلغ المطلوب تعويضه (Target Capital): إجمالي COGS للمبيعات خلال الفترة.
+    2. المبلغ المعوض فعلياً (Covered Capital): إجمالي ما تم إدراجه في أوامر شراء لتلك المبيعات.
+    3. عجز التعويض المتبقي (Remaining Deficit): Target - Covered (يصل إلى 0.00 عند اكتمال الطلب).
+    4. نسبة التغطية (Coverage Percentage).
+    5. السيولة النقدية المتاحة بالدرج (Drawer Available Cash) لتحديد كفاية الكاش للشراء الفوري.
     """
     def get(self, request, *args, **kwargs):
-        from pos.models import OrderItem
+        from pos.models import OrderItem, Order
         from inventory.models import PurchaseOrderItem
-        from django.db.models import Sum
+        from core_project.services import get_profit_and_loss
+        from django.db.models import Sum, Q
         import datetime
 
-        period = request.GET.get('period', 'today')  # today / this_week / this_month / all
+        period = request.GET.get('period', 'today')  # today / this_week / this_month / all / custom
+        start_date_str = request.GET.get('start_date', '').strip()
+        end_date_str = request.GET.get('end_date', '').strip()
         today = timezone.now().date()
 
         date_filter_sales = {}
@@ -1128,6 +1137,21 @@ class COGSRestockDataView(View):
             date_filter_sales['order__created_at__date__lte'] = today
             date_filter_po['purchase_order__created_at__date__gte'] = month_start
             date_filter_po['purchase_order__created_at__date__lte'] = today
+        elif period == 'custom':
+            if start_date_str:
+                try:
+                    s_date = datetime.datetime.strptime(start_date_str, '%Y-%m-%d').date()
+                    date_filter_sales['order__created_at__date__gte'] = s_date
+                    date_filter_po['purchase_order__created_at__date__gte'] = s_date
+                except (ValueError, TypeError):
+                    pass
+            if end_date_str:
+                try:
+                    e_date = datetime.datetime.strptime(end_date_str, '%Y-%m-%d').date()
+                    date_filter_sales['order__created_at__date__lte'] = e_date
+                    date_filter_po['purchase_order__created_at__date__lte'] = e_date
+                except (ValueError, TypeError):
+                    pass
         # 'all' => no date filter
 
         # 1. Fetch quantities already ordered in purchase orders for this period
@@ -1161,45 +1185,86 @@ class COGSRestockDataView(View):
         )
 
         items = []
-        grand_cogs = Decimal('0.00')
+        target_capital = Decimal('0.00')
+        covered_capital = Decimal('0.00')
+        remaining_deficit = Decimal('0.00')
+        all_sold_products_count = 0
+
         for row in qs:
             prod_id = row['product__id']
             if not prod_id:
                 continue
 
+            all_sold_products_count += 1
             total_qty_sold = int(row['total_qty_sold'] or 0)
             already_ordered = ordered_map.get(prod_id, 0)
+            purchase_price = Decimal(str(row['product__purchase_price'] or '0.00'))
+
+            item_target_cogs = purchase_price * Decimal(str(total_qty_sold))
+            covered_qty = min(already_ordered, total_qty_sold)
+            item_covered_cogs = purchase_price * Decimal(str(covered_qty))
+            
+            target_capital += item_target_cogs
+            covered_capital += item_covered_cogs
 
             # Calculate remaining quantity that still needs to be re-ordered
             net_needed = total_qty_sold - already_ordered
-            if net_needed <= 0:
-                # All sold units have already been re-ordered / restocked!
-                continue
+            if net_needed > 0:
+                item_deficit_cogs = purchase_price * Decimal(str(net_needed))
+                remaining_deficit += item_deficit_cogs
 
-            purchase_price = Decimal(str(row['product__purchase_price'] or '0.00'))
-            cogs_val = purchase_price * Decimal(str(net_needed))
-            grand_cogs += cogs_val
+                items.append({
+                    'product_id': prod_id,
+                    'product_name': row['product__name'],
+                    'product_sku': row['product__sku'] or '',
+                    'qty_sold': total_qty_sold,
+                    'already_ordered': already_ordered,
+                    'purchase_price': float(purchase_price),
+                    'total_cogs': float(item_target_cogs),
+                    'covered_cogs': float(item_covered_cogs),
+                    'deficit_cogs': float(item_deficit_cogs),
+                    'current_stock': row['product__stock_quantity'],
+                    'supplier_id': row['product__default_supplier__id'],
+                    'supplier_name': row['product__default_supplier__name'] or '',
+                    'restock_qty': net_needed,  # Default to remaining net needed
+                    'is_fully_covered': False,
+                })
 
-            items.append({
-                'product_id': prod_id,
-                'product_name': row['product__name'],
-                'product_sku': row['product__sku'] or '',
-                'qty_sold': total_qty_sold,
-                'already_ordered': already_ordered,
-                'purchase_price': float(purchase_price),
-                'total_cogs': float(cogs_val),
-                'current_stock': row['product__stock_quantity'],
-                'supplier_id': row['product__default_supplier__id'],
-                'supplier_name': row['product__default_supplier__name'] or '',
-                'restock_qty': net_needed,  # Default to remaining net needed
-            })
+        # Calculate coverage percent
+        if target_capital > Decimal('0.00'):
+            coverage_percent = round(float((covered_capital / target_capital) * Decimal('100.00')), 1)
+            coverage_percent = min(100.0, max(0.0, coverage_percent))
+        else:
+            coverage_percent = 100.0
+
+        # Calculate real-time available drawer cash for capital safety comparison
+        try:
+            order_methods = Order.objects.filter(**({'tenant': tenant} if tenant else {})).aggregate(
+                cash_visa=Sum('total_amount', filter=Q(payment_method__in=['cash', 'visa']))
+            )
+            cash_sales = order_methods['cash_visa'] or Decimal('0.00')
+            pnl = get_profit_and_loss()
+            total_cash_in = cash_sales + pnl.get('labor_fees', Decimal('0.00')) + pnl.get('collected_from_customers', Decimal('0.00')) + pnl.get('cash_deposits', Decimal('0.00'))
+            total_cash_out = pnl.get('total_expenses', Decimal('0.00')) + pnl.get('paid_to_suppliers', Decimal('0.00')) + pnl.get('cash_withdrawals', Decimal('0.00'))
+            drawer_cash = max(Decimal('0.00'), total_cash_in - total_cash_out)
+        except Exception:
+            drawer_cash = Decimal('0.00')
 
         return JsonResponse({
             'success': True,
             'period': period,
+            'start_date': start_date_str,
+            'end_date': end_date_str,
+            'target_capital': float(target_capital),
+            'covered_capital': float(covered_capital),
+            'remaining_deficit': float(remaining_deficit),
+            'coverage_percent': coverage_percent,
+            'drawer_cash': float(drawer_cash),
+            'is_fully_covered': (remaining_deficit <= Decimal('0.00') and target_capital > Decimal('0.00')),
+            'is_empty_sales': (target_capital <= Decimal('0.00')),
             'items': items,
-            'grand_cogs': float(grand_cogs),
             'items_count': len(items),
+            'all_sold_products_count': all_sold_products_count,
         })
 
 

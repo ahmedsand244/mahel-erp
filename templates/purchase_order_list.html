@@ -219,254 +219,453 @@
     </div>
 
     <!-- ─────────────────────────────────────────────────────────────
-         COGS-Based Auto Restock Panel
+         ميزان تعويض المخزون وحماية رأس المال (Restock Balance & Capital Safety)
          ───────────────────────────────────────────────────────────── -->
     <div id="cogs-restock"
-         class="glass-card rounded-2xl lg:rounded-3xl overflow-hidden border border-emerald-500/25 bg-gradient-to-b from-emerald-500/5 to-transparent"
+         class="glass-card rounded-2xl lg:rounded-3xl overflow-hidden border transition-all duration-300"
+         :class="isFullyCovered 
+            ? 'border-emerald-500/40 bg-gradient-to-b from-emerald-500/10 via-emerald-500/5 to-transparent shadow-emerald-500/10' 
+            : (remainingDeficit > 0 ? 'border-amber-500/30 bg-gradient-to-b from-amber-500/10 via-apple-surface to-transparent' : 'border-apple-border bg-apple-surface/60')"
          x-data="cogsRestockPanel()"
          x-init="init()">
 
         <!-- Panel Header -->
-        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 p-5 sm:p-7 border-b border-apple-border">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-500 shrink-0">
-                    <span class="material-symbols-outlined text-2xl">autorenew</span>
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 p-5 sm:p-7 border-b border-apple-border/60">
+            <div class="flex items-center gap-3.5">
+                <div class="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 border shadow-apple-sm transition-all"
+                     :class="isFullyCovered 
+                        ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-500' 
+                        : (remainingDeficit > 0 ? 'bg-amber-500/20 border-amber-500/40 text-amber-500' : 'bg-primary/15 border-primary/30 text-primary')">
+                    <span class="material-symbols-outlined text-2xl" x-text="isFullyCovered ? 'verified' : (remainingDeficit > 0 ? 'balance' : 'account_balance_wallet')"></span>
                 </div>
                 <div>
-                    <h2 class="text-base sm:text-lg font-black text-apple-text flex items-center gap-2 flex-wrap">
-                        <span>إعادة طلب البضاعة المباعة تلقائياً</span>
-                        <span class="px-2.5 py-0.5 rounded-full text-xs bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25 font-mono font-bold" x-text="itemsCount + ' صنف'"></span>
-                    </h2>
-                    <p class="text-xs text-apple-secondary mt-0.5">يربط مبالغ تكلفة البضاعة المباعة (COGS) مباشرةً بقائمة إعادة الطلب لضمان استمرارية رأس المال التجاري</p>
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <h2 class="text-base sm:text-lg lg:text-xl font-black text-apple-text tracking-tight">
+                            ميزان تعويض المخزون وحماية رأس المال
+                        </h2>
+                        <template x-if="isFullyCovered">
+                            <span class="px-3 py-0.5 rounded-full text-xs font-black bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/40 flex items-center gap-1 shadow-sm">
+                                <span class="material-symbols-outlined text-sm">check_circle</span>
+                                <span>100% رأس المال محمي بالكامل</span>
+                            </span>
+                        </template>
+                        <template x-if="!isFullyCovered && remainingDeficit > 0">
+                            <span class="px-3 py-0.5 rounded-full text-xs font-black bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/40 flex items-center gap-1 shadow-sm">
+                                <span class="material-symbols-outlined text-sm">warning</span>
+                                <span>عجز متبقي: <span x-text="formatMoney(remainingDeficit)"></span></span>
+                            </span>
+                        </template>
+                        <template x-if="isEmptySales">
+                            <span class="px-3 py-0.5 rounded-full text-xs font-bold bg-slate-500/15 text-slate-500 border border-slate-500/25">
+                                لا توجد مبيعات في الفترة
+                            </span>
+                        </template>
+                    </div>
+                    <p class="text-xs text-apple-secondary mt-1">
+                        مؤشر تنفيذي مستقل يربط تكلفة البضاعة المباعة (COGS) بتعويض النواقص لحماية رأس المال ومنع تآكل السيولة والمخزون
+                    </p>
                 </div>
             </div>
-            <!-- Toggle collapse -->
-            <button @click="panelOpen = !panelOpen"
-                    class="shrink-0 p-2 bg-apple-surface-subtle hover:bg-apple-surface border border-apple-border rounded-xl transition-all active:scale-95">
-                <span class="material-symbols-outlined text-apple-secondary text-lg transition-transform duration-200"
-                      :class="panelOpen ? 'rotate-180' : ''"
-                      >expand_more</span>
-            </button>
+
+            <!-- Header Actions / Time Filter / Collapse Toggle -->
+            <div class="flex items-center gap-2 w-full md:w-auto justify-between md:justify-end shrink-0">
+                <button @click="fetchData()" 
+                        :disabled="loading"
+                        class="p-2 rounded-xl bg-apple-surface-subtle hover:bg-apple-surface border border-apple-border text-apple-secondary hover:text-apple-text transition-all active:scale-95 text-xs font-bold flex items-center gap-1 cursor-pointer"
+                        title="تحديث الأرقام">
+                    <span class="material-symbols-outlined text-base" :class="loading ? 'animate-spin' : ''">sync</span>
+                    <span class="hidden sm:inline">تحديث</span>
+                </button>
+                <button @click="panelOpen = !panelOpen"
+                        class="p-2 rounded-xl bg-apple-surface-subtle hover:bg-apple-surface border border-apple-border text-apple-secondary hover:text-apple-text transition-all active:scale-95 cursor-pointer">
+                    <span class="material-symbols-outlined text-lg transition-transform duration-300"
+                          :class="panelOpen ? 'rotate-180' : ''">expand_more</span>
+                </button>
+            </div>
         </div>
 
         <!-- Collapsible Body -->
         <div x-show="panelOpen" x-collapse>
-            <div class="p-5 sm:p-7 space-y-5">
+            <div class="p-5 sm:p-7 space-y-6">
 
-                <!-- Period Filter Pills -->
-                <div class="flex items-center gap-2 flex-wrap">
-                    <span class="text-xs font-bold text-apple-secondary">الفترة الزمنية:</span>
-                    <template x-for="p in periods" :key="p.value">
-                        <button @click="setPeriod(p.value)"
-                                :class="period === p.value
-                                    ? 'bg-emerald-500 text-white shadow-apple-sm'
-                                    : 'bg-apple-surface-subtle text-apple-secondary hover:text-apple-text border border-apple-border'"
-                                class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap active:scale-95"
-                                x-text="p.label">
-                        </button>
-                    </template>
-                </div>
-
-                <!-- Loading State -->
-                <div x-show="loading" class="flex items-center justify-center py-10 gap-3 text-apple-secondary">
-                    <div class="w-5 h-5 border-2 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin"></div>
-                    <span class="text-sm font-medium">جاري تحليل بيانات المبيعات وحساب تكلفة البضاعة المباعة...</span>
-                </div>
-
-                <!-- Empty State -->
-                <div x-show="!loading && items.length === 0" class="py-10 text-center space-y-2">
-                    <span class="material-symbols-outlined text-4xl text-apple-secondary/50 block">inventory_2</span>
-                    <p class="text-sm font-semibold text-apple-text">لا توجد مبيعات مسجلة في هذه الفترة</p>
-                    <p class="text-xs text-apple-secondary">حاول تغيير الفترة الزمنية أو التأكد من تسجيل فواتير المبيعات.</p>
-                </div>
-
-                <!-- Items Table -->
-                <div x-show="!loading && items.length > 0" class="space-y-4">
-
-                    <!-- Select All & Summary bar -->
-                    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3.5 bg-apple-surface-subtle rounded-2xl border border-apple-border">
-                        <label class="flex items-center gap-2.5 cursor-pointer select-none">
-                            <input type="checkbox" @change="toggleSelectAll($event.target.checked)"
-                                   :checked="selectedAll"
-                                   class="w-4 h-4 accent-emerald-500 rounded cursor-pointer">
-                            <span class="text-xs font-bold text-apple-text">تحديد الكل / إلغاء الكل</span>
-                            <span class="text-xs text-apple-secondary font-mono" x-text="'(' + selectedCount + ' محدد)'"></span>
-                        </label>
-                        <div class="flex items-center gap-3 flex-wrap">
-                            <div class="text-xs text-apple-secondary">
-                                إجمالي COGS المحدد:
-                                <span class="font-mono font-black text-emerald-500 text-sm" x-text="selectedCOGS.toLocaleString('ar-EG', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' ج.م'"></span>
-                            </div>
-                            <div class="text-xs text-apple-secondary">
-                                إجمالي تكلفة إعادة الطلب:
-                                <span class="font-mono font-black text-primary text-sm" x-text="selectedRestockCost.toLocaleString('ar-EG', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' ج.م'"></span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Desktop Table -->
-                    <div class="hidden sm:block apple-table-container shadow-apple-sm border border-apple-border">
-                        <table class="apple-table min-w-[700px]">
-                            <thead>
-                                <tr>
-                                    <th class="p-3 w-10"></th>
-                                    <th class="p-3 text-right">المنتج</th>
-                                    <th class="p-3 text-center whitespace-nowrap">كمية مُباعة</th>
-                                    <th class="p-3 text-center whitespace-nowrap">إجمالي COGS</th>
-                                    <th class="p-3 text-center whitespace-nowrap">سعر الشراء</th>
-                                    <th class="p-3 text-center whitespace-nowrap">الرصيد الحالي</th>
-                                    <th class="p-3 text-center whitespace-nowrap">كمية إعادة الطلب</th>
-                                    <th class="p-3 text-center whitespace-nowrap">تكلفة إعادة الطلب</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-apple-border text-sm">
-                                <template x-for="(item, idx) in items" :key="item.product_id">
-                                    <tr class="hover:bg-apple-surface-subtle transition-all"
-                                        :class="item.selected ? 'bg-emerald-500/5' : ''">
-                                        <td class="p-3 text-center">
-                                            <input type="checkbox" x-model="item.selected"
-                                                   @change="onItemSelect()"
-                                                   class="w-4 h-4 accent-emerald-500 rounded cursor-pointer">
-                                        </td>
-                                        <td class="p-3">
-                                            <div class="flex flex-col">
-                                                <span class="font-bold text-apple-text text-xs" x-text="item.product_name"></span>
-                                                <span class="font-mono text-[11px] text-apple-secondary" x-text="item.product_sku"></span>
-                                                <span class="text-[11px] text-apple-secondary/70" x-show="item.supplier_name" x-text="'المورد: ' + item.supplier_name"></span>
-                                            </div>
-                                        </td>
-                                        <td class="p-3 text-center">
-                                            <span class="font-mono font-black text-apple-text" x-text="item.qty_sold + ' قطعة'"></span>
-                                            <span class="text-[10px] text-amber-500 font-bold block" x-show="item.already_ordered > 0" x-text="'(طُلب منها ' + item.already_ordered + ')'"></span>
-                                        </td>
-                                        <td class="p-3 text-center">
-                                            <span class="font-mono font-bold text-emerald-600 dark:text-emerald-400" x-text="item.total_cogs.toLocaleString('ar-EG', {minimumFractionDigits:2}) + ' ج.م'"></span>
-                                        </td>
-                                        <td class="p-3 text-center">
-                                            <span class="font-mono text-xs text-apple-secondary" x-text="item.purchase_price.toLocaleString('ar-EG', {minimumFractionDigits:2}) + ' ج.م'"></span>
-                                        </td>
-                                        <td class="p-3 text-center">
-                                            <span class="font-mono text-xs"
-                                                  :class="item.current_stock <= 0 ? 'text-error font-black' : item.current_stock < item.qty_sold ? 'text-amber-500 font-bold' : 'text-apple-text'"
-                                                  x-text="item.current_stock + ' قطعة'"></span>
-                                        </td>
-                                        <td class="p-3 text-center">
-                                            <input type="number"
-                                                   x-model.number="item.restock_qty"
-                                                   @input="onItemSelect()"
-                                                   min="1"
-                                                   :disabled="!item.selected"
-                                                   class="w-20 text-center font-mono font-black text-xs py-1.5 px-2 rounded-xl border border-apple-border bg-apple-surface focus:outline-none focus:border-emerald-500 disabled:opacity-40 transition-all">
-                                        </td>
-                                        <td class="p-3 text-center">
-                                            <span class="font-mono font-bold text-primary text-xs"
-                                                  x-text="(item.restock_qty * item.purchase_price).toLocaleString('ar-EG', {minimumFractionDigits:2}) + ' ج.م'"></span>
-                                        </td>
-                                    </tr>
-                                </template>
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <!-- Mobile Card Layout -->
-                    <div class="sm:hidden space-y-3">
-                        <template x-for="(item, idx) in items" :key="item.product_id">
-                            <div class="p-4 rounded-2xl border transition-all"
-                                 :class="item.selected ? 'bg-emerald-500/8 border-emerald-500/30' : 'bg-apple-surface border-apple-border'">
-                                <!-- Header -->
-                                <div class="flex items-start justify-between gap-2 mb-3">
-                                    <label class="flex items-start gap-2.5 cursor-pointer flex-1 min-w-0">
-                                        <input type="checkbox" x-model="item.selected" @change="onItemSelect()"
-                                               class="w-4 h-4 mt-0.5 accent-emerald-500 rounded cursor-pointer shrink-0">
-                                        <div class="min-w-0">
-                                            <p class="font-black text-xs text-apple-text truncate" x-text="item.product_name"></p>
-                                            <p class="font-mono text-[11px] text-apple-secondary" x-text="item.product_sku"></p>
-                                            <p class="text-[11px] text-apple-secondary/70" x-show="item.supplier_name" x-text="'المورد: ' + item.supplier_name"></p>
-                                        </div>
-                                    </label>
-                                    <span class="px-2 py-0.5 rounded-lg text-[10px] font-black bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25 whitespace-nowrap shrink-0"
-                                          x-text="item.total_cogs.toLocaleString('ar-EG', {minimumFractionDigits:2}) + ' ج.م'"></span>
-                                </div>
-                                <!-- Stats Grid -->
-                                <div class="grid grid-cols-2 gap-2 text-[11px] mb-3">
-                                    <div class="bg-apple-surface-subtle rounded-xl p-2.5 text-center">
-                                        <p class="text-apple-secondary mb-0.5">كمية مُباعة</p>
-                                        <p class="font-mono font-black text-apple-text" x-text="item.qty_sold + ' قطعة'"></p>
-                                        <p class="text-[9px] text-amber-500 font-bold" x-show="item.already_ordered > 0" x-text="'(طُلب ' + item.already_ordered + ')'"></p>
-                                    </div>
-                                    <div class="bg-apple-surface-subtle rounded-xl p-2.5 text-center">
-                                        <p class="text-apple-secondary mb-0.5">الرصيد الحالي</p>
-                                        <p class="font-mono font-black"
-                                           :class="item.current_stock <= 0 ? 'text-error' : 'text-apple-text'"
-                                           x-text="item.current_stock + ' قطعة'"></p>
-                                    </div>
-                                    <div class="bg-apple-surface-subtle rounded-xl p-2.5 text-center">
-                                        <p class="text-apple-secondary mb-0.5">سعر الشراء</p>
-                                        <p class="font-mono font-bold text-apple-text" x-text="item.purchase_price.toLocaleString('ar-EG', {minimumFractionDigits:2}) + ' ج.م'"></p>
-                                    </div>
-                                    <div class="bg-apple-surface-subtle rounded-xl p-2.5 text-center">
-                                        <p class="text-apple-secondary mb-0.5">تكلفة إعادة الطلب</p>
-                                        <p class="font-mono font-bold text-primary" x-text="(item.restock_qty * item.purchase_price).toLocaleString('ar-EG', {minimumFractionDigits:2}) + ' ج.م'"></p>
-                                    </div>
-                                </div>
-                                <!-- Quantity Input -->
-                                <div class="flex items-center gap-2">
-                                    <span class="text-[11px] font-bold text-apple-secondary shrink-0">كمية إعادة الطلب:</span>
-                                    <input type="number"
-                                           x-model.number="item.restock_qty"
-                                           @input="onItemSelect()"
-                                           min="1"
-                                           :disabled="!item.selected"
-                                           class="flex-1 text-center font-mono font-black text-xs py-1.5 px-2 rounded-xl border border-apple-border bg-apple-surface focus:outline-none focus:border-emerald-500 disabled:opacity-40 transition-all">
-                                </div>
-                            </div>
+                <!-- Period Filter Pills & Custom Date Picker -->
+                <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3 bg-apple-surface-subtle/80 p-3 rounded-2xl border border-apple-border">
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <span class="text-xs font-bold text-apple-secondary flex items-center gap-1">
+                            <span class="material-symbols-outlined text-sm">calendar_month</span>
+                            <span>الفترة الزمنية:</span>
+                        </span>
+                        <template x-for="p in periods" :key="p.value">
+                            <button @click="setPeriod(p.value)"
+                                    :class="period === p.value
+                                        ? 'bg-emerald-500 text-white shadow-apple-sm scale-[1.02]'
+                                        : 'bg-apple-surface text-apple-secondary hover:text-apple-text border border-apple-border'"
+                                    class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap active:scale-95 cursor-pointer"
+                                    x-text="p.label">
+                            </button>
                         </template>
                     </div>
 
-                    <!-- Financial Summary Banner -->
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 bg-gradient-to-l from-emerald-500/10 to-primary/5 rounded-2xl border border-emerald-500/20">
-                        <div class="text-center">
-                            <p class="text-[11px] text-apple-secondary font-medium mb-1">إجمالي COGS للمحدد</p>
-                            <p class="text-lg font-extrabold font-mono text-emerald-500" x-text="selectedCOGS.toLocaleString('ar-EG', {minimumFractionDigits:2}) + ' ج.م'"></p>
-                            <p class="text-[10px] text-apple-secondary mt-0.5">المبلغ المستحق إعادة ضخه في المخزون</p>
-                        </div>
-                        <div class="text-center border-t sm:border-t-0 sm:border-r sm:border-l border-emerald-500/20 pt-3 sm:pt-0 sm:px-4">
-                            <p class="text-[11px] text-apple-secondary font-medium mb-1">تكلفة إعادة الطلب التقديرية</p>
-                            <p class="text-lg font-extrabold font-mono text-primary" x-text="selectedRestockCost.toLocaleString('ar-EG', {minimumFractionDigits:2}) + ' ج.م'"></p>
-                            <p class="text-[10px] text-apple-secondary mt-0.5">بناءً على أسعار الشراء المسجلة</p>
-                        </div>
-                        <div class="text-center border-t sm:border-t-0 pt-3 sm:pt-0">
-                            <p class="text-[11px] text-apple-secondary font-medium mb-1">عدد الأصناف المحددة</p>
-                            <p class="text-lg font-extrabold font-mono text-apple-text" x-text="selectedCount + ' صنف'"></p>
-                            <p class="text-[10px] text-apple-secondary mt-0.5">ستُضاف لأمر الشراء الجديد</p>
-                        </div>
-                    </div>
-
-                    <!-- Action Buttons -->
-                    <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-                        <p class="text-xs text-apple-secondary" x-show="selectedCount === 0">
-                            <span class="material-symbols-outlined text-sm align-middle">info</span>
-                            حدد الأصناف التي تريد إعادة طلبها ثم اضغط على زر توليد أمر الشراء.
-                        </p>
-                        <div class="flex items-center gap-2.5 flex-wrap" x-show="selectedCount > 0">
-                            <span class="text-xs text-emerald-600 dark:text-emerald-400 font-bold">
-                                <span class="material-symbols-outlined text-sm align-middle">check_circle</span>
-                                <span x-text="selectedCount + ' صنف محدد جاهز للطلب'"></span>
-                            </span>
-                        </div>
-                        <button @click="generateOrder()"
-                                :disabled="selectedCount === 0 || generating"
-                                class="w-full sm:w-auto bg-emerald-500 hover:bg-emerald-600 disabled:opacity-40 disabled:cursor-not-allowed text-white font-black px-6 py-3 rounded-2xl flex items-center justify-center gap-2 transition-all shadow-apple-sm active:scale-95 text-sm">
-                            <template x-if="!generating">
-                                <span class="material-symbols-outlined text-lg">shopping_cart</span>
-                            </template>
-                            <template x-if="generating">
-                                <div class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                            </template>
-                            <span x-text="generating ? 'جاري إنشاء أمر الشراء...' : 'توليد أمر شراء فوري'"></span>
+                    <!-- Custom Date Controls -->
+                    <div x-show="period === 'custom'" 
+                         x-transition 
+                         class="flex items-center gap-2 w-full lg:w-auto pt-2 lg:pt-0 border-t lg:border-t-0 border-apple-border">
+                        <input type="date" x-model="startDate" class="apple-input py-1 px-2 text-xs text-apple-text">
+                        <span class="text-xs text-apple-secondary">إلى</span>
+                        <input type="date" x-model="endDate" class="apple-input py-1 px-2 text-xs text-apple-text">
+                        <button @click="fetchData()" class="bg-primary text-white text-xs font-bold py-1.5 px-3 rounded-xl shadow-sm active:scale-95 cursor-pointer">
+                            تطبيق
                         </button>
                     </div>
                 </div>
+
+                <!-- Loading State -->
+                <div x-show="loading" class="flex items-center justify-center py-12 gap-3 text-apple-secondary">
+                    <div class="w-6 h-6 border-2 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin"></div>
+                    <span class="text-sm font-semibold">جاري حساب ميزان رأس المال وتكلفة البضاعة المباعة...</span>
+                </div>
+
+                <!-- Main Indicator Content -->
+                <div x-show="!loading" class="space-y-6">
+
+                    <!-- 3 Financial KPI Cards (Core Math) -->
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3.5 sm:gap-4">
+                        
+                        <!-- 1. المبلغ المطلوب تعويضه (Target Capital) -->
+                        <div class="glass-card p-5 rounded-2xl border border-blue-500/20 bg-blue-500/5 relative overflow-hidden flex flex-col justify-between space-y-3">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-extrabold text-blue-600 dark:text-blue-400 uppercase tracking-wider">
+                                    المبلغ المطلوب تعويضه
+                                </span>
+                                <div class="w-8 h-8 rounded-xl bg-blue-500/15 text-blue-500 flex items-center justify-center">
+                                    <span class="material-symbols-outlined text-lg">shopping_bag</span>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="text-2xl sm:text-3xl font-black font-mono text-apple-text tracking-tight" x-text="formatMoney(targetCapital)"></div>
+                                <p class="text-[11px] text-apple-secondary mt-1">إجمالي تكلفة البضاعة المباعة (COGS) للفترة</p>
+                            </div>
+                        </div>
+
+                        <!-- 2. المبلغ المعوض فعلياً (Covered Capital) -->
+                        <div class="glass-card p-5 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 relative overflow-hidden flex flex-col justify-between space-y-3">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-extrabold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
+                                    المبلغ المعوض فعلياً
+                                </span>
+                                <div class="flex items-center gap-1.5">
+                                    <span class="px-2 py-0.5 rounded-lg text-[10px] font-black font-mono bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30" x-text="coveragePercent + '%'"></span>
+                                    <div class="w-8 h-8 rounded-xl bg-emerald-500/15 text-emerald-500 flex items-center justify-center">
+                                        <span class="material-symbols-outlined text-lg">task_alt</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="text-2xl sm:text-3xl font-black font-mono text-emerald-600 dark:text-emerald-400 tracking-tight" x-text="formatMoney(coveredCapital)"></div>
+                                <p class="text-[11px] text-apple-secondary mt-1">قيمة الأصناف المشمولة بأوامر شراء ومخزون</p>
+                            </div>
+                        </div>
+
+                        <!-- 3. عجز التعويض المتبقي (Remaining Deficit) -->
+                        <div class="glass-card p-5 rounded-2xl border relative overflow-hidden flex flex-col justify-between space-y-3"
+                             :class="isFullyCovered || remainingDeficit <= 0 
+                                ? 'border-emerald-500/30 bg-emerald-500/10' 
+                                : 'border-amber-500/30 bg-amber-500/10'">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-extrabold uppercase tracking-wider"
+                                      :class="isFullyCovered || remainingDeficit <= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'">
+                                    عجز التعويض المتبقي
+                                </span>
+                                <div class="w-8 h-8 rounded-xl flex items-center justify-center"
+                                     :class="isFullyCovered || remainingDeficit <= 0 ? 'bg-emerald-500/20 text-emerald-500' : 'bg-amber-500/20 text-amber-500'">
+                                    <span class="material-symbols-outlined text-lg" x-text="isFullyCovered || remainingDeficit <= 0 ? 'verified' : 'priority_high'"></span>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="text-2xl sm:text-3xl font-black font-mono tracking-tight"
+                                     :class="isFullyCovered || remainingDeficit <= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'"
+                                     x-text="formatMoney(remainingDeficit)"></div>
+                                <p class="text-[11px] text-apple-secondary mt-1"
+                                   x-text="isFullyCovered || remainingDeficit <= 0 ? 'رأس المال في أمان تام ولا يوجد عجز' : 'المبلغ المتبقي الواجب شراؤه لتعويض المباع'"></p>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- Progress Bar & Capital Safety Message -->
+                    <div class="p-4 sm:p-5 rounded-2xl bg-apple-surface-subtle border border-apple-border space-y-3">
+                        <div class="flex items-center justify-between text-xs">
+                            <span class="font-extrabold text-apple-text flex items-center gap-1.5">
+                                <span class="material-symbols-outlined text-sm text-emerald-500">trending_up</span>
+                                <span>مؤشر تغطية رأس المال العامل:</span>
+                            </span>
+                            <span class="font-mono font-black text-sm"
+                                  :class="isFullyCovered ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-500'"
+                                  x-text="coveragePercent + '% (' + formatMoney(coveredCapital) + ' من ' + formatMoney(targetCapital) + ')'"></span>
+                        </div>
+
+                        <!-- Visual Progress Track -->
+                        <div class="w-full h-3 bg-apple-border/50 rounded-full overflow-hidden p-0.5 border border-apple-border/80">
+                            <div class="h-full rounded-full transition-all duration-700 ease-out shadow-sm"
+                                 :class="isFullyCovered 
+                                    ? 'bg-gradient-to-r from-emerald-500 to-teal-400' 
+                                    : (coveragePercent > 50 ? 'bg-gradient-to-r from-amber-500 to-emerald-500' : 'bg-gradient-to-r from-red-500 to-amber-500')"
+                                 :style="'width: ' + coveragePercent + '%'"></div>
+                        </div>
+
+                        <!-- Status Alert Narrative -->
+                        <div class="pt-1 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs">
+                            <template x-if="isFullyCovered">
+                                <div class="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-bold">
+                                    <span class="material-symbols-outlined text-base">check_circle</span>
+                                    <span>تم تغطية رأس المال بالكامل وجارٍ تعويض النواقص (المتبقي: 0.00 ج.م).</span>
+                                </div>
+                            </template>
+                            <template x-if="!isFullyCovered && remainingDeficit > 0">
+                                <div class="flex items-center gap-1.5 text-amber-600 dark:text-amber-400 font-bold">
+                                    <span class="material-symbols-outlined text-base">info</span>
+                                    <span>تم تعويض <span class="font-mono font-black" x-text="coveragePercent + '%'"></span> — يتبقى عجز <span class="font-mono font-black" x-text="formatMoney(remainingDeficit)"></span> يلزم شراؤه لحماية رأس المال.</span>
+                                </div>
+                            </template>
+                            <template x-if="isEmptySales">
+                                <div class="text-apple-secondary font-medium">
+                                    لا توجد مبيعات مسجلة في هذا النطاق الزمني.
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+
+                    <!-- Drawer Liquidity Safety Comparison (مقارنة سيولة الدرج) -->
+                    <div class="p-4 rounded-2xl border transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
+                         :class="drawerCash >= remainingDeficit 
+                            ? 'bg-emerald-500/8 border-emerald-500/25' 
+                            : 'bg-amber-500/8 border-amber-500/25'">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                                 :class="drawerCash >= remainingDeficit ? 'bg-emerald-500/20 text-emerald-500' : 'bg-amber-500/20 text-amber-500'">
+                                <span class="material-symbols-outlined text-xl" x-text="drawerCash >= remainingDeficit ? 'payments' : 'account_balance'"></span>
+                            </div>
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <h4 class="text-xs sm:text-sm font-black text-apple-text">
+                                        مقارنة سيولة الخزينة والدرج الحالية
+                                    </h4>
+                                    <span class="px-2 py-0.5 rounded-md text-[10px] font-black font-mono"
+                                          :class="drawerCash >= remainingDeficit ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400' : 'bg-amber-500/20 text-amber-600 dark:text-amber-400'"
+                                          x-text="'السيولة: ' + formatMoney(drawerCash)"></span>
+                                </div>
+                                <p class="text-[11px] text-apple-secondary mt-0.5"
+                                   x-text="remainingDeficit <= 0 
+                                      ? 'رأس المال مغطى ولا يتطلب أي سيولة إضافية حالياً.' 
+                                      : (drawerCash >= remainingDeficit 
+                                          ? 'السيولة النقدية المتوفرة بالدرج كافية تماماً لسداد العجز كاش فوراً دون الحاجة للآجل.' 
+                                          : 'الكاش المتاح بالدرج أقل من العجز المطلوب (' + formatMoney(remainingDeficit) + ') — يفضل الشراء بالآجل أو جدولة الطلبيات.')">
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="shrink-0">
+                            <template x-if="remainingDeficit > 0 && drawerCash >= remainingDeficit">
+                                <span class="px-3 py-1 rounded-xl text-xs font-black bg-emerald-500 text-white shadow-sm flex items-center gap-1">
+                                    <span class="material-symbols-outlined text-sm">verified_user</span>
+                                    <span>كاش كافي للشراء</span>
+                                </span>
+                            </template>
+                            <template x-if="remainingDeficit > 0 && drawerCash < remainingDeficit">
+                                <span class="px-3 py-1 rounded-xl text-xs font-black bg-amber-500 text-white shadow-sm flex items-center gap-1">
+                                    <span class="material-symbols-outlined text-sm">credit_card</span>
+                                    <span>يفضل الشراء آجل</span>
+                                </span>
+                            </template>
+                        </div>
+                    </div>
+
+                    <!-- Zero Deficit / Full Coverage Celebration Card -->
+                    <div x-show="isFullyCovered && items.length === 0" 
+                         class="p-8 sm:p-10 rounded-2xl bg-gradient-to-b from-emerald-500/15 via-emerald-500/5 to-transparent border border-emerald-500/30 text-center space-y-3 shadow-apple-sm">
+                        <div class="w-14 h-14 mx-auto rounded-full bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-500 shadow-lg animate-pulse">
+                            <span class="material-symbols-outlined text-3xl">verified</span>
+                        </div>
+                        <h3 class="text-base sm:text-lg font-black text-apple-text">
+                            رأس المال التجاري في أمان تام ومغطى بنسبة 100%!
+                        </h3>
+                        <p class="text-xs sm:text-sm text-apple-secondary max-w-xl mx-auto">
+                            تم إصدار أوامر شراء لجميع الأصناف المباعة في هذه الفترة بقيمة <span class="font-mono font-bold text-emerald-500" x-text="formatMoney(coveredCapital)"></span>. العجز المتبقي = 0.00 ج.م.
+                        </p>
+                    </div>
+
+                    <!-- Deficit Items Interactive Table (When items need ordering) -->
+                    <div x-show="items.length > 0" class="space-y-4 pt-2">
+                        
+                        <!-- Table Header & Multi-select Bar -->
+                        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3.5 bg-apple-surface rounded-2xl border border-apple-border">
+                            <label class="flex items-center gap-2.5 cursor-pointer select-none">
+                                <input type="checkbox" @change="toggleSelectAll($event.target.checked)"
+                                       :checked="selectedAll"
+                                       class="w-4 h-4 accent-emerald-500 rounded cursor-pointer">
+                                <span class="text-xs font-extrabold text-apple-text">تحديد كل الأصناف التي بها عجز</span>
+                                <span class="text-xs text-apple-secondary font-mono" x-text="'(' + selectedCount + ' من ' + itemsCount + ' صنف)'"></span>
+                            </label>
+
+                            <div class="flex items-center gap-3 flex-wrap">
+                                <div class="text-xs text-apple-secondary">
+                                    عجز الأصناف المحددة:
+                                    <span class="font-mono font-black text-amber-500 text-sm" x-text="formatMoney(selectedDeficitCost)"></span>
+                                </div>
+                                <div class="text-xs text-apple-secondary">
+                                    تكلفة إعادة الطلب:
+                                    <span class="font-mono font-black text-primary text-sm" x-text="formatMoney(selectedRestockCost)"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Desktop Table -->
+                        <div class="hidden md:block apple-table-container shadow-apple-sm border border-apple-border">
+                            <table class="apple-table min-w-[760px]">
+                                <thead>
+                                    <tr>
+                                        <th class="p-3 w-10 text-center"></th>
+                                        <th class="p-3 text-right">المنتج والمورد</th>
+                                        <th class="p-3 text-center whitespace-nowrap">الكمية المباعة</th>
+                                        <th class="p-3 text-center whitespace-nowrap">إجمالي COGS</th>
+                                        <th class="p-3 text-center whitespace-nowrap">تم طلبه</th>
+                                        <th class="p-3 text-center whitespace-nowrap">الرصيد بالمخزن</th>
+                                        <th class="p-3 text-center whitespace-nowrap">كمية العجز للطلب</th>
+                                        <th class="p-3 text-center whitespace-nowrap">قيمة العجز المتبقي</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-apple-border text-sm">
+                                    <template x-for="(item, idx) in items" :key="item.product_id">
+                                        <tr class="hover:bg-apple-surface-subtle transition-all"
+                                            :class="item.selected ? 'bg-emerald-500/5' : ''">
+                                            <td class="p-3 text-center">
+                                                <input type="checkbox" x-model="item.selected"
+                                                       @change="onItemSelect()"
+                                                       class="w-4 h-4 accent-emerald-500 rounded cursor-pointer">
+                                            </td>
+                                            <td class="p-3">
+                                                <div class="flex flex-col">
+                                                    <span class="font-bold text-apple-text text-xs" x-text="item.product_name"></span>
+                                                    <div class="flex items-center gap-2 mt-0.5">
+                                                        <span class="font-mono text-[11px] text-apple-secondary" x-text="item.product_sku"></span>
+                                                        <span class="text-[10px] text-apple-secondary/80" x-show="item.supplier_name" x-text="'• المورد: ' + item.supplier_name"></span>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td class="p-3 text-center">
+                                                <span class="font-mono font-black text-apple-text" x-text="item.qty_sold + ' قطعة'"></span>
+                                            </td>
+                                            <td class="p-3 text-center">
+                                                <span class="font-mono font-bold text-blue-600 dark:text-blue-400 text-xs" x-text="formatMoney(item.total_cogs)"></span>
+                                            </td>
+                                            <td class="p-3 text-center">
+                                                <span class="font-mono font-bold text-xs"
+                                                      :class="item.already_ordered > 0 ? 'text-emerald-500' : 'text-apple-secondary'"
+                                                      x-text="item.already_ordered + ' قطعة'"></span>
+                                            </td>
+                                            <td class="p-3 text-center">
+                                                <span class="font-mono text-xs"
+                                                      :class="item.current_stock <= 0 ? 'text-error font-black' : (item.current_stock < item.qty_sold ? 'text-amber-500 font-bold' : 'text-apple-text')"
+                                                      x-text="item.current_stock + ' قطعة'"></span>
+                                            </td>
+                                            <td class="p-3 text-center">
+                                                <input type="number"
+                                                       x-model.number="item.restock_qty"
+                                                       @input="onItemSelect()"
+                                                       min="1"
+                                                       :disabled="!item.selected"
+                                                       class="w-20 text-center font-mono font-black text-xs py-1.5 px-2 rounded-xl border border-apple-border bg-apple-surface focus:outline-none focus:border-emerald-500 disabled:opacity-40 transition-all">
+                                            </td>
+                                            <td class="p-3 text-center">
+                                                <span class="font-mono font-black text-amber-600 dark:text-amber-400 text-xs"
+                                                      x-text="formatMoney(item.restock_qty * item.purchase_price)"></span>
+                                            </td>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Mobile Cards -->
+                        <div class="md:hidden space-y-3">
+                            <template x-for="(item, idx) in items" :key="item.product_id">
+                                <div class="p-4 rounded-2xl border transition-all"
+                                     :class="item.selected ? 'bg-emerald-500/8 border-emerald-500/30' : 'bg-apple-surface border-apple-border'">
+                                    <div class="flex items-start justify-between gap-2 mb-3">
+                                        <label class="flex items-start gap-2.5 cursor-pointer flex-1 min-w-0">
+                                            <input type="checkbox" x-model="item.selected" @change="onItemSelect()"
+                                                   class="w-4 h-4 mt-0.5 accent-emerald-500 rounded cursor-pointer shrink-0">
+                                            <div class="min-w-0">
+                                                <p class="font-black text-xs text-apple-text truncate" x-text="item.product_name"></p>
+                                                <p class="font-mono text-[11px] text-apple-secondary" x-text="item.product_sku"></p>
+                                                <p class="text-[11px] text-apple-secondary/80" x-show="item.supplier_name" x-text="'المورد: ' + item.supplier_name"></p>
+                                            </div>
+                                        </label>
+                                        <span class="px-2 py-0.5 rounded-lg text-[10px] font-black bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/25 whitespace-nowrap shrink-0"
+                                              x-text="'عجز: ' + formatMoney(item.restock_qty * item.purchase_price)"></span>
+                                    </div>
+
+                                    <div class="grid grid-cols-2 gap-2 text-[11px] mb-3">
+                                        <div class="bg-apple-surface-subtle rounded-xl p-2 text-center">
+                                            <p class="text-apple-secondary mb-0.5">كمية مُباعة</p>
+                                            <p class="font-mono font-black text-apple-text" x-text="item.qty_sold + ' قطعة'"></p>
+                                        </div>
+                                        <div class="bg-apple-surface-subtle rounded-xl p-2 text-center">
+                                            <p class="text-apple-secondary mb-0.5">تم طلبه</p>
+                                            <p class="font-mono font-black text-emerald-500" x-text="item.already_ordered + ' قطعة'"></p>
+                                        </div>
+                                        <div class="bg-apple-surface-subtle rounded-xl p-2 text-center">
+                                            <p class="text-apple-secondary mb-0.5">إجمالي COGS</p>
+                                            <p class="font-mono font-bold text-blue-500" x-text="formatMoney(item.total_cogs)"></p>
+                                        </div>
+                                        <div class="bg-apple-surface-subtle rounded-xl p-2 text-center">
+                                            <p class="text-apple-secondary mb-0.5">المخزون الحالي</p>
+                                            <p class="font-mono font-bold"
+                                               :class="item.current_stock <= 0 ? 'text-error' : 'text-apple-text'"
+                                               x-text="item.current_stock + ' قطعة'"></p>
+                                        </div>
+                                    </div>
+
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-[11px] font-bold text-apple-secondary shrink-0">كمية طلب العجز:</span>
+                                        <input type="number"
+                                               x-model.number="item.restock_qty"
+                                               @input="onItemSelect()"
+                                               min="1"
+                                               :disabled="!item.selected"
+                                               class="flex-1 text-center font-mono font-black text-xs py-1.5 px-2 rounded-xl border border-apple-border bg-apple-surface focus:outline-none focus:border-emerald-500 disabled:opacity-40 transition-all">
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+
+                        <!-- Action Bar to Generate Purchase Order -->
+                        <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-4 bg-gradient-to-r from-emerald-500/10 via-apple-surface to-primary/10 rounded-2xl border border-emerald-500/25">
+                            <div class="flex items-center gap-2">
+                                <span class="material-symbols-outlined text-emerald-500 text-xl">shopping_cart_checkout</span>
+                                <div>
+                                    <p class="text-xs font-black text-apple-text" x-text="selectedCount + ' صنف محدد لسد العجز'"></p>
+                                    <p class="text-[11px] text-apple-secondary" x-text="'التكلفة الإجمالية للطلبية: ' + formatMoney(selectedRestockCost)"></p>
+                                </div>
+                            </div>
+
+                            <button @click="generateOrder()"
+                                    :disabled="selectedCount === 0 || generating"
+                                    class="bg-emerald-500 hover:bg-emerald-600 disabled:opacity-40 disabled:cursor-not-allowed text-white font-black px-6 py-3 rounded-2xl flex items-center justify-center gap-2 transition-all shadow-apple-sm active:scale-95 text-xs sm:text-sm cursor-pointer">
+                                <template x-if="!generating">
+                                    <span class="material-symbols-outlined text-lg">add_shopping_cart</span>
+                                </template>
+                                <template x-if="generating">
+                                    <div class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                </template>
+                                <span x-text="generating ? 'جاري توليد أمر الشراء...' : 'توليد أمر شراء فوري لسد العجز'"></span>
+                            </button>
+                        </div>
+
+                    </div>
+
+                </div>
+
             </div>
         </div>
     </div>
@@ -638,21 +837,42 @@ function cogsRestockPanel() {
         loading: false,
         generating: false,
         period: 'today',
+        startDate: '',
+        endDate: '',
+        
+        // Financial Metrics (Core Math)
+        targetCapital: 0,
+        coveredCapital: 0,
+        remainingDeficit: 0,
+        coveragePercent: 100,
+        drawerCash: 0,
+        isFullyCovered: false,
+        isEmptySales: false,
+
+        // Items & Selection
         items: [],
         itemsCount: 0,
-        selectedAll: false,
+        selectedAll: true,
         selectedCount: 0,
         selectedCOGS: 0,
+        selectedDeficitCost: 0,
         selectedRestockCost: 0,
+
         periods: [
             { value: 'today',      label: 'اليوم' },
             { value: 'this_week',  label: 'هذا الأسبوع' },
             { value: 'this_month', label: 'هذا الشهر' },
             { value: 'all',        label: 'الكل' },
+            { value: 'custom',     label: 'فترة مخصصة' },
         ],
 
         init() {
             this.fetchData();
+        },
+
+        formatMoney(val) {
+            const num = parseFloat(val) || 0;
+            return num.toLocaleString('ar-EG', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ج.م';
         },
 
         fetchData() {
@@ -661,24 +881,42 @@ function cogsRestockPanel() {
             this.itemsCount = 0;
             this.recalcTotals();
 
-            const url = `{% url 'inventory:cogs_restock_data' %}?period=${this.period}`;
+            let url = `{% url 'inventory:cogs_restock_data' %}?period=${this.period}`;
+            if (this.period === 'custom') {
+                if (this.startDate) url += `&start_date=${encodeURIComponent(this.startDate)}`;
+                if (this.endDate) url += `&end_date=${encodeURIComponent(this.endDate)}`;
+            }
+
             fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
                 .then(r => r.json())
                 .then(data => {
                     if (data.success) {
-                        // Mark all selected by default
-                        this.items = data.items.map(item => ({ ...item, selected: true }));
-                        this.itemsCount = data.items_count;
+                        this.targetCapital = data.target_capital || 0;
+                        this.coveredCapital = data.covered_capital || 0;
+                        this.remainingDeficit = data.remaining_deficit || 0;
+                        this.coveragePercent = data.coverage_percent !== undefined ? data.coverage_percent : 100;
+                        this.drawerCash = data.drawer_cash || 0;
+                        this.isFullyCovered = !!data.is_fully_covered;
+                        this.isEmptySales = !!data.is_empty_sales;
+
+                        // Mark all deficit items selected by default
+                        this.items = (data.items || []).map(item => ({ ...item, selected: true }));
+                        this.itemsCount = this.items.length;
+                        this.selectedAll = true;
                         this.recalcTotals();
                     }
                     this.loading = false;
                 })
-                .catch(() => { this.loading = false; });
+                .catch(() => { 
+                    this.loading = false; 
+                });
         },
 
         setPeriod(val) {
             this.period = val;
-            this.fetchData();
+            if (val !== 'custom') {
+                this.fetchData();
+            }
         },
 
         toggleSelectAll(checked) {
@@ -689,20 +927,24 @@ function cogsRestockPanel() {
 
         onItemSelect() {
             this.recalcTotals();
-            this.selectedAll = this.items.every(i => i.selected);
+            this.selectedAll = this.items.length > 0 && this.items.every(i => i.selected);
         },
 
         recalcTotals() {
-            let count = 0, cogs = 0, restockCost = 0;
+            let count = 0, cogs = 0, deficitCost = 0, restockCost = 0;
             this.items.forEach(item => {
                 if (item.selected) {
                     count++;
+                    const price = parseFloat(item.purchase_price) || 0;
+                    const rQty = parseFloat(item.restock_qty) || 1;
                     cogs += parseFloat(item.total_cogs) || 0;
-                    restockCost += (parseFloat(item.restock_qty) || 1) * (parseFloat(item.purchase_price) || 0);
+                    deficitCost += parseFloat(item.deficit_cogs) || (rQty * price);
+                    restockCost += rQty * price;
                 }
             });
             this.selectedCount = count;
             this.selectedCOGS = cogs;
+            this.selectedDeficitCost = deficitCost;
             this.selectedRestockCost = restockCost;
         },
 
@@ -723,6 +965,7 @@ function cogsRestockPanel() {
             const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value
                 || document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '';
 
+            const periodLabel = this.periods.find(p => p.value === this.period)?.label || this.period;
             fetch('{% url "inventory:cogs_restock_create" %}', {
                 method: 'POST',
                 headers: {
@@ -732,7 +975,7 @@ function cogsRestockPanel() {
                 },
                 body: JSON.stringify({
                     items: selectedItems,
-                    notes: `أمر شراء تلقائي (COGS Restock) — فترة: ${this.periods.find(p=>p.value===this.period)?.label || this.period}`,
+                    notes: `أمر شراء تلقائي (ميزان تعويض المخزون وحماية رأس المال) — فترة: ${periodLabel}`,
                 }),
             })
             .then(r => r.json())
