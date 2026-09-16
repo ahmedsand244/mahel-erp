@@ -53,6 +53,7 @@ urlpatterns = [
     path('', include('tenants.urls')),
 
     # Fallback legacy single-tenant routes
+    path('dashboard/',   include('dashboard.urls')),
     path('pos/',         include('pos.urls')),
     path('inventory/',   include('inventory.urls')),
     path('maintenance/', include('maintenance.urls')),

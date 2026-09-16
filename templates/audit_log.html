@@ -90,7 +90,7 @@
 
     <!-- Filters & Search Toolbar -->
     <div class="glass-card rounded-2xl lg:rounded-3xl p-5 sm:p-6 border border-apple-border space-y-4"
-         x-data="{ showAdvanced: {{ 'true' if current_period or current_start_date or current_user != 'all' or current_action_type != 'all' else 'false' }} }">
+         x-data="{ showAdvanced: {% if current_period or current_start_date or current_user != 'all' or current_action_type != 'all' %}true{% else %}false{% endif %} }">
         
         <form method="get" action="" class="space-y-4">
             <!-- Row 1: Search, Module, Severity, Submit -->
