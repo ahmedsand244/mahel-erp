@@ -30,11 +30,15 @@ def service_worker_view(request):
     return HttpResponse('', content_type='application/javascript')
 
 from core_project.views import dashboard_redirect_view, desktop_launch_view
+from dashboard.views import GlobalSearchView
 
 urlpatterns = [
     # PWA Endpoints
     path('manifest.json', manifest_view, name='manifest'),
     path('sw.js',         service_worker_view, name='service_worker'),
+
+    # Global Instant Search API
+    path('api/global-search/', GlobalSearchView.as_view(), name='global_search_root'),
 
     # Core Auth & SaaS Root URLs
     path('',                LandingView.as_view(),      name='landing'),

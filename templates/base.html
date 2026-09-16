@@ -637,24 +637,40 @@
                     },
                     performSearch() {
                         clearTimeout(this.searchTimeout);
-                        if (!this.searchQuery.trim()) {
+                        const q = this.searchQuery.trim();
+                        if (!q) {
                             this.searchResults = [];
                             this.showDropdown = false;
+                            this.isSearching = false;
                             return;
                         }
                         this.isSearching = true;
                         this.searchTimeout = setTimeout(() => {
-                            fetch('/api/global-search/?q=' + encodeURIComponent(this.searchQuery))
-                                .then(res => res.json())
+                            const searchUrl = '{% if request.tenant %}/t/{{ request.tenant.slug }}/dashboard/api/global-search/{% else %}/api/global-search/{% endif %}?q=' + encodeURIComponent(q);
+                            fetch(searchUrl)
+                                .then(res => {
+                                    if (!res.ok) throw new Error('Network error');
+                                    return res.json();
+                                })
                                 .then(data => {
                                     this.searchResults = data.results || [];
                                     this.isSearching = false;
                                     this.showDropdown = true;
                                 })
                                 .catch(() => {
-                                    this.isSearching = false;
+                                    // Fallback attempt to root search endpoint if tenant subpath fails
+                                    fetch('/api/global-search/?q=' + encodeURIComponent(q))
+                                        .then(res => res.json())
+                                        .then(data => {
+                                            this.searchResults = data.results || [];
+                                            this.isSearching = false;
+                                            this.showDropdown = true;
+                                        })
+                                        .catch(() => {
+                                            this.isSearching = false;
+                                        });
                                 });
-                        }, 250);
+                        }, 200);
                     }
                 }"
                 @click.away="showDropdown = false">

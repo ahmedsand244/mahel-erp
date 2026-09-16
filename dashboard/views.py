@@ -154,116 +154,160 @@ class DashboardView(TemplateView):
 
 
 class GlobalSearchView(View):
-    """البحث المباشر الشامل في كافة أرجاء النظام"""
+    """البحث المباشر الشامل في كافة أرجاء النظام (منتجات، عملاء، موردين، فواتير، صيانة، طلبات بضاعة)"""
     def get(self, request, *args, **kwargs):
         query = request.GET.get('q', '').strip()
         if not query or len(query) < 1:
             return JsonResponse({'results': []})
 
-        results = []
+        tenant = getattr(request, 'tenant', None)
+        if not tenant:
+            tenant_id = request.session.get('tenant_id')
+            if tenant_id:
+                from tenants.models import Tenant
+                try:
+                    tenant = Tenant.objects.get(id=tenant_id)
+                except Tenant.DoesNotExist:
+                    tenant = None
+            if not tenant and request.user.is_authenticated:
+                tenant = getattr(request.user, 'tenant', None)
 
-        # 1. المنتجات والمخزون
-        products = Product.objects.filter(
-            Q(name__icontains=query) | Q(sku__icontains=query)
-        )[:5]
-        if products.exists():
-            items = []
-            for p in products:
-                items.append({
-                    'title': p.name,
-                    'subtitle': f"كود: {p.sku} | السعر: {p.selling_price} ج.م | المتاح: {p.stock_quantity}",
-                    'url': '/inventory/',
-                    'badge': f"{p.stock_quantity} قطعة",
-                    'badge_type': 'primary' if p.stock_quantity > 0 else 'error'
+        from tenants.middleware import set_current_tenant, clear_current_tenant, get_current_tenant
+        prev_tenant = get_current_tenant()
+        if tenant:
+            set_current_tenant(tenant)
+
+        try:
+            prefix = f"/t/{tenant.slug}" if tenant else ""
+            results = []
+
+            # 1. المنتجات والمخزون
+            products = Product.objects.filter(
+                Q(name__icontains=query) | Q(sku__icontains=query) | Q(barcode__icontains=query) | Q(category__icontains=query)
+            )[:5]
+            if products.exists():
+                items = []
+                for p in products:
+                    items.append({
+                        'title': p.name,
+                        'subtitle': f"SKU: {p.sku} | السعر: {p.selling_price:,.2f} ج.م | الرصيد: {p.stock_quantity}",
+                        'url': f'{prefix}/inventory/',
+                        'badge': f"{p.stock_quantity} قطعة",
+                        'badge_type': 'primary' if p.stock_quantity > 0 else 'error'
+                    })
+                results.append({
+                    'category': 'المنتجات والمخزون',
+                    'icon': 'inventory_2',
+                    'items': items
                 })
-            results.append({
-                'category': 'المنتجات والمخزون',
-                'icon': 'inventory_2',
-                'items': items
-            })
 
-        # 2. حسابات العملاء
-        customers = Customer.objects.filter(
-            Q(name__icontains=query) | Q(phone__icontains=query) | Q(workplace__icontains=query)
-        )[:5]
-        if customers.exists():
-            items = []
-            for c in customers:
-                items.append({
-                    'title': c.name,
-                    'subtitle': f"هاتف: {c.phone or '—'} | مكان العمل: {c.workplace or '—'}",
-                    'url': f'/ledger/customer/{c.id}/',
-                    'badge': f"دين: {c.balance} ج.م" if c.balance > 0 else "مسدد بالكامل",
-                    'badge_type': 'error' if c.balance > 0 else 'primary'
+            # 2. حسابات العملاء والشكك
+            customers = Customer.objects.filter(
+                Q(name__icontains=query) | Q(phone__icontains=query) | Q(workplace__icontains=query) | Q(address__icontains=query)
+            )[:5]
+            if customers.exists():
+                items = []
+                for c in customers:
+                    items.append({
+                        'title': c.name,
+                        'subtitle': f"هاتف: {c.phone or '—'} | مكان العمل: {c.workplace or '—'}",
+                        'url': f'{prefix}/ledger/customer/{c.id}/',
+                        'badge': f"دين: {c.balance:,.2f} ج.م" if c.balance > 0 else "خالص",
+                        'badge_type': 'error' if c.balance > 0 else 'primary'
+                    })
+                results.append({
+                    'category': 'حسابات العملاء (الشكك)',
+                    'icon': 'person',
+                    'items': items
                 })
-            results.append({
-                'category': 'حسابات العملاء (الشكك)',
-                'icon': 'person',
-                'items': items
-            })
 
-        # 3. حسابات الموردين
-        suppliers = Supplier.objects.filter(
-            Q(name__icontains=query) | Q(phone__icontains=query) | Q(company__icontains=query)
-        )[:5]
-        if suppliers.exists():
-            items = []
-            for s in suppliers:
-                items.append({
-                    'title': s.name,
-                    'subtitle': f"الشركة: {s.company or '—'} | هاتف: {s.phone or '—'}",
-                    'url': f'/ledger/supplier/{s.id}/',
-                    'badge': f"مستحق: {s.balance} ج.م" if s.balance > 0 else "مسدد",
-                    'badge_type': 'error' if s.balance > 0 else 'primary'
+            # 3. حسابات الموردين والشركات
+            suppliers = Supplier.objects.filter(
+                Q(name__icontains=query) | Q(phone__icontains=query) | Q(company__icontains=query)
+            )[:5]
+            if suppliers.exists():
+                items = []
+                for s in suppliers:
+                    items.append({
+                        'title': s.name,
+                        'subtitle': f"الشركة: {s.company or '—'} | هاتف: {s.phone or '—'}",
+                        'url': f'{prefix}/ledger/supplier/{s.id}/',
+                        'badge': f"مستحق: {s.balance:,.2f} ج.م" if s.balance > 0 else "خالص",
+                        'badge_type': 'error' if s.balance > 0 else 'primary'
+                    })
+                results.append({
+                    'category': 'حسابات الموردين والتوريدات',
+                    'icon': 'local_shipping',
+                    'items': items
                 })
-            results.append({
-                'category': 'حسابات الموردين والتوريدات',
-                'icon': 'local_shipping',
-                'items': items
-            })
 
-        # 4. تذاكر الصيانة
-        tickets = MaintenanceTicket.objects.select_related('customer').filter(
-            Q(ticket_number__icontains=query) | Q(device_name__icontains=query) | Q(customer__name__icontains=query)
-        )[:5]
-        if tickets.exists():
-            items = []
-            for t in tickets:
-                items.append({
-                    'title': f"تذكرة #{t.ticket_number} - {t.device_name}",
-                    'subtitle': f"العميل: {t.customer.name}",
-                    'url': '/maintenance/',
-                    'badge': t.get_status_display(),
-                    'badge_type': 'primary' if t.status == 'delivered' else 'tertiary'
+            # 4. تذاكر الورشة والصيانة
+            tickets = MaintenanceTicket.objects.select_related('customer').filter(
+                Q(ticket_number__icontains=query) | Q(device_name__icontains=query) | Q(customer__name__icontains=query)
+            )[:5]
+            if tickets.exists():
+                items = []
+                for t in tickets:
+                    cust_title = t.customer.name if t.customer else 'عميل نقدي'
+                    items.append({
+                        'title': f"تذكرة #{t.ticket_number} - {t.device_name}",
+                        'subtitle': f"العميل: {cust_title} | الحالة: {t.get_status_display()}",
+                        'url': f'{prefix}/maintenance/',
+                        'badge': t.get_status_display(),
+                        'badge_type': 'primary' if t.status == 'delivered' else 'tertiary'
+                    })
+                results.append({
+                    'category': 'تذاكر الورشة والصيانة',
+                    'icon': 'build',
+                    'items': items
                 })
-            results.append({
-                'category': 'تذاكر الورشة والصيانة',
-                'icon': 'build',
-                'items': items
-            })
 
-        # 5. فواتير المبيعات POS
-        orders = Order.objects.select_related('customer').filter(
-            Q(order_number__icontains=query) | Q(customer__name__icontains=query)
-        )[:5]
-        if orders.exists():
-            items = []
-            for o in orders:
-                cust_name = o.customer.name if o.customer else "عميل نقدي"
-                items.append({
-                    'title': f"فاتورة مبيعات #{o.order_number}",
-                    'subtitle': f"العميل: {cust_name} | {o.created_at.strftime('%Y-%m-%d %H:%M')}",
-                    'url': '/pos/',
-                    'badge': f"{o.total_amount} ج.م",
-                    'badge_type': 'primary'
+            # 5. فواتير المبيعات (POS)
+            orders = Order.objects.select_related('customer').filter(
+                Q(order_number__icontains=query) | Q(customer__name__icontains=query)
+            )[:5]
+            if orders.exists():
+                items = []
+                for o in orders:
+                    cust_name = o.customer.name if o.customer else "عميل نقدي"
+                    items.append({
+                        'title': f"فاتورة مبيعات #{o.order_number}",
+                        'subtitle': f"العميل: {cust_name} | {o.created_at.strftime('%Y-%m-%d %H:%M')}",
+                        'url': f'{prefix}/pos/invoices/?q={o.order_number}',
+                        'badge': f"{o.total_amount:,.2f} ج.م",
+                        'badge_type': 'primary'
+                    })
+                results.append({
+                    'category': 'فواتير المبيعات (POS)',
+                    'icon': 'receipt_long',
+                    'items': items
                 })
-            results.append({
-                'category': 'فواتير المبيعات (POS)',
-                'icon': 'receipt_long',
-                'items': items
-            })
 
-        return JsonResponse({'results': results})
+            # 6. طلبات البضاعة والنواقص للموردين
+            from inventory.models import PurchaseOrder
+            purchase_orders = PurchaseOrder.objects.select_related('supplier').filter(
+                Q(order_number__icontains=query) | Q(supplier__name__icontains=query) | Q(notes__icontains=query)
+            )[:5]
+            if purchase_orders.exists():
+                items = []
+                for po in purchase_orders:
+                    supp_name = po.supplier.name if po.supplier else "عدة شركات"
+                    items.append({
+                        'title': f"طلب بضاعة #{po.order_number} ({supp_name})",
+                        'subtitle': f"الحالة: {po.get_status_display()} | {po.created_at.strftime('%Y-%m-%d')}",
+                        'url': f'{prefix}/inventory/orders/{po.id}/',
+                        'badge': po.get_status_display(),
+                        'badge_type': 'primary' if po.status == 'received' else 'tertiary'
+                    })
+                results.append({
+                    'category': 'طلبات البضاعة والنواقص',
+                    'icon': 'local_shipping',
+                    'items': items
+                })
+
+            return JsonResponse({'results': results})
+        finally:
+            set_current_tenant(prev_tenant)
 
 
 import os
