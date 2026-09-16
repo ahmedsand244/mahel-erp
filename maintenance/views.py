@@ -15,13 +15,13 @@ class MaintenanceKanbanView(ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        tickets = MaintenanceTicket.objects.select_related('customer').prefetch_related('parts_consumed__product')
-        context['pending_tickets'] = tickets.filter(status='pending')
-        context['in_progress_tickets'] = tickets.filter(status='in_progress')
-        context['completed_tickets'] = tickets.filter(status='completed')
-        context['delivered_tickets'] = tickets.filter(status='delivered')
-        context['customers'] = Customer.objects.all()
-        context['products'] = Product.objects.filter(stock_quantity__gt=0)
+        all_tickets = list(MaintenanceTicket.objects.select_related('customer').prefetch_related('parts_consumed__product').order_by('-created_at'))
+        context['pending_tickets'] = [t for t in all_tickets if t.status == 'pending']
+        context['in_progress_tickets'] = [t for t in all_tickets if t.status == 'in_progress']
+        context['completed_tickets'] = [t for t in all_tickets if t.status == 'completed']
+        context['delivered_tickets'] = [t for t in all_tickets if t.status == 'delivered']
+        context['customers'] = Customer.objects.only('id', 'name', 'phone').all()
+        context['products'] = Product.objects.only('id', 'name', 'selling_price', 'stock_quantity').filter(stock_quantity__gt=0)
         return context
 
     def post(self, request, *args, **kwargs):

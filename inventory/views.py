@@ -29,19 +29,22 @@ class InventoryListView(ListView):
     template_name = "inventory.html"
     context_object_name = "products"
 
+    def get_queryset(self):
+        return Product.objects.select_related('default_supplier').all().order_by('name')
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         
         # Dynamic, real-time deduplicated stock alerts
-        low_stock_products = Product.objects.filter(
+        low_stock_products = list(Product.objects.filter(
             stock_quantity__lte=F('min_stock_threshold')
-        ).order_by('stock_quantity', 'name')
+        ).select_related('default_supplier').order_by('stock_quantity', 'name'))
         
         tenant = getattr(self.request, 'tenant', None)
         context['categories'] = get_tenant_categories(tenant) if tenant else Category.objects.all()
         context['low_stock_products'] = low_stock_products
-        context['out_of_stock_count'] = low_stock_products.filter(stock_quantity__lte=0).count()
-        context['low_stock_count'] = low_stock_products.filter(stock_quantity__gt=0).count()
+        context['out_of_stock_count'] = sum(1 for p in low_stock_products if p.stock_quantity <= 0)
+        context['low_stock_count'] = sum(1 for p in low_stock_products if p.stock_quantity > 0)
         context['category_choices'] = Product.CATEGORY_CHOICES
         return context
 

@@ -18,10 +18,9 @@ class POSView(TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        products = Product.objects.all().order_by('name')
-        prods_list = []
-        for p in products:
-            prods_list.append({
+        products = Product.objects.only('id', 'name', 'sku', 'barcode', 'category', 'selling_price', 'purchase_price', 'stock_quantity', 'image').order_by('name')
+        prods_list = [
+            {
                 'id': p.id,
                 'name': p.name,
                 'sku': p.sku or '',
@@ -31,17 +30,20 @@ class POSView(TemplateView):
                 'cost': str(p.purchase_price),
                 'stock': p.stock_quantity,
                 'image': p.image.url if p.image else ''
-            })
-        customers = Customer.objects.all()
-        custs_list = []
-        for c in customers:
-            custs_list.append({
+            }
+            for p in products
+        ]
+        customers = Customer.objects.only('id', 'name', 'phone', 'workplace', 'balance').all()
+        custs_list = [
+            {
                 'id': c.id,
                 'name': c.name,
                 'phone': c.phone or '',
                 'workplace': c.workplace or '',
                 'balance': str(c.balance)
-            })
+            }
+            for c in customers
+        ]
         tenant = getattr(self.request, 'tenant', None)
         context['categories'] = get_tenant_categories(tenant) if tenant else Category.objects.all()
         context['customers'] = customers

@@ -1,6 +1,7 @@
 from django.utils import timezone
 from django.db.models import F, Q
 from decimal import Decimal
+from django.core.cache import cache
 
 from ledger.models import Customer, Supplier, Transaction
 from inventory.models import Product
@@ -9,16 +10,21 @@ from maintenance.models import MaintenanceTicket
 def smart_notifications(request):
     """
     سياق محرك التنبيهات والإشعارات الذكية المتاحة لكافة صفحات النظام.
-    يغطي:
-    1. استحقاق مواعيد سداد ديون العملاء والموردين
-    2. النقص الحاد في المخزون (الحد الأدنى)
-    3. تذاكر الورشة والصيانة المتأخرة أو المستحقة التسليم
+    يتم تخزينه مؤقتاً في الرام (RAM Cache) لمدة 30 ثانية لتفادي استعلامات قاعدة البيانات المتكررة.
     """
     if not request.user.is_authenticated:
         return {'smart_alerts': [], 'smart_alerts_count': 0}
 
     if hasattr(request, '_cached_smart_alerts'):
         return request._cached_smart_alerts
+
+    tenant = getattr(request, 'tenant', None)
+    tenant_id = tenant.id if tenant else 'none'
+    cache_key = f"smart_alerts_{tenant_id}_{request.user.id}"
+    cached_data = cache.get(cache_key)
+    if cached_data is not None:
+        request._cached_smart_alerts = cached_data
+        return cached_data
 
     alerts = []
     today = timezone.now().date()
@@ -107,6 +113,7 @@ def smart_notifications(request):
         'smart_alerts': alerts,
         'smart_alerts_count': len(alerts)
     }
+    cache.set(cache_key, result, timeout=30)
     request._cached_smart_alerts = result
     return result
 
@@ -114,11 +121,19 @@ def smart_notifications(request):
 def tenant_subscription_info(request):
     """
     يوفر معلومات اشتراك الشركة والوقت المتبقي لجميع صفحات النظام
+    مخزن في الذاكرة (RAM Cache) لمدة دقيقتين لسرعة التصفح الفائقة.
     """
     if hasattr(request, '_cached_tenant_subscription_info'):
         return request._cached_tenant_subscription_info
 
     tenant = getattr(request, 'tenant', None)
+    tenant_id = tenant.id if tenant else 'none'
+    cache_key = f"tenant_sub_info_{tenant_id}"
+    cached_res = cache.get(cache_key)
+    if cached_res is not None:
+        request._cached_tenant_subscription_info = cached_res
+        return cached_res
+
     if not tenant and request.user.is_authenticated:
         from tenants.models import TenantUser, Tenant
         membership = TenantUser.objects.filter(user=request.user).select_related('tenant').first()
@@ -129,6 +144,7 @@ def tenant_subscription_info(request):
 
     if not tenant:
         res = {'subscription_info': None}
+        cache.set(cache_key, res, timeout=120)
         request._cached_tenant_subscription_info = res
         return res
 
@@ -148,5 +164,6 @@ def tenant_subscription_info(request):
             'badge_color': 'emerald' if days_left > 5 else ('amber' if days_left > 2 else 'rose'),
         }
     }
+    cache.set(cache_key, res, timeout=120)
     request._cached_tenant_subscription_info = res
     return res

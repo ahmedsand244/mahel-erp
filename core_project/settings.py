@@ -104,9 +104,22 @@ else:
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
             'NAME': BASE_DIR / 'db.sqlite3',
-            'CONN_MAX_AGE': 300,
+            'CONN_MAX_AGE': 600,
         }
     }
+
+# High-Speed In-Memory Cache (RAM Turbo)
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'mahel-erp-ram-cache',
+        'TIMEOUT': 300,
+        'OPTIONS': {
+            'MAX_ENTRIES': 5000,
+            'CULL_FREQUENCY': 3,
+        }
+    }
+}
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [

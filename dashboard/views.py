@@ -74,12 +74,9 @@ class DashboardView(TemplateView):
         context['products_count'] = inv_agg['count'] or 0
 
         # 3. Dynamic deduplicated low stock products
-        low_stock_products = Product.objects.filter(
-            stock_quantity__lte=F('min_stock_threshold')
-        ).only('id', 'name', 'stock_quantity', 'min_stock_threshold').order_by('stock_quantity', 'name')[:5]
-        
-        context['low_stock_products'] = low_stock_products
-        context['low_stock_count'] = low_stock_products.count()
+        low_stock_qs = Product.objects.filter(stock_quantity__lte=F('min_stock_threshold'))
+        context['low_stock_count'] = low_stock_qs.count()
+        context['low_stock_products'] = low_stock_qs.only('id', 'name', 'stock_quantity', 'min_stock_threshold').order_by('stock_quantity', 'name')[:5]
 
         # 4. Maintenance & Ledger Counts
         context['active_tickets_count'] = MaintenanceTicket.objects.exclude(status='delivered').count()
