@@ -39,6 +39,10 @@ class MaintenanceTicket(models.Model):
     def __str__(self):
         return f"تذكرة صيانة #{self.ticket_number} - {self.device_name}"
 
+    @property
+    def total_amount(self):
+        return (self.labor_fees or Decimal('0.00')) + (self.parts_sell or Decimal('0.00'))
+
 
 class TicketPartConsumption(models.Model):
     ticket = models.ForeignKey(MaintenanceTicket, on_delete=models.CASCADE, related_name='parts_consumed', verbose_name="تذكرة الصيانة")

@@ -335,6 +335,118 @@
             </form>
         </div>
     </div>
+
+    <!-- Modal 3: Edit Maintenance Labor Fees -->
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+         x-show="showEditLaborModal"
+         style="display: none;"
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="opacity-0 scale-95"
+         x-transition:enter-end="opacity-100 scale-100"
+         x-transition:leave="transition ease-in duration-150"
+         x-transition:leave-start="opacity-100 scale-100"
+         x-transition:leave-end="opacity-0 scale-95">
+        <div class="glass-card rounded-2xl p-6 sm:p-8 max-w-md w-full space-y-5 text-right shadow-2xl bg-surface-container-low border border-white/10"
+             @click.away="showEditLaborModal = false">
+            
+            <div class="flex items-center justify-between border-b border-white/10 pb-3">
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-primary text-2xl">price_change</span>
+                    <h3 class="text-xl font-bold text-on-surface">تعديل رسوم الصيانة</h3>
+                </div>
+                <button type="button" @click="showEditLaborModal = false" class="text-on-surface-variant hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors">
+                    <span class="material-symbols-outlined text-lg">close</span>
+                </button>
+            </div>
+
+            <!-- Ticket Quick Info -->
+            <div class="p-3 bg-white/5 rounded-xl border border-white/5 space-y-1">
+                <div class="flex justify-between items-center text-xs">
+                    <span class="text-on-surface-variant">رقم التذكرة:</span>
+                    <span class="font-mono font-bold text-secondary" x-text="'#' + selectedTicketNumber"></span>
+                </div>
+                <div class="flex justify-between items-center text-xs" x-show="selectedDeviceName">
+                    <span class="text-on-surface-variant">المعدة / الجهاز:</span>
+                    <span class="font-bold text-on-surface" x-text="selectedDeviceName"></span>
+                </div>
+            </div>
+
+            <form method="post" :action="'/maintenance/update-labor-fee/' + selectedTicketId + '/'" class="space-y-4 text-sm">
+                {% csrf_token %}
+                
+                <div class="space-y-2">
+                    <label class="block text-xs font-bold text-on-surface-variant">رسوم الصيانة والمصنعية (ج.م):</label>
+                    <div class="relative">
+                        <input type="number" 
+                               step="0.01" 
+                               min="0" 
+                               name="labor_fees" 
+                               x-model="selectedLaborFee" 
+                               required 
+                               placeholder="0.00" 
+                               class="w-full bg-surface-container-high border border-white/15 rounded-xl py-3 px-4 focus:outline-none focus:border-primary text-left font-mono text-base font-bold text-primary">
+                        <span class="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-on-surface-variant pointer-events-none">ج.م</span>
+                    </div>
+
+                    <!-- Quick Preset Buttons -->
+                    <div class="flex flex-wrap gap-1.5 pt-1">
+                        <button type="button" 
+                                @click="selectedLaborFee = '0.00'" 
+                                class="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-xs font-medium text-on-surface-variant border border-white/5 transition-all">
+                            مجاني (0)
+                        </button>
+                        <button type="button" 
+                                @click="adjustLaborFee(10)" 
+                                class="px-2.5 py-1 rounded-lg bg-primary/10 hover:bg-primary/20 text-xs font-bold text-primary border border-primary/20 transition-all">
+                            +10
+                        </button>
+                        <button type="button" 
+                                @click="adjustLaborFee(20)" 
+                                class="px-2.5 py-1 rounded-lg bg-primary/10 hover:bg-primary/20 text-xs font-bold text-primary border border-primary/20 transition-all">
+                            +20
+                        </button>
+                        <button type="button" 
+                                @click="adjustLaborFee(50)" 
+                                class="px-2.5 py-1 rounded-lg bg-primary/10 hover:bg-primary/20 text-xs font-bold text-primary border border-primary/20 transition-all">
+                            +50
+                        </button>
+                        <button type="button" 
+                                @click="adjustLaborFee(100)" 
+                                class="px-2.5 py-1 rounded-lg bg-primary/10 hover:bg-primary/20 text-xs font-bold text-primary border border-primary/20 transition-all">
+                            +100
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Live Total Preview -->
+                <div class="p-3.5 bg-primary/5 rounded-xl border border-primary/20 space-y-1.5">
+                    <div class="flex justify-between items-center text-xs">
+                        <span class="text-on-surface-variant">قطع الغيار (ثابتة):</span>
+                        <span class="font-bold text-tertiary font-mono" x-text="Number(selectedPartsSell || 0).toFixed(2) + ' ج.م'"></span>
+                    </div>
+                    <div class="flex justify-between items-center text-xs">
+                        <span class="text-on-surface-variant">رسوم الصيانة الجديدة:</span>
+                        <span class="font-bold text-primary font-mono" x-text="Number(selectedLaborFee || 0).toFixed(2) + ' ج.م'"></span>
+                    </div>
+                    <div class="flex justify-between items-center pt-2 border-t border-primary/20">
+                        <span class="text-xs font-black text-on-surface">الإجمالي الجديد المطلوب:</span>
+                        <span class="font-black text-emerald-400 font-mono text-sm" 
+                              x-text="(Number(selectedLaborFee || 0) + Number(selectedPartsSell || 0)).toFixed(2) + ' ج.م'"></span>
+                    </div>
+                </div>
+
+                <div class="flex gap-3 pt-2">
+                    <button type="submit" class="flex-1 bg-primary hover:bg-primary/90 text-on-primary py-3 rounded-xl font-bold transition-all shadow-lg shadow-primary/25 flex items-center justify-center gap-2">
+                        <span class="material-symbols-outlined text-base">check</span>
+                        <span>حفظ التعديل</span>
+                    </button>
+                    <button type="button" @click="showEditLaborModal = false" class="flex-1 bg-white/5 hover:bg-white/10 border border-white/10 py-3 rounded-xl text-on-surface-variant font-bold transition-all">
+                        إلغاء
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
 {% endblock %}
 
@@ -346,8 +458,17 @@ function maintenanceApp() {
     return {
         showNewTicketModal: false,
         showAddPartsModal: false,
+        showEditLaborModal: false,
         selectedTicketId: null,
         selectedTicketNumber: '',
+        selectedDeviceName: '',
+        selectedLaborFee: '0.00',
+        selectedPartsSell: '0.00',
+
+        adjustLaborFee(amount) {
+            let current = parseFloat(this.selectedLaborFee) || 0;
+            this.selectedLaborFee = Math.max(0, current + amount).toFixed(2);
+        },
 
         selectedCustomerId: '',
         customerSearchQuery: '',

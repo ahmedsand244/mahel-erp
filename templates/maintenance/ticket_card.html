@@ -24,14 +24,35 @@
     </div>
 
     <!-- Pricing Summary -->
-    <div class="p-2 bg-white/5 rounded-lg text-xs space-y-1">
-        <div class="flex justify-between">
-            <span class="text-on-surface-variant">رسوم الصيانة:</span>
-            <span class="font-bold text-primary">{{ ticket.labor_fees }} ج.م</span>
+    <div class="p-2.5 bg-white/5 rounded-xl text-xs space-y-1.5 border border-white/5">
+        <div class="flex justify-between items-center">
+            <span class="text-on-surface-variant font-medium">رسوم الصيانة:</span>
+            <div class="flex items-center gap-1.5">
+                <span class="font-bold text-primary font-mono">{{ ticket.labor_fees }} ج.م</span>
+                {% if ticket.status != 'delivered' %}
+                <button type="button"
+                        @click="
+                            selectedTicketId = '{{ ticket.id }}';
+                            selectedTicketNumber = '{{ ticket.ticket_number }}';
+                            selectedDeviceName = '{{ ticket.device_name|escapejs }}';
+                            selectedLaborFee = '{{ ticket.labor_fees }}';
+                            selectedPartsSell = '{{ ticket.parts_sell }}';
+                            showEditLaborModal = true;
+                        "
+                        class="p-1 rounded-md bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 transition-all active:scale-95 flex items-center justify-center"
+                        title="تعديل رسوم الصيانة / خصم أو زيادة">
+                    <span class="material-symbols-outlined text-[13px] leading-none">edit</span>
+                </button>
+                {% endif %}
+            </div>
         </div>
-        <div class="flex justify-between">
-            <span class="text-on-surface-variant">قطع غيار:</span>
-            <span class="font-bold text-tertiary">{{ ticket.parts_sell }} ج.م</span>
+        <div class="flex justify-between items-center">
+            <span class="text-on-surface-variant font-medium">قطع غيار:</span>
+            <span class="font-bold text-tertiary font-mono">{{ ticket.parts_sell }} ج.م</span>
+        </div>
+        <div class="flex justify-between items-center pt-1.5 border-t border-white/10 font-bold">
+            <span class="text-on-surface-variant text-[11px]">الإجمالي المطلوب:</span>
+            <span class="text-emerald-400 font-mono text-xs font-black">{{ ticket.total_amount }} ج.م</span>
         </div>
     </div>
 

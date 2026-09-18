@@ -120,3 +120,36 @@ class AddPartsToTicketView(View):
 
         return redirect('maintenance:kanban')
 
+
+class UpdateTicketLaborFeeView(View):
+    def post(self, request, pk, *args, **kwargs):
+        ticket = get_object_or_404(MaintenanceTicket, pk=pk)
+        if ticket.status == 'delivered':
+            messages.error(request, "لا يمكن تعديل رسوم تذكرة صيانة تم تسليمها وتحصيلها بالفعل.")
+            return redirect('maintenance:kanban')
+
+        raw_fee = request.POST.get('labor_fees')
+        try:
+            new_fee = Decimal(str(raw_fee).strip())
+            if new_fee < Decimal('0.00'):
+                messages.error(request, "رسوم الصيانة لا يمكن أن تكون قيمة سالبة.")
+                return redirect('maintenance:kanban')
+
+            old_fee = ticket.labor_fees
+            ticket.labor_fees = new_fee
+            ticket.save()
+
+            from dashboard.audit import log_activity
+            log_activity(
+                request,
+                module='maintenance',
+                action_type='update',
+                description=f"تعديل رسوم الصيانة لتذكرة #{ticket.ticket_number} من ({old_fee} ج.م) إلى ({new_fee} ج.م) - الجهاز: {ticket.device_name}",
+                severity='info'
+            )
+            messages.success(request, f"تم تحديث رسوم الصيانة للتذكرة #{ticket.ticket_number} بنجاح إلى {new_fee} ج.م")
+        except (ValueError, TypeError, Exception) as e:
+            messages.error(request, f"قيمة الرسوم غير صحيحة: {str(e)}")
+
+        return redirect('maintenance:kanban')
+
