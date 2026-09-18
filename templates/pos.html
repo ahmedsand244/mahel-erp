@@ -535,26 +535,6 @@
             </template>
         </div>
     </div>
-    <!-- Mobile Floating Sticky Cart Summary Bar (Only visible on Mobile when cart has items) -->
-    <div x-show="cart.length > 0" x-cloak
-         class="xl:hidden fixed bottom-4 left-4 right-4 z-40 bg-apple-surface/95 dark:bg-slate-900/95 backdrop-blur-xl border border-primary/40 shadow-2xl rounded-2xl p-3 flex items-center justify-between gap-3 animate-slide-up transition-all">
-        <div class="flex items-center gap-2.5">
-            <div class="w-10 h-10 rounded-xl bg-primary/20 text-primary flex items-center justify-center font-bold relative">
-                <span class="material-symbols-outlined text-xl">shopping_cart</span>
-                <span class="absolute -top-1.5 -right-1.5 bg-primary text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-mono font-extrabold border-2 border-apple-surface"
-                      x-text="cartTotalCount()"></span>
-            </div>
-            <div>
-                <div class="text-[11px] text-apple-secondary font-bold">إجمالي السلة</div>
-                <div class="text-sm font-black text-primary font-mono" x-text="getCartTotal().toFixed(2) + ' ج.م'"></div>
-            </div>
-        </div>
-        <button type="button" @click="scrollToCart()"
-                class="bg-gradient-to-r from-primary to-indigo-600 hover:from-primary-dark hover:to-indigo-700 text-white px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-1.5 shadow-apple-sm active:scale-95 transition-all cursor-pointer">
-            <span>إتمام الفاتورة</span>
-            <span class="material-symbols-outlined text-sm">arrow_downward</span>
-        </button>
-    </div>
 </div>
 
 {{ products_list_json|json_script:"products-db-json" }}
