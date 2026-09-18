@@ -42,58 +42,135 @@
         </div>
 
         <!-- 1. Search Bar & Filters with Phone Camera Barcode Scanner -->
-        <div class="glass-card rounded-2xl xl:rounded-3xl p-4 sm:p-6 order-2 xl:order-none">
-            <div class="relative w-full flex items-center gap-2.5">
-                <div class="relative flex-1">
-                    <input class="apple-input text-sm sm:text-base pr-12 text-right shadow-apple-sm w-full" 
-                           placeholder="ابحث عن منتج بالاسم أو رمز الباركوود..." 
-                           type="text" 
-                           x-model="searchQuery">
-                    <span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-apple-secondary text-2xl pointer-events-none">search</span>
+        <div class="glass-card rounded-2xl xl:rounded-3xl p-3.5 sm:p-5 order-2 xl:order-none transition-all shadow-apple-sm">
+            <div class="flex flex-col gap-3">
+                <div class="relative w-full flex items-center gap-2 sm:gap-3">
+                    <div class="relative flex-1 group">
+                        <!-- Search Icon -->
+                        <span class="material-symbols-outlined absolute right-3.5 top-1/2 -translate-y-1/2 text-primary text-xl sm:text-2xl pointer-events-none transition-transform group-focus-within:scale-110">search</span>
+                        
+                        <!-- Search Input -->
+                        <input class="apple-input text-sm sm:text-base pr-11 sm:pr-12 pl-10 sm:pl-12 text-right shadow-apple-sm w-full font-medium transition-all focus:ring-2 focus:ring-primary/25" 
+                               placeholder="ابحث بالاسم (بوجيه/بجيه، تانك/تنك...) أو الباركود..." 
+                               type="text" 
+                               x-model="searchQuery"
+                               x-ref="searchInput"
+                               @keydown.enter.prevent="handleSearchEnter()"
+                               @keydown.escape="clearSearch()">
+                        
+                        <!-- Clear Search Button (X) -->
+                        <button type="button" 
+                                x-show="searchQuery && searchQuery.length > 0" 
+                                x-cloak
+                                @click="clearSearch()" 
+                                class="absolute left-2.5 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-apple-surface-subtle hover:bg-apple-border text-apple-secondary hover:text-apple-text flex items-center justify-center transition-all active:scale-90"
+                                title="مسح البحث">
+                            <span class="material-symbols-outlined text-sm sm:text-base">close</span>
+                        </button>
+                    </div>
+                    
+                    <!-- Camera Barcode Scanner Button -->
+                    <button type="button" @click="startCameraScanner()" 
+                            class="bg-gradient-to-r from-primary to-indigo-600 hover:from-primary-dark hover:to-indigo-700 text-white px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl font-bold transition-all flex items-center gap-1.5 sm:gap-2 shrink-0 text-xs sm:text-sm active:scale-95 cursor-pointer shadow-apple-sm"
+                            title="مسح الباركوود بكاميرا الموبايل أو الحاسوب">
+                        <span class="material-symbols-outlined text-lg sm:text-xl">photo_camera</span>
+                        <span class="hidden sm:inline">مسح باركود</span>
+                        <span class="sm:hidden text-xs">كاميرا</span>
+                    </button>
                 </div>
-                
-                <!-- Camera Barcode Scanner Button -->
-                <button type="button" @click="startCameraScanner()" 
-                        class="bg-primary/15 hover:bg-primary text-primary hover:text-white border border-primary/30 px-4 py-3 rounded-2xl font-bold transition-all flex items-center gap-2 shrink-0 text-xs sm:text-sm active:scale-95 cursor-pointer shadow-apple-sm"
-                        title="مسح الباركوود بكاميرا الموبايل أو الحاسوب">
-                    <span class="material-symbols-outlined text-xl animate-pulse">photo_camera</span>
-                    <span>مسح بالباركود</span>
-                </button>
+
+                <!-- Search Quick Filters & Intelligent Search Status Bar -->
+                <div class="flex flex-wrap items-center justify-between gap-2 pt-1.5 border-t border-apple-border/40 text-xs">
+                    <!-- Quick Stock Filter Chips -->
+                    <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+                        <button type="button" @click="activeStockFilter = 'all'" 
+                                class="px-2.5 py-1 rounded-lg font-bold text-xs transition-all cursor-pointer select-none"
+                                :class="activeStockFilter === 'all' ? 'bg-primary text-white shadow-apple-sm' : 'bg-apple-surface-subtle text-apple-secondary hover:text-apple-text'">
+                            الكل (<span x-text="products.length"></span>)
+                        </button>
+                        <button type="button" @click="activeStockFilter = 'instock'" 
+                                class="px-2.5 py-1 rounded-lg font-bold text-xs transition-all cursor-pointer select-none flex items-center gap-1"
+                                :class="activeStockFilter === 'instock' ? 'bg-emerald-600 text-white shadow-apple-sm' : 'bg-apple-surface-subtle text-apple-secondary hover:text-apple-text'">
+                            <span>متوفر</span>
+                            <span class="text-[10px] opacity-80" x-text="'(' + countInStock() + ')'"></span>
+                        </button>
+                        <button type="button" @click="activeStockFilter = 'lowstock'" 
+                                class="px-2.5 py-1 rounded-lg font-bold text-xs transition-all cursor-pointer select-none flex items-center gap-1"
+                                :class="activeStockFilter === 'lowstock' ? 'bg-rose-600 text-white shadow-apple-sm' : 'bg-apple-surface-subtle text-apple-secondary hover:text-apple-text'">
+                            <span>نواقص</span>
+                            <span class="text-[10px] opacity-80" x-text="'(' + countLowStock() + ')'"></span>
+                        </button>
+                    </div>
+
+                    <!-- Search Match Counter & Smart Search Indicator -->
+                    <div class="flex items-center gap-2 mr-auto">
+                        <template x-if="searchQuery">
+                            <span class="bg-primary/10 text-primary border border-primary/25 px-2.5 py-0.5 rounded-full font-bold text-[11px] flex items-center gap-1 animate-fadeIn">
+                                <span class="material-symbols-outlined text-xs">auto_awesome</span>
+                                <span x-text="'مطابقة ذكية: ' + filteredProducts().length + ' صنف'"></span>
+                            </span>
+                        </template>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <!-- 3. Products Grid (Order 3 on mobile - below the Cart Card!) -->
-        <div class="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 order-3 xl:order-none">
-            <template x-for="product in filteredProducts()" :key="product.id">
-                <div class="glass-card rounded-2xl p-4 flex flex-col hover:border-primary/50 transition-all duration-200 cursor-pointer group active:scale-[0.98]"
-                     @click="addToCart(product)">
-                    <div class="aspect-square bg-apple-surface-subtle border border-apple-border rounded-xl mb-4 flex items-center justify-center relative overflow-hidden">
-                        <span class="absolute top-2 right-2 px-2.5 py-1 rounded-full text-[11px] font-extrabold z-10 shadow-sm border"
-                              :class="product.stock <= 3 ? 'bg-rose-600 text-white border-rose-500/50' : 'bg-emerald-600 text-white border-emerald-500/50'"
-                              x-text="product.stock <= 3 ? 'منخفض (' + product.stock + ')' : 'متوفر (' + product.stock + ')'">
-                        </span>
-                        <template x-if="product.image">
-                            <img :src="product.image" :alt="product.name" class="w-full h-full object-cover rounded-xl group-hover:scale-105 transition-transform duration-300">
-                        </template>
-                        <template x-if="!product.image">
-                            <span class="material-symbols-outlined text-4xl text-apple-secondary group-hover:scale-110 transition-transform">inventory_2</span>
-                        </template>
-                    </div>
-                    <h3 class="text-sm sm:text-base font-bold text-apple-text mb-1 truncate text-right" x-text="product.name"></h3>
-                    <p class="text-xs text-apple-secondary mb-3 text-right font-mono" x-text="'SKU: ' + product.sku"></p>
-                    <div class="mt-auto flex justify-between items-center w-full">
-                        <span class="text-base sm:text-lg font-bold text-primary font-mono" x-text="parseFloat(product.price).toFixed(2) + ' ج.م'"></span>
-                        <button class="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-colors">
-                            <span class="material-symbols-outlined text-sm">add</span>
-                        </button>
-                    </div>
+        <!-- 3. Products Grid (Order 3 on mobile - directly under the Search Bar for seamless UX!) -->
+        <div class="order-3 xl:order-none">
+            <!-- Empty State when 0 products match -->
+            <div x-show="filteredProducts().length === 0" x-cloak
+                 class="glass-card rounded-2xl sm:rounded-3xl p-6 sm:p-10 text-center flex flex-col items-center justify-center gap-3">
+                <div class="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-apple-surface-subtle border border-apple-border flex items-center justify-center text-apple-secondary">
+                    <span class="material-symbols-outlined text-3xl">search_off</span>
                 </div>
-            </template>
+                <h3 class="text-base sm:text-lg font-bold text-apple-text">لا توجد منتجات مطابقة للبحث</h3>
+                <p class="text-xs sm:text-sm text-apple-secondary max-w-sm">
+                    لم نجد نتائج تطابق "<span class="text-primary font-bold" x-text="searchQuery"></span>". يمكنك مراجعة الكلمة أو مسح البحث.
+                </p>
+                <button type="button" @click="clearSearch()"
+                        class="mt-2 bg-primary hover:bg-primary-dark text-white text-xs sm:text-sm px-4 py-2 rounded-xl font-bold transition-all shadow-apple-sm active:scale-95 cursor-pointer">
+                    عرض كافة المنتجات
+                </button>
+            </div>
+
+            <!-- Products Grid -->
+            <div x-show="filteredProducts().length > 0" class="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-5">
+                <template x-for="product in filteredProducts()" :key="product.id">
+                    <div class="glass-card rounded-2xl p-3.5 sm:p-4 flex flex-col hover:border-primary/50 transition-all duration-200 cursor-pointer group active:scale-[0.98] relative overflow-hidden"
+                         @click="addToCart(product)">
+                        <div class="aspect-square bg-apple-surface-subtle border border-apple-border rounded-xl mb-3 flex items-center justify-center relative overflow-hidden">
+                            <span class="absolute top-2 right-2 px-2.5 py-1 rounded-full text-[11px] font-extrabold z-10 shadow-sm border"
+                                  :class="product.stock <= 3 ? 'bg-rose-600 text-white border-rose-500/50' : 'bg-emerald-600 text-white border-emerald-500/50'"
+                                  x-text="product.stock <= 3 ? 'منخفض (' + product.stock + ')' : 'متوفر (' + product.stock + ')'">
+                            </span>
+                            <template x-if="product.image">
+                                <img :src="product.image" :alt="product.name" class="w-full h-full object-cover rounded-xl group-hover:scale-105 transition-transform duration-300">
+                            </template>
+                            <template x-if="!product.image">
+                                <span class="material-symbols-outlined text-4xl text-apple-secondary group-hover:scale-110 transition-transform">inventory_2</span>
+                            </template>
+                        </div>
+                        <h3 class="text-xs sm:text-sm font-bold text-apple-text mb-1 truncate text-right group-hover:text-primary transition-colors" x-text="product.name"></h3>
+                        <div class="flex items-center justify-between text-[11px] text-apple-secondary mb-2.5 font-mono">
+                            <span x-text="'SKU: ' + product.sku"></span>
+                            <template x-if="product.barcode">
+                                <span class="text-[10px] bg-apple-surface-subtle px-1.5 py-0.5 rounded text-apple-secondary" x-text="product.barcode"></span>
+                            </template>
+                        </div>
+                        <div class="mt-auto flex justify-between items-center w-full pt-2 border-t border-apple-border/40">
+                            <span class="text-sm sm:text-base font-extrabold text-primary font-mono" x-text="parseFloat(product.price).toFixed(2) + ' ج.م'"></span>
+                            <button type="button" class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-all shadow-apple-sm">
+                                <span class="material-symbols-outlined text-xs sm:text-sm">add</span>
+                            </button>
+                        </div>
+                    </div>
+                </template>
+            </div>
         </div>
     </div>
 
-    <!-- 2. Left Panel: Shopping Cart & Checkout Card (Order 2 on mobile - SIT RIGHT BELOW SEARCH BAR!) -->
-    <section class="w-full xl:w-[420px] glass-card rounded-2xl xl:rounded-3xl flex flex-col h-[650px] sm:h-[700px] overflow-hidden shrink-0 order-2 xl:order-none">
+    <!-- 2. Left Panel: Shopping Cart & Checkout Card (Order 4 on mobile - placed after search and products) -->
+    <section id="pos-cart-section" class="w-full xl:w-[420px] glass-card rounded-2xl xl:rounded-3xl flex flex-col h-[650px] sm:h-[700px] overflow-hidden shrink-0 order-4 xl:order-none">
         <!-- Customer Selection Header & Quick Add Button -->
         <div class="p-4 sm:p-6 border-b border-apple-border space-y-2.5 bg-apple-surface-subtle/40">
             <div class="flex justify-between items-center">
@@ -458,6 +535,26 @@
             </template>
         </div>
     </div>
+    <!-- Mobile Floating Sticky Cart Summary Bar (Only visible on Mobile when cart has items) -->
+    <div x-show="cart.length > 0" x-cloak
+         class="xl:hidden fixed bottom-4 left-4 right-4 z-40 bg-apple-surface/95 dark:bg-slate-900/95 backdrop-blur-xl border border-primary/40 shadow-2xl rounded-2xl p-3 flex items-center justify-between gap-3 animate-slide-up transition-all">
+        <div class="flex items-center gap-2.5">
+            <div class="w-10 h-10 rounded-xl bg-primary/20 text-primary flex items-center justify-center font-bold relative">
+                <span class="material-symbols-outlined text-xl">shopping_cart</span>
+                <span class="absolute -top-1.5 -right-1.5 bg-primary text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-mono font-extrabold border-2 border-apple-surface"
+                      x-text="cartTotalCount()"></span>
+            </div>
+            <div>
+                <div class="text-[11px] text-apple-secondary font-bold">إجمالي السلة</div>
+                <div class="text-sm font-black text-primary font-mono" x-text="getCartTotal().toFixed(2) + ' ج.م'"></div>
+            </div>
+        </div>
+        <button type="button" @click="scrollToCart()"
+                class="bg-gradient-to-r from-primary to-indigo-600 hover:from-primary-dark hover:to-indigo-700 text-white px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-1.5 shadow-apple-sm active:scale-95 transition-all cursor-pointer">
+            <span>إتمام الفاتورة</span>
+            <span class="material-symbols-outlined text-sm">arrow_downward</span>
+        </button>
+    </div>
 </div>
 
 {{ products_list_json|json_script:"products-db-json" }}
@@ -468,11 +565,143 @@
 <script>
     let html5QrScannerInstance = null;
 
+    // --- Arabic Fuzzy NLP & Intelligent Search Engine ---
+    function normalizeArabicText(str) {
+        if (!str) return '';
+        return str
+            .toString()
+            .toLowerCase()
+            .trim()
+            .replace(/[\u064B-\u065F\u0670\u0640]/g, '') // Remove Arabic Diacritics (Tashkeel) & Tatweel
+            .replace(/[أإآٱ]/g, 'ا') // Normalize all Alef forms to plain ا
+            .replace(/ة/g, 'ه') // Normalize Taa Marbuta to Haa
+            .replace(/ى/g, 'ي') // Normalize Alef Maksura to Yaa
+            .replace(/[ؤئ]/g, 'ء') // Normalize Hamzas
+            .replace(/[٠-٩]/g, d => d.charCodeAt(0) - 1632) // Convert Eastern Arabic digits to standard
+            .replace(/[۰-۹]/g, d => d.charCodeAt(0) - 1776) // Convert Persian digits to standard
+            .replace(/گ/g, 'ك')
+            .replace(/پ/g, 'ب')
+            .replace(/چ/g, 'ج')
+            .replace(/ژ/g, 'ز')
+            .replace(/[\s\-_/\\,.]+/g, ' '); // Clean excess symbols
+    }
+
+    function getVowelSkeleton(str) {
+        const norm = normalizeArabicText(str);
+        if (!norm) return '';
+        return norm
+            .replace(/[اويةaeiou]/g, '') // Remove long vowels (بوجيه -> بجه, تانك -> تنك, كابل -> كبل)
+            .replace(/(.)\1+/g, '$1')   // Collapse duplicate adjacent letters
+            .trim();
+    }
+
+    function levenshteinDist(s1, s2) {
+        if (s1 === s2) return 0;
+        if (!s1.length) return s2.length;
+        if (!s2.length) return s1.length;
+        const v0 = new Array(s2.length + 1);
+        const v1 = new Array(s2.length + 1);
+        for (let i = 0; i <= s2.length; i++) v0[i] = i;
+        for (let i = 0; i < s1.length; i++) {
+            v1[0] = i + 1;
+            for (let j = 0; j < s2.length; j++) {
+                const cost = (s1[i] === s2[j]) ? 0 : 1;
+                v1[j + 1] = Math.min(v1[j] + 1, v0[j + 1] + 1, v0[j] + cost);
+            }
+            for (let j = 0; j <= s2.length; j++) v0[j] = v1[j];
+        }
+        return v0[s2.length];
+    }
+
+    function calculateProductMatchScore(product, query) {
+        const normQ = normalizeArabicText(query);
+        if (!normQ) return { match: true, score: 100 };
+
+        const normName = normalizeArabicText(product.name || '');
+        const normSku = normalizeArabicText(product.sku || '');
+        const normBarcode = normalizeArabicText(product.barcode || '');
+
+        // 1. Exact Barcode or SKU match (Immediate Top Priority)
+        if (normBarcode && normBarcode === normQ) return { match: true, score: 3000 };
+        if (normBarcode && normBarcode.includes(normQ)) return { match: true, score: 2200 };
+        if (normSku && normSku === normQ) return { match: true, score: 2500 };
+        if (normSku && normSku.includes(normQ)) return { match: true, score: 1800 };
+
+        // 2. Exact Name or Direct Substring
+        if (normName === normQ) return { match: true, score: 1500 };
+        if (normName.startsWith(normQ)) return { match: true, score: 1200 };
+        if (normName.includes(normQ)) return { match: true, score: 900 };
+
+        // 3. Full Vowel Skeleton Match (بوجيه = بجيه, تانك = تنك, كابل = كبل)
+        const skelQ = getVowelSkeleton(normQ);
+        const skelName = getVowelSkeleton(normName);
+        if (skelQ && skelName && (skelName === skelQ || (skelQ.length >= 2 && skelName.includes(skelQ)))) {
+            return { match: true, score: 850 };
+        }
+
+        // 4. Token-by-Token Multi-word and Typo Matching
+        const qTokens = normQ.split(' ').filter(Boolean);
+        const nameTokens = normName.split(' ').filter(Boolean);
+
+        let allTokensMatched = true;
+        let totalScore = 0;
+
+        for (const qTok of qTokens) {
+            let tokMatched = false;
+            let bestTokScore = 0;
+            const qTokSkel = getVowelSkeleton(qTok);
+
+            for (const pTok of nameTokens) {
+                const pTokSkel = getVowelSkeleton(pTok);
+
+                if (pTok === qTok) {
+                    tokMatched = true;
+                    bestTokScore = Math.max(bestTokScore, 300);
+                } else if (pTok.startsWith(qTok)) {
+                    tokMatched = true;
+                    bestTokScore = Math.max(bestTokScore, 240);
+                } else if (pTok.includes(qTok)) {
+                    tokMatched = true;
+                    bestTokScore = Math.max(bestTokScore, 200);
+                } else if (qTokSkel && pTokSkel && (pTokSkel === qTokSkel || (qTokSkel.length >= 2 && pTokSkel.includes(qTokSkel)))) {
+                    tokMatched = true;
+                    bestTokScore = Math.max(bestTokScore, 180);
+                } else if (qTok.length >= 3 && pTok.length >= 3) {
+                    const maxAllowedDist = qTok.length <= 4 ? 1 : 2;
+                    const d = levenshteinDist(qTok, pTok);
+                    if (d <= maxAllowedDist) {
+                        tokMatched = true;
+                        bestTokScore = Math.max(bestTokScore, 140 - d * 25);
+                    }
+                } else if (qTokSkel && pTokSkel && qTokSkel.length >= 3 && pTokSkel.length >= 3) {
+                    const dSkel = levenshteinDist(qTokSkel, pTokSkel);
+                    if (dSkel <= 1) {
+                        tokMatched = true;
+                        bestTokScore = Math.max(bestTokScore, 120);
+                    }
+                }
+            }
+
+            if (tokMatched) {
+                totalScore += bestTokScore;
+            } else {
+                allTokensMatched = false;
+                break;
+            }
+        }
+
+        if (allTokensMatched && totalScore > 0) {
+            return { match: true, score: totalScore };
+        }
+
+        return { match: false, score: 0 };
+    }
+
     function posApp() {
         const dbProducts = JSON.parse(document.getElementById('products-db-json').textContent || '[]');
         const dbCustomers = JSON.parse(document.getElementById('customers-db-json').textContent || '[]');
 
-        // 1. Cache to localStorage for offline launch support
+        // Cache to localStorage for offline launch support
         if (dbProducts && dbProducts.length > 0) {
             try { localStorage.setItem('mahel_cached_products', JSON.stringify(dbProducts)); } catch(e) {}
         }
@@ -492,6 +721,7 @@
             products: initialProducts,
             customers: initialCustomers,
             searchQuery: '',
+            activeStockFilter: 'all', // 'all', 'instock', 'lowstock'
             customerId: '',
             customerSearchQuery: '',
             isCustomerDropdownOpen: false,
@@ -525,6 +755,39 @@
                         this.syncOfflineInvoices();
                     }
                 }, 25000);
+            },
+
+            clearSearch() {
+                this.searchQuery = '';
+                this.$nextTick(() => {
+                    if (this.$refs.searchInput) this.$refs.searchInput.focus();
+                });
+            },
+
+            handleSearchEnter() {
+                const matches = this.filteredProducts();
+                if (matches && matches.length === 1) {
+                    this.addToCart(matches[0]);
+                    if (navigator.vibrate) navigator.vibrate(60);
+                    this.clearSearch();
+                }
+            },
+
+            countInStock() {
+                return this.products.filter(p => (parseInt(p.stock) || 0) > 0).length;
+            },
+
+            countLowStock() {
+                return this.products.filter(p => (parseInt(p.stock) || 0) <= 3).length;
+            },
+
+            cartTotalCount() {
+                return this.cart.reduce((sum, item) => sum + (parseInt(item.quantity) || 0), 0);
+            },
+
+            scrollToCart() {
+                const el = document.getElementById('pos-cart-section');
+                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
             },
 
             updatePendingCount() {
@@ -594,20 +857,21 @@
                 if (!code) return;
                 const cleanCode = code.trim().toLowerCase();
                 this.searchQuery = cleanCode;
+                const normCode = normalizeArabicText(cleanCode);
                 const matchedProd = this.products.find(p => 
                     (p.barcode && p.barcode.toLowerCase().trim() === cleanCode) ||
                     (p.sku && p.sku.toLowerCase().trim() === cleanCode) ||
-                    (p.name && p.name.toLowerCase().includes(cleanCode))
+                    (p.name && normalizeArabicText(p.name).includes(normCode))
                 );
 
                 if (matchedProd) {
                     if (navigator.vibrate) navigator.vibrate(100);
                     this.addToCart(matchedProd);
                     this.stopCameraScanner();
-                    alert(` تم التعرف على الباركود: [${matchedProd.name}] وإضافته لسلة البيع بنجاح!`);
+                    alert(`✅ تم التعرف على الباركود: [${matchedProd.name}] وإضافته لسلة البيع بنجاح!`);
                 } else {
                     this.stopCameraScanner();
-                    alert(` تم البحث عن الباركود: [${code}] — يمكنك مراجعة شاشة المنتجات المفلترة.`);
+                    alert(`🔍 تم البحث عن الباركود: [${code}] — يمكنك مراجعة شاشة المنتجات المفلترة.`);
                 }
             },
             showAddCustomerModal: false,
@@ -635,12 +899,18 @@
 
             filteredCustomers() {
                 if (!this.customerSearchQuery.trim()) return this.customers;
-                const q = this.customerSearchQuery.toLowerCase().trim();
-                return this.customers.filter(c => 
-                    (c.name && c.name.toLowerCase().includes(q)) ||
-                    (c.phone && c.phone.includes(q)) ||
-                    (c.workplace && c.workplace.toLowerCase().includes(q))
-                );
+                const q = normalizeArabicText(this.customerSearchQuery);
+                const qSkel = getVowelSkeleton(this.customerSearchQuery);
+                return this.customers.filter(c => {
+                    const cNameNorm = normalizeArabicText(c.name || '');
+                    const cNameSkel = getVowelSkeleton(c.name || '');
+                    const cPhone = c.phone || '';
+                    const cWorkNorm = normalizeArabicText(c.workplace || '');
+                    return cNameNorm.includes(q) || 
+                           cPhone.includes(q) || 
+                           cWorkNorm.includes(q) ||
+                           (qSkel.length >= 2 && cNameSkel.includes(qSkel));
+                });
             },
 
             selectCustomer(id) {
@@ -656,13 +926,38 @@
             },
 
             filteredProducts() {
-                if (!this.searchQuery || !this.searchQuery.trim()) return this.products;
-                const query = this.searchQuery.toLowerCase().trim();
-                return this.products.filter(p => 
-                    (p.name && p.name.toLowerCase().includes(query)) || 
-                    (p.sku && p.sku.toLowerCase().includes(query)) ||
-                    (p.barcode && p.barcode.toLowerCase().includes(query))
-                );
+                let list = this.products;
+
+                // 1. Filter by Stock Tabs
+                if (this.activeStockFilter === 'instock') {
+                    list = list.filter(p => (parseInt(p.stock) || 0) > 0);
+                } else if (this.activeStockFilter === 'lowstock') {
+                    list = list.filter(p => (parseInt(p.stock) || 0) <= 3);
+                }
+
+                // 2. If no query, return current list
+                if (!this.searchQuery || !this.searchQuery.trim()) {
+                    return list;
+                }
+
+                // 3. Smart Arabic Fuzzy Scoring Engine
+                const scoredList = [];
+                for (const p of list) {
+                    const { match, score } = calculateProductMatchScore(p, this.searchQuery);
+                    if (match) {
+                        scoredList.push({ product: p, score: score });
+                    }
+                }
+
+                // 4. Sort by highest relevance score first, then stock availability
+                scoredList.sort((a, b) => {
+                    if (b.score !== a.score) return b.score - a.score;
+                    const aStock = (parseInt(a.product.stock) || 0) > 0 ? 1 : 0;
+                    const bStock = (parseInt(b.product.stock) || 0) > 0 ? 1 : 0;
+                    return bStock - aStock;
+                });
+
+                return scoredList.map(item => item.product);
             },
 
             addToCart(product) {
@@ -702,7 +997,7 @@
                 }
                 const cost = parseFloat(this.editingItem.cost || 0);
                 if (cost > 0 && newPrice < cost) {
-                    alert(` تنبيه: لا يمكن البيع بأقل من سعر التكلفة والشراء (${cost.toFixed(2)} ج.م)!`);
+                    alert(`⚠️ تنبيه: لا يمكن البيع بأقل من سعر التكلفة والشراء (${cost.toFixed(2)} ج.م)!`);
                     return;
                 }
                 this.editingItem.price = newPrice;
@@ -813,7 +1108,6 @@
                 };
 
                 // Always attempt server checkout first!
-                // On localhost / desktop, the local server runs locally even without external internet.
                 fetch('{% url "pos:checkout_ajax" %}', {
                     method: 'POST',
                     headers: {
@@ -838,8 +1132,8 @@
                     }
                 })
                 .catch(err => {
-                    // Fallback to offline invoice storage only if server is completely unreachable (e.g. mobile app without WiFi)
-                    this.saveOfflineInvoice(payload, 'تم حفظ الفاتورة محلياً بأمان (أوفلاين) نظراً لتعذر الاتصال بالسيرفر! ستُرفع تلقائياً عند توفر الاتصال ');
+                    // Fallback to offline invoice storage only if server is unreachable
+                    this.saveOfflineInvoice(payload, 'تم حفظ الفاتورة محلياً بأمان (أوفلاين) نظراً لتعذر الاتصال بالسيرفر! ستُرفع تلقائياً عند توفر الاتصال ⚡');
                 });
             },
 
@@ -918,7 +1212,7 @@
                     if (data.success) {
                         localStorage.removeItem('mahel_pending_invoices');
                         this.updatePendingCount();
-                        alert(` ممتاز! تم مزامنة ${data.synced_count || pending.length} فاتورة مسجلة بدون نت مع السيرفر السحابي بنجاح!`);
+                        alert(`🎉 ممتاز! تم مزامنة ${data.synced_count || pending.length} فاتورة مسجلة بدون نت مع السيرفر السحابي بنجاح!`);
                     } else {
                         console.warn('Sync response error:', data.error);
                     }
