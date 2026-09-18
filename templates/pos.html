@@ -388,7 +388,7 @@
         </div>
 
         <!-- Totals & Payment -->
-        <div class="p-4 sm:p-6 bg-apple-surface-subtle/80 border-t border-apple-border shrink-0 space-y-4">
+        <div id="pos-checkout-actions" class="p-4 sm:p-6 bg-apple-surface-subtle/80 border-t border-apple-border shrink-0 space-y-4">
             <div class="flex justify-between items-end pt-2 border-t border-apple-border">
                 <span class="text-sm sm:text-base text-apple-text font-bold">المجموع الإجمالي</span>
                 <span class="text-xl sm:text-2xl text-primary font-extrabold tracking-tight font-mono" x-text="getCartTotal().toFixed(2) + ' ج.م'"></span>
@@ -600,8 +600,11 @@
                     </div>
                 </div>
             </template>
-    <!-- Mobile Floating Sticky Cart Summary Bar (Auto-hides smoothly when user scrolls down to cart checkout) -->
-    <div x-show="cart.length > 0 && !isCartInView" x-cloak
+        </div>
+    </div>
+
+    <!-- Mobile Floating Sticky Cart Summary Bar (Visible on mobile when cart has items, hides when reaching checkout buttons) -->
+    <div x-show="cart.length > 0 && !isCheckoutVisible" x-cloak
          x-transition:enter="transition ease-out duration-200 transform"
          x-transition:enter-start="opacity-0 translate-y-8 scale-95"
          x-transition:enter-end="opacity-100 translate-y-0 scale-100"
@@ -794,7 +797,7 @@
             searchQuery: '',
             viewMode: 'grid', // 'grid', 'list'
             activeStockFilter: 'all', // 'all', 'instock', 'lowstock'
-            isCartInView: false,
+            isCheckoutVisible: false,
             customerId: '',
             customerSearchQuery: '',
             isCustomerDropdownOpen: false,
@@ -815,16 +818,16 @@
             init() {
                 this.updatePendingCount();
                 
-                // IntersectionObserver to auto-hide floating cart bar when the user scrolls down to the checkout section
+                // IntersectionObserver to auto-hide floating cart bar ONLY when checkout buttons are in view
                 if ('IntersectionObserver' in window) {
                     const observer = new IntersectionObserver((entries) => {
                         entries.forEach(entry => {
-                            this.isCartInView = entry.isIntersecting;
+                            this.isCheckoutVisible = entry.isIntersecting;
                         });
-                    }, { threshold: 0.1 });
+                    }, { threshold: 0.2 });
                     this.$nextTick(() => {
-                        const cartEl = document.getElementById('pos-cart-section');
-                        if (cartEl) observer.observe(cartEl);
+                        const checkoutEl = document.getElementById('pos-checkout-actions');
+                        if (checkoutEl) observer.observe(checkoutEl);
                     });
                 }
 
