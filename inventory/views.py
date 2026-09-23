@@ -30,21 +30,24 @@ class InventoryListView(ListView):
     context_object_name = "products"
 
     def get_queryset(self):
-        return Product.objects.select_related('default_supplier').all().order_by('name')
+        return Product.objects.select_related('default_supplier').only(
+            'id', 'name', 'sku', 'barcode', 'category', 'image',
+            'purchase_price', 'selling_price', 'stock_quantity', 'min_stock_threshold',
+            'default_supplier__name'
+        ).order_by('name')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         
-        # Dynamic, real-time deduplicated stock alerts
+        # Dynamic stock alerts limited to top critical items
         low_stock_products = list(Product.objects.filter(
             stock_quantity__lte=F('min_stock_threshold')
-        ).select_related('default_supplier').order_by('stock_quantity', 'name'))
+        ).only('id', 'name', 'stock_quantity', 'min_stock_threshold').order_by('stock_quantity', 'name')[:30])
         
         tenant = getattr(self.request, 'tenant', None)
         context['categories'] = get_tenant_categories(tenant) if tenant else Category.objects.all()
         context['low_stock_products'] = low_stock_products
-        context['out_of_stock_count'] = sum(1 for p in low_stock_products if p.stock_quantity <= 0)
-        context['low_stock_count'] = sum(1 for p in low_stock_products if p.stock_quantity > 0)
+        context['critical_stock_count'] = Product.objects.filter(stock_quantity__lte=F('min_stock_threshold')).count()
         context['category_choices'] = Product.CATEGORY_CHOICES
         return context
 

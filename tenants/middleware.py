@@ -31,6 +31,8 @@ def clear_current_tenant():
     _thread_locals.tenant = None
 
 
+from django.core.cache import cache
+
 class TenantMiddleware:
     """
     يستخرج slug الشركة من الـ URL ويحدد الـ Tenant.
@@ -55,19 +57,27 @@ class TenantMiddleware:
             parts = path.split('/')
             if len(parts) >= 3:
                 slug = parts[2]
-                try:
-                    tenant = Tenant.objects.get(slug=slug)
-                except Tenant.DoesNotExist:
-                    clear_current_tenant()
-                    request.tenant = None
-                    raise Http404(f"الشركة '{slug}' غير موجودة")
+                cache_key = f"tenant_slug_{slug}"
+                tenant = cache.get(cache_key)
+                if tenant is None:
+                    try:
+                        tenant = Tenant.objects.get(slug=slug)
+                        cache.set(cache_key, tenant, timeout=300)
+                    except Tenant.DoesNotExist:
+                        clear_current_tenant()
+                        request.tenant = None
+                        raise Http404(f"الشركة '{slug}' غير موجودة")
         else:
             tenant_id = request.session.get('tenant_id')
             if tenant_id:
-                try:
-                    tenant = Tenant.objects.get(id=tenant_id)
-                except Tenant.DoesNotExist:
-                    tenant = None
+                cache_key = f"tenant_id_{tenant_id}"
+                tenant = cache.get(cache_key)
+                if tenant is None:
+                    try:
+                        tenant = Tenant.objects.get(id=tenant_id)
+                        cache.set(cache_key, tenant, timeout=300)
+                    except Tenant.DoesNotExist:
+                        tenant = None
 
         if tenant:
             set_current_tenant(tenant)

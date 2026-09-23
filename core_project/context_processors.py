@@ -56,14 +56,15 @@ def smart_notifications(request):
                 'badge': 'تجديد الاشتراك'
             })
 
-    # 1. تنبيهات نقص المخزون والحد الأدنى (إذا كانت الكمية تساوي أو أقل من الحد الأدنى)
+    # 1. تنبيهات نقص المخزون والحد الأدنى
     low_stock_filter = Q(stock_quantity__lte=F('min_stock_threshold'))
     if tenant:
         low_stock_qs = Product.all_objects.filter(Q(tenant=tenant) | Q(tenant__isnull=True), low_stock_filter)
     else:
         low_stock_qs = Product.objects.filter(low_stock_filter)
 
-    low_stock = low_stock_qs.only('id', 'name', 'stock_quantity', 'min_stock_threshold').order_by('stock_quantity')
+    low_stock_count = low_stock_qs.count()
+    low_stock = low_stock_qs.only('id', 'name', 'stock_quantity', 'min_stock_threshold').order_by('stock_quantity')[:6]
     inv_url = f"/t/{tenant.slug}/inventory/" if tenant else "/inventory/"
 
     for p in low_stock:
@@ -80,9 +81,12 @@ def smart_notifications(request):
     # 2. تنبيهات استحقاق ديون العملاء
     cust_filter = Q(balance__gt=0) & (Q(due_date__lte=today) | Q(due_date__isnull=True))
     if tenant:
-        overdue_customers = Customer.all_objects.filter(Q(tenant=tenant) | Q(tenant__isnull=True), cust_filter).only('id', 'name', 'balance', 'due_date').order_by('due_date')
+        cust_qs = Customer.all_objects.filter(Q(tenant=tenant) | Q(tenant__isnull=True), cust_filter)
     else:
-        overdue_customers = Customer.objects.filter(cust_filter).only('id', 'name', 'balance', 'due_date').order_by('due_date')
+        cust_qs = Customer.objects.filter(cust_filter)
+
+    cust_count = cust_qs.count()
+    overdue_customers = cust_qs.only('id', 'name', 'balance', 'due_date').order_by('due_date')[:4]
 
     for c in overdue_customers:
         days = (today - c.due_date).days if c.due_date else None
@@ -100,9 +104,12 @@ def smart_notifications(request):
     # 3. تنبيهات مستحقات الموردين
     supp_filter = Q(balance__gt=0) & (Q(due_date__lte=today) | Q(due_date__isnull=True))
     if tenant:
-        overdue_suppliers = Supplier.all_objects.filter(Q(tenant=tenant) | Q(tenant__isnull=True), supp_filter).only('id', 'name', 'balance', 'due_date').order_by('due_date')
+        supp_qs = Supplier.all_objects.filter(Q(tenant=tenant) | Q(tenant__isnull=True), supp_filter)
     else:
-        overdue_suppliers = Supplier.objects.filter(supp_filter).only('id', 'name', 'balance', 'due_date').order_by('due_date')
+        supp_qs = Supplier.objects.filter(supp_filter)
+
+    supp_count = supp_qs.count()
+    overdue_suppliers = supp_qs.only('id', 'name', 'balance', 'due_date').order_by('due_date')[:4]
 
     for s in overdue_suppliers:
         days = (today - s.due_date).days if s.due_date else None
@@ -120,9 +127,12 @@ def smart_notifications(request):
     # 4. تنبيهات تذاكر الصيانة والورشة المعلقة
     maint_filter = ~Q(status='delivered')
     if tenant:
-        active_tickets = MaintenanceTicket.all_objects.filter(Q(tenant=tenant) | Q(tenant__isnull=True), maint_filter).select_related('customer').only('id', 'ticket_number', 'device_name', 'status', 'customer__name', 'created_at').order_by('-created_at')
+        maint_qs = MaintenanceTicket.all_objects.filter(Q(tenant=tenant) | Q(tenant__isnull=True), maint_filter)
     else:
-        active_tickets = MaintenanceTicket.objects.filter(maint_filter).select_related('customer').only('id', 'ticket_number', 'device_name', 'status', 'customer__name', 'created_at').order_by('-created_at')
+        maint_qs = MaintenanceTicket.objects.filter(maint_filter)
+
+    maint_count = maint_qs.count()
+    active_tickets = maint_qs.select_related('customer').only('id', 'ticket_number', 'device_name', 'status', 'customer__name', 'created_at').order_by('-created_at')[:4]
 
     maint_url = f"/t/{tenant.slug}/maintenance/" if tenant else "/maintenance/"
     for t in active_tickets:
@@ -136,8 +146,10 @@ def smart_notifications(request):
             'badge': 'ورشة نشطة'
         })
 
-    # 5. تنبيه النسخ الاحتياطي الأسبوعي للبيانات (يظهر للمدير والمسؤولين)
+    # 5. تنبيه النسخ الاحتياطي الأسبوعي للبيانات
+    has_backup_alert = False
     if request.user.is_staff or request.user.is_superuser or (tenant and getattr(tenant, 'owner_id', None) == request.user.id):
+        has_backup_alert = True
         backup_url = f"/t/{tenant.slug}/dashboard/backup/" if tenant else "/dashboard/backup/"
         alerts.append({
             'title': "🛡️ تذكير النسخ الاحتياطي الأسبوعي للبيانات",
@@ -148,11 +160,13 @@ def smart_notifications(request):
             'badge': 'أمان البيانات'
         })
 
+    total_true_count = low_stock_count + cust_count + supp_count + maint_count + (1 if has_backup_alert else 0)
+
     result = {
         'smart_alerts': alerts,
-        'smart_alerts_count': len(alerts),
+        'smart_alerts_count': total_true_count,
     }
-    cache.set(cache_key, result, timeout=10)
+    cache.set(cache_key, result, timeout=120)
     request._cached_smart_alerts = result
     return result
 
