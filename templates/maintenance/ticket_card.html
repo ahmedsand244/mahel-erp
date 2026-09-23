@@ -76,11 +76,20 @@
     <div class="border-t border-white/5 pt-2">
         <label class="text-[10px] text-on-surface-variant block mb-1">تحديث الحالة:</label>
         <select class="w-full bg-white/5 border border-white/10 rounded py-1 px-2 text-xs focus:outline-none text-right text-on-surface"
-                onchange="changeTicketStatus('{{ ticket.id }}', this.value)">
+                onchange="handleTicketStatusSelection('{{ ticket.id }}', this.value, {
+                    id: '{{ ticket.id }}',
+                    ticket_number: '{{ ticket.ticket_number }}',
+                    device_name: '{{ ticket.device_name|escapejs }}',
+                    customer_name: '{{ ticket.customer.name|escapejs }}',
+                    customer_id: '{{ ticket.customer.id }}',
+                    labor_fees: '{{ ticket.labor_fees }}',
+                    parts_sell: '{{ ticket.parts_sell }}',
+                    total_amount: '{{ ticket.total_amount }}'
+                }, '{{ ticket.status }}', this)">
             <option value="pending" {% if ticket.status == 'pending' %}selected{% endif %} class="bg-[#122131]">استلام / قيد الانتظار</option>
             <option value="in_progress" {% if ticket.status == 'in_progress' %}selected{% endif %} class="bg-[#122131]">صيانة نشطة</option>
             <option value="completed" {% if ticket.status == 'completed' %}selected{% endif %} class="bg-[#122131]">جاهز للاستلام</option>
-            <option value="delivered" {% if ticket.status == 'delivered' %}selected{% endif %} class="bg-[#122131]">تسليم وتحصيل الكاش</option>
+            <option value="delivered" {% if ticket.status == 'delivered' %}selected{% endif %} class="bg-[#122131]">تسليم وتحصيل (كاش / شكك)</option>
         </select>
     </div>
     {% else %}

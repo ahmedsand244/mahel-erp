@@ -86,20 +86,74 @@ class UpdateTicketStatusView(View):
     def post(self, request, pk, *args, **kwargs):
         ticket = get_object_or_404(MaintenanceTicket, pk=pk)
         new_status = request.POST.get('status')
-        if new_status in dict(MaintenanceTicket.STATUS_CHOICES):
-            ticket.status = new_status
-            ticket.save()
-            from dashboard.audit import log_activity
-            log_activity(
-                request,
-                module='maintenance',
-                action_type='status_change',
-                description=f"تغيير حالة تذكرة الصيانة #{ticket.ticket_number} إلى '{ticket.get_status_display()}' (المعدة: {ticket.device_name})",
-                severity='info'
-            )
-            messages.success(request, f"تم تحديث حالة التذكرة #{ticket.ticket_number} إلى '{ticket.get_status_display()}'")
-            return JsonResponse({'success': True})
-        return JsonResponse({'success': False, 'error': 'حالة غير صحيحة'}, status=400)
+        if new_status not in dict(MaintenanceTicket.STATUS_CHOICES):
+            return JsonResponse({'success': False, 'error': 'حالة غير صحيحة'}, status=400)
+
+        # إذا كانت الحالة تسليم وتحصيل
+        if new_status == 'delivered' and ticket.status != 'delivered':
+            raw_paid = request.POST.get('paid_amount')
+            due_date_str = request.POST.get('due_date')
+            target_customer_id = request.POST.get('customer_id')
+            new_customer_name = request.POST.get('new_customer_name')
+
+            total = ticket.total_amount
+            try:
+                paid_amount = Decimal(str(raw_paid).strip()) if raw_paid is not None and str(raw_paid).strip() != '' else total
+            except (ValueError, TypeError):
+                paid_amount = total
+
+            paid_amount = max(Decimal('0.00'), min(paid_amount, total))
+            remaining_amount = total - paid_amount
+
+            # تحديث أو ربط العميل إذا كان هناك دين متبقي وتم تحديد عميل
+            if target_customer_id and str(target_customer_id).strip() not in ['', 'none', 'quick']:
+                try:
+                    c = Customer.objects.get(pk=target_customer_id)
+                    ticket.customer = c
+                except Customer.DoesNotExist:
+                    pass
+            elif new_customer_name and str(new_customer_name).strip():
+                c = Customer.objects.create(
+                    name=str(new_customer_name).strip(),
+                    tenant=ticket.tenant
+                )
+                ticket.customer = c
+
+            # إذا كان هناك متبقي آجل / شكك، يُضاف لرصيد حساب العميل
+            if remaining_amount > Decimal('0.00'):
+                from ledger.models import Transaction
+                ticket.customer.balance += remaining_amount
+                if due_date_str:
+                    try:
+                        import datetime
+                        due_date_obj = datetime.datetime.strptime(due_date_str, '%Y-%m-%d').date()
+                        ticket.customer.due_date = due_date_obj
+                    except ValueError:
+                        pass
+                ticket.customer.save()
+
+                Transaction.objects.create(
+                    customer=ticket.customer,
+                    amount=remaining_amount,
+                    transaction_type='sale_credit',
+                    notes=f"متبقي صيانة تذكرة #{ticket.ticket_number} ({ticket.device_name}) - إجمالي: {total} ج.م | مدفوع كاش: {paid_amount} ج.م | متبقي شكك: {remaining_amount} ج.م",
+                    due_date=ticket.customer.due_date,
+                    tenant=ticket.tenant
+                )
+
+        ticket.status = new_status
+        ticket.save()
+
+        from dashboard.audit import log_activity
+        log_activity(
+            request,
+            module='maintenance',
+            action_type='status_change',
+            description=f"تغيير حالة تذكرة الصيانة #{ticket.ticket_number} إلى '{ticket.get_status_display()}' (المعدة: {ticket.device_name})",
+            severity='info'
+        )
+        messages.success(request, f"تم تحديث حالة التذكرة #{ticket.ticket_number} إلى '{ticket.get_status_display()}' بنجاح!")
+        return JsonResponse({'success': True})
 
 
 class AddPartsToTicketView(View):

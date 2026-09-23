@@ -498,6 +498,173 @@
             </form>
         </div>
     </div>
+
+    <!-- Modal 4: Deliver & Settle Maintenance Ticket (تسليم الجهاز وتحصيل الكاش / الآجل) -->
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 overflow-y-auto"
+         x-show="showDeliverModal"
+         style="display: none;"
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="opacity-0 scale-95"
+         x-transition:enter-end="opacity-100 scale-100"
+         x-transition:leave="transition ease-in duration-150"
+         x-transition:leave-start="opacity-100 scale-100"
+         x-transition:leave-end="opacity-0 scale-95">
+        <div class="glass-card rounded-3xl p-6 sm:p-8 max-w-lg w-full space-y-5 text-right shadow-2xl bg-surface-container-low border border-white/15 my-auto"
+             @click.away="closeDeliverModal()">
+            
+            <div class="flex items-center justify-between border-b border-white/10 pb-3.5">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-10 h-10 rounded-2xl bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 flex items-center justify-center">
+                        <span class="material-symbols-outlined text-2xl">payments</span>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-black text-on-surface">تسليم الجهاز وتحصيل الحساب</h3>
+                        <p class="text-[11px] text-on-surface-variant">تحصيل كاش كامل أو دفع جزء والباقي شكك (آجل)</p>
+                    </div>
+                </div>
+                <button type="button" @click="closeDeliverModal()" class="text-on-surface-variant hover:text-white p-1.5 rounded-xl hover:bg-white/10 transition-colors">
+                    <span class="material-symbols-outlined text-xl">close</span>
+                </button>
+            </div>
+
+            <!-- Ticket & Customer Info Banner -->
+            <div class="p-4 rounded-2xl bg-white/[0.04] border border-white/10 space-y-2">
+                <div class="flex justify-between items-center text-xs">
+                    <span class="text-on-surface-variant">رقم التذكرة:</span>
+                    <span class="font-mono font-black text-secondary text-sm" x-text="'#' + deliverTicket.ticket_number"></span>
+                </div>
+                <div class="flex justify-between items-center text-xs">
+                    <span class="text-on-surface-variant">المعدة / الموتور:</span>
+                    <span class="font-bold text-on-surface" x-text="deliverTicket.device_name"></span>
+                </div>
+                <div class="flex justify-between items-center text-xs">
+                    <span class="text-on-surface-variant">العميل الحالي:</span>
+                    <span class="font-bold text-primary flex items-center gap-1">
+                        <span class="material-symbols-outlined text-xs">person</span>
+                        <span x-text="deliverTicket.customer_name"></span>
+                    </span>
+                </div>
+                <div class="pt-2 border-t border-white/10 flex justify-between items-center">
+                    <span class="text-xs font-bold text-on-surface-variant">إجمالي المبلغ المطلوب:</span>
+                    <span class="font-mono font-black text-emerald-400 text-base" x-text="Number(deliverTicket.total_amount || 0).toFixed(2) + ' ج.م'"></span>
+                </div>
+            </div>
+
+            <!-- Quick Settlement Modes -->
+            <div class="space-y-1.5">
+                <label class="block text-xs font-bold text-on-surface-variant">اختر نوع التسوية والتحصيل:</label>
+                <div class="grid grid-cols-3 gap-2">
+                    <button type="button" 
+                            @click="setSettlementMode('full_cash')"
+                            :class="settlementMode === 'full_cash' ? 'bg-emerald-600 text-white border-emerald-500 shadow-md shadow-emerald-900/30' : 'bg-white/5 text-on-surface-variant hover:bg-white/10 border-white/5'"
+                            class="py-2.5 px-2 rounded-xl text-xs font-bold border transition-all flex flex-col items-center gap-1">
+                        <span class="material-symbols-outlined text-base">attach_money</span>
+                        <span>كاش كامل (100%)</span>
+                    </button>
+                    <button type="button" 
+                            @click="setSettlementMode('partial')"
+                            :class="settlementMode === 'partial' ? 'bg-amber-600 text-white border-amber-500 shadow-md shadow-amber-900/30' : 'bg-white/5 text-on-surface-variant hover:bg-white/10 border-white/5'"
+                            class="py-2.5 px-2 rounded-xl text-xs font-bold border transition-all flex flex-col items-center gap-1">
+                        <span class="material-symbols-outlined text-base">call_split</span>
+                        <span>جزء كاش + شكك</span>
+                    </button>
+                    <button type="button" 
+                            @click="setSettlementMode('full_credit')"
+                            :class="settlementMode === 'full_credit' ? 'bg-blue-600 text-white border-blue-500 shadow-md shadow-blue-900/30' : 'bg-white/5 text-on-surface-variant hover:bg-white/10 border-white/5'"
+                            class="py-2.5 px-2 rounded-xl text-xs font-bold border transition-all flex flex-col items-center gap-1">
+                        <span class="material-symbols-outlined text-base">receipt_long</span>
+                        <span>آجل / شكك كامل</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Paid Cash Amount Input -->
+            <div class="space-y-2">
+                <div class="flex justify-between items-center">
+                    <label class="block text-xs font-bold text-on-surface-variant">المبلغ المدفوع كاش الآن:</label>
+                    <span class="text-[10px] font-bold text-primary" x-show="settlementMode === 'partial'">يمكنك تعديل المبلغ المحصل</span>
+                </div>
+                <div class="relative">
+                    <input type="number" 
+                           step="0.01" 
+                           min="0" 
+                           :max="deliverTicket.total_amount"
+                           x-model="deliverPaidAmount"
+                           @input="updateSettlementCalculation()"
+                           required 
+                           placeholder="0.00" 
+                           class="w-full bg-surface-container-high border border-white/15 rounded-xl py-3 px-4 focus:outline-none focus:border-primary text-left font-mono text-base font-bold text-emerald-400">
+                    <span class="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-on-surface-variant pointer-events-none">ج.م كاش</span>
+                </div>
+            </div>
+
+            <!-- Remaining Credit Balance Card -->
+            <div class="p-3.5 rounded-2xl border transition-all"
+                 :class="getRemainingDeferred() > 0 ? 'bg-amber-500/10 border-amber-500/30' : 'bg-emerald-500/10 border-emerald-500/30'">
+                <div class="flex justify-between items-center">
+                    <span class="text-xs font-bold" :class="getRemainingDeferred() > 0 ? 'text-amber-400' : 'text-emerald-400'">
+                        <span x-text="getRemainingDeferred() > 0 ? 'المتبقي آجل (يُضاف لمديونية العميل):' : 'حالة الحساب:'"></span>
+                    </span>
+                    <span class="font-mono font-black text-sm"
+                          :class="getRemainingDeferred() > 0 ? 'text-amber-400' : 'text-emerald-400'"
+                          x-text="getRemainingDeferred() > 0 ? (getRemainingDeferred().toFixed(2) + ' ج.م شكك') : 'خالص بالكامل (0.00)'"></span>
+                </div>
+            </div>
+
+            <!-- Deferred Due Date Section (Shows if Remaining > 0) -->
+            <div x-show="getRemainingDeferred() > 0" 
+                 x-transition:enter="transition ease-out duration-200"
+                 x-transition:enter-start="opacity-0 -translate-y-2"
+                 x-transition:enter-end="opacity-100 translate-y-0"
+                 class="p-4 rounded-2xl bg-amber-500/5 border border-amber-500/20 space-y-3">
+                <div class="flex items-center gap-1.5">
+                    <span class="material-symbols-outlined text-amber-400 text-lg">event</span>
+                    <label class="text-xs font-bold text-amber-300">موعد استحقاق سداد المتبقي (تاريخ السداد):</label>
+                </div>
+                
+                <input type="date" 
+                       x-model="deliverDueDate"
+                       class="w-full bg-surface-container-high border border-white/15 rounded-xl py-2.5 px-3.5 focus:outline-none focus:border-amber-400 text-xs font-mono font-bold text-on-surface">
+
+                <!-- Quick Date Presets -->
+                <div class="flex flex-wrap gap-1.5 pt-1">
+                    <button type="button" 
+                            @click="setDeliverQuickDueDate(7)"
+                            class="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-xs font-bold text-on-surface-variant border border-white/10 transition-all">
+                        +7 أيام (أسبوع)
+                    </button>
+                    <button type="button" 
+                            @click="setDeliverQuickDueDate(14)"
+                            class="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-xs font-bold text-on-surface-variant border border-white/10 transition-all">
+                        +14 يوم (أسبوعين)
+                    </button>
+                    <button type="button" 
+                            @click="setDeliverQuickDueDate(30)"
+                            class="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-xs font-bold text-on-surface-variant border border-white/10 transition-all">
+                        +30 يوم (شهر)
+                    </button>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex gap-3 pt-2">
+                <button type="button" 
+                        @click="submitTicketDelivery()"
+                        :disabled="isSubmittingDelivery"
+                        class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white py-3.5 rounded-2xl font-black text-sm transition-all shadow-lg shadow-emerald-900/40 flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50">
+                    <span class="material-symbols-outlined text-lg" :class="isSubmittingDelivery ? 'animate-spin' : ''">
+                        <span x-text="isSubmittingDelivery ? 'sync' : 'check_circle'"></span>
+                    </span>
+                    <span>تأكيد التسليم والتحصيل</span>
+                </button>
+                <button type="button" 
+                        @click="closeDeliverModal()" 
+                        class="px-5 bg-white/5 hover:bg-white/10 border border-white/10 py-3.5 rounded-2xl text-on-surface-variant font-bold text-xs transition-all">
+                    إلغاء
+                </button>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}
 
@@ -510,11 +677,119 @@ function maintenanceApp() {
         showNewTicketModal: false,
         showAddPartsModal: false,
         showEditLaborModal: false,
+        showDeliverModal: false,
+        isSubmittingDelivery: false,
+
         selectedTicketId: null,
         selectedTicketNumber: '',
         selectedDeviceName: '',
         selectedLaborFee: '0.00',
         selectedPartsSell: '0.00',
+
+        // Deliver & Settle Modal State
+        deliverTicket: {
+            id: null,
+            ticket_number: '',
+            device_name: '',
+            customer_name: '',
+            customer_id: null,
+            labor_fees: '0.00',
+            parts_sell: '0.00',
+            total_amount: '0.00'
+        },
+        deliverPaidAmount: '0.00',
+        deliverDueDate: '',
+        settlementMode: 'full_cash',
+        lastSelectElement: null,
+        lastSelectedOldStatus: 'completed',
+
+        openDeliverModal(ticketData, selectEl, oldStatus) {
+            this.deliverTicket = ticketData;
+            this.lastSelectElement = selectEl;
+            this.lastSelectedOldStatus = oldStatus;
+            this.deliverPaidAmount = Number(ticketData.total_amount || 0).toFixed(2);
+            this.settlementMode = 'full_cash';
+            this.deliverDueDate = '';
+            this.showDeliverModal = true;
+        },
+
+        closeDeliverModal() {
+            this.showDeliverModal = false;
+            if (this.lastSelectElement) {
+                this.lastSelectElement.value = this.lastSelectedOldStatus;
+            }
+        },
+
+        setSettlementMode(mode) {
+            this.settlementMode = mode;
+            const total = parseFloat(this.deliverTicket.total_amount) || 0;
+            if (mode === 'full_cash') {
+                this.deliverPaidAmount = total.toFixed(2);
+            } else if (mode === 'full_credit') {
+                this.deliverPaidAmount = '0.00';
+                if (!this.deliverDueDate) this.setDeliverQuickDueDate(14);
+            } else if (mode === 'partial') {
+                this.deliverPaidAmount = (total / 2).toFixed(2);
+                if (!this.deliverDueDate) this.setDeliverQuickDueDate(14);
+            }
+        },
+
+        updateSettlementCalculation() {
+            const total = parseFloat(this.deliverTicket.total_amount) || 0;
+            const paid = parseFloat(this.deliverPaidAmount) || 0;
+            if (paid >= total) {
+                this.settlementMode = 'full_cash';
+            } else if (paid <= 0) {
+                this.settlementMode = 'full_credit';
+                if (!this.deliverDueDate) this.setDeliverQuickDueDate(14);
+            } else {
+                this.settlementMode = 'partial';
+                if (!this.deliverDueDate) this.setDeliverQuickDueDate(14);
+            }
+        },
+
+        getRemainingDeferred() {
+            const total = parseFloat(this.deliverTicket.total_amount) || 0;
+            const paid = parseFloat(this.deliverPaidAmount) || 0;
+            return Math.max(0, total - paid);
+        },
+
+        setDeliverQuickDueDate(days) {
+            const d = new Date();
+            d.setDate(d.getDate() + days);
+            this.deliverDueDate = d.toISOString().split('T')[0];
+        },
+
+        submitTicketDelivery() {
+            this.isSubmittingDelivery = true;
+            const formData = new FormData();
+            formData.append('status', 'delivered');
+            formData.append('paid_amount', this.deliverPaidAmount);
+            if (this.deliverDueDate) {
+                formData.append('due_date', this.deliverDueDate);
+            }
+
+            fetch(`/maintenance/update-status/${this.deliverTicket.id}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                this.isSubmittingDelivery = false;
+                if (data.success) {
+                    window.location.reload();
+                } else {
+                    alert('حدث خطأ: ' + (data.error || 'فشلت عملية التسليم'));
+                }
+            })
+            .catch(err => {
+                this.isSubmittingDelivery = false;
+                alert('حدث خطأ في الاتصال بالخادم: ' + err);
+            });
+        },
 
         adjustLaborFee(amount) {
             let current = parseFloat(this.selectedLaborFee) || 0;
@@ -599,6 +874,17 @@ function maintenanceApp() {
             return this.products.filter(p => p.name.toLowerCase().includes(q));
         }
     };
+}
+
+function handleTicketStatusSelection(ticketId, newStatus, ticketData, oldStatus, selectElement) {
+    if (newStatus === 'delivered') {
+        const app = Alpine.$data(document.querySelector('[x-data="maintenanceApp()"]'));
+        if (app && app.openDeliverModal) {
+            app.openDeliverModal(ticketData, selectElement, oldStatus);
+            return;
+        }
+    }
+    changeTicketStatus(ticketId, newStatus);
 }
 
 function changeTicketStatus(ticketId, newStatus) {
