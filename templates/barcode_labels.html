@@ -11,20 +11,25 @@
     /* ── Screen Preview Styles ── */
     .sticker-card {
         background: #ffffff;
-        color: #0f172a;
+        color: #000000;
         border: 1px solid #cbd5e1;
-        border-radius: 1rem;
-        padding: 0.65rem 0.85rem;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+        border-radius: 0.5rem;
+        padding: 0.35rem 0.5rem;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.05);
         display: flex;
         flex-direction: column;
         justify-content: space-between;
         user-select: none;
-        min-height: 125px;
+        height: 112px;
     }
 
     /* ── Print Engines ── */
     @media print {
+        @page {
+            size: A4 portrait;
+            margin: 8mm 6mm 8mm 6mm;
+        }
+
         .no-print, header, aside, nav, button, .action-bar, footer {
             display: none !important;
         }
@@ -36,40 +41,30 @@
             width: 100% !important;
         }
 
-        /* 1. Standard A4 Paper Printer (Laser / Inkjet Grid Sheet) */
-        body.printer-a4 {
-            margin: 0 !important;
-        }
-        body.printer-a4 @page {
-            size: A4 portrait;
-            margin: 6mm 5mm 6mm 5mm;
-        }
+        /* 1. Standard A4 Paper Printer (24 stickers per sheet: 3 columns x 8 rows) */
         .print-grid-a4 {
             display: grid !important;
             grid-template-columns: repeat(3, 1fr) !important;
-            gap: 3.5mm 3.5mm !important;
+            gap: 2mm 3mm !important;
             width: 100% !important;
         }
         .print-grid-a4 .sticker-card {
-            border: 1px dashed #94a3b8 !important;
-            border-radius: 4px !important;
-            padding: 2.5mm 3.5mm !important;
+            border: 1px dashed #64748b !important;
+            border-radius: 3px !important;
+            padding: 1.5mm 2.5mm !important;
             box-shadow: none !important;
             break-inside: avoid !important;
             page-break-inside: avoid !important;
-            height: 35mm !important;
-            max-height: 35mm !important;
+            height: 32mm !important;
+            max-height: 32mm !important;
             display: flex !important;
             flex-direction: column !important;
             justify-content: space-between !important;
             overflow: hidden !important;
+            box-sizing: border-box !important;
         }
 
         /* 2. Dedicated Thermal Sticker Roll Printer (Xprinter / Zebra 38x25mm / 50x30mm) */
-        body.printer-thermal @page {
-            size: 50mm 30mm;
-            margin: 1mm;
-        }
         .print-grid-thermal {
             display: block !important;
             width: 100% !important;
@@ -88,6 +83,7 @@
             flex-direction: column !important;
             justify-content: space-between !important;
             overflow: hidden !important;
+            box-sizing: border-box !important;
         }
     }
 </style>
@@ -323,25 +319,24 @@
     </div>
 
     <!-- ── Print & Preview Grid of Barcode Stickers ── -->
-    <div :class="printerType === 'a4' ? 'print-grid-a4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 gap-3.5 p-3 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800' : 'print-grid-thermal space-y-3 p-3 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800'">
+    <div :class="printerType === 'a4' ? 'print-grid-a4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 gap-3 p-3 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800' : 'print-grid-thermal space-y-3 p-3 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800'">
         
         <template x-for="(stk, idx) in getRenderStickersList()" :key="idx">
-            <div class="sticker-card bg-white text-slate-900 border border-slate-300 rounded-2xl p-2.5 flex flex-col justify-between shadow-sm select-none" dir="rtl">
+            <div class="sticker-card bg-white text-black border border-slate-300 rounded-lg p-1.5 flex flex-col justify-between select-none" dir="rtl">
                 <!-- 1. Top Row: Store Name (Top Right) -->
-                <div class="flex items-center justify-between border-b border-slate-200 pb-1 text-right">
-                    <span class="text-[11px] font-black text-slate-900 tracking-tight truncate max-w-full" x-text="storeName"></span>
-                    <span class="text-[9px] font-bold text-slate-400 font-mono shrink-0">ORIGINAL</span>
+                <div class="flex items-center justify-between border-b border-black/15 pb-0.5 text-right w-full">
+                    <span class="text-[10px] font-black text-black tracking-tight truncate w-full" x-text="storeName"></span>
                 </div>
                 
-                <!-- 2. Middle: Large, High-Contrast Barcode -->
-                <div class="flex items-center justify-center my-auto py-1.5 w-full overflow-hidden">
-                    <svg class="barcode-svg w-full max-w-full h-12" :data-barcode="stk.barcode"></svg>
+                <!-- 2. Middle: Large, Sharp Barcode + Number -->
+                <div class="flex items-center justify-center my-auto py-0.5 w-full overflow-hidden">
+                    <svg class="barcode-svg w-full max-w-[98%] h-7" :data-barcode="stk.barcode"></svg>
                 </div>
                 
                 <!-- 3. Bottom Row: Product Name (Bottom Right) & Price (Bottom Left) -->
-                <div class="flex items-center justify-between border-t border-slate-200 pt-1 text-right gap-2">
-                    <span class="text-xs font-black text-slate-900 truncate max-w-[65%]" x-text="stk.title"></span>
-                    <span class="text-xs font-black text-emerald-700 font-mono shrink-0" x-text="parseFloat(stk.price || 0).toFixed(2) + ' ج.م'"></span>
+                <div class="flex items-center justify-between border-t border-black/15 pt-0.5 text-right gap-1 w-full">
+                    <span class="text-[10px] font-black text-black truncate flex-1 min-w-0" x-text="stk.title"></span>
+                    <span class="text-[10px] font-black text-black font-mono shrink-0" x-text="parseFloat(stk.price || 0).toFixed(2) + ' ج.م'"></span>
                 </div>
             </div>
         </template>
@@ -400,8 +395,21 @@ function barcodeApp() {
         },
 
         updateBodyClass() {
-            document.body.classList.remove('printer-a4', 'printer-thermal');
-            document.body.classList.add(this.printerType === 'thermal' ? 'printer-thermal' : 'printer-a4');
+            let styleTag = document.getElementById('dynamic-print-page-style');
+            if (!styleTag) {
+                styleTag = document.createElement('style');
+                styleTag.id = 'dynamic-print-page-style';
+                document.head.appendChild(styleTag);
+            }
+            if (this.printerType === 'thermal') {
+                styleTag.innerHTML = '@media print { @page { size: 50mm 30mm; margin: 0mm; } }';
+                document.body.classList.remove('printer-a4');
+                document.body.classList.add('printer-thermal');
+            } else {
+                styleTag.innerHTML = '@media print { @page { size: A4 portrait; margin: 8mm 6mm 8mm 6mm; } }';
+                document.body.classList.remove('printer-thermal');
+                document.body.classList.add('printer-a4');
+            }
         },
 
         onSingleProductChange() {
@@ -495,12 +503,12 @@ function barcodeApp() {
                     try {
                         JsBarcode(el, val, {
                             format: 'CODE128',
-                            width: 2.0,
-                            height: 46,
+                            width: 1.4,
+                            height: 28,
                             displayValue: true,
-                            fontSize: 12,
-                            textMargin: 2,
-                            margin: 2
+                            fontSize: 9,
+                            textMargin: 1,
+                            margin: 1
                         });
                     } catch(e) {}
                 });
