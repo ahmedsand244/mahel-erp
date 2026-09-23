@@ -14,7 +14,7 @@
         color: #000000;
         border: 1px solid #cbd5e1;
         border-radius: 8px;
-        padding: 5px 8px;
+        padding: 6px 8px;
         box-shadow: 0 1px 3px rgba(0,0,0,0.06);
         display: flex;
         flex-direction: column;
@@ -86,147 +86,230 @@
         flex-shrink: 0;
     }
 
-    /* ── Print Engines ── */
+    /* ── Print Media Optimization & Strict Reset ── */
     @media print {
-        .no-print, header, aside, nav, button, .action-bar, footer {
+        /* Complete isolation & reset of global styles from base.html */
+        *, *::before, *::after {
+            box-shadow: none !important;
+            text-shadow: none !important;
+        }
+
+        .no-print, header, aside, nav, button, .action-bar, footer, [class*="no-print"] {
             display: none !important;
         }
-        html, body, main {
+
+        html, body {
             background: #ffffff !important;
             color: #000000 !important;
             padding: 0 !important;
             margin: 0 !important;
             width: 100% !important;
             height: auto !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
         }
 
-        /* 1. Standard A4 Paper Printer (24 stickers per sheet: 3 columns x 8 rows) */
-        .print-grid-a4 {
+        main, main.flex-1, .space-y-6, .barcode-print-canvas, div, section, article {
+            background: transparent !important;
+            border: none !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            max-width: 100% !important;
+            min-height: 0 !important;
+        }
+
+        /* ── 1. Standard A4 Paper Printer (24 stickers per sheet: 3 columns x 8 rows) ── */
+        body.printer-a4 .print-grid-a4 {
             display: grid !important;
             grid-template-columns: repeat(3, 1fr) !important;
-            gap: 2mm 3mm !important;
+            gap: 2.5mm 3mm !important;
             width: 100% !important;
             margin: 0 !important;
             padding: 0 !important;
+            box-sizing: border-box !important;
         }
-        .print-grid-a4 .sticker-card {
+        body.printer-a4 .sticker-card {
             border: 1px dashed #94a3b8 !important;
-            border-radius: 3px !important;
+            border-radius: 2mm !important;
             padding: 1.5mm 2.5mm !important;
             box-shadow: none !important;
             break-inside: avoid !important;
             page-break-inside: avoid !important;
-            height: 32mm !important;
-            max-height: 32mm !important;
+            height: 33mm !important;
+            max-height: 33mm !important;
             display: flex !important;
             flex-direction: column !important;
             justify-content: space-between !important;
             overflow: hidden !important;
             box-sizing: border-box !important;
+            background: #ffffff !important;
         }
-        .print-grid-a4 .store-name {
+        body.printer-a4 .sticker-header {
+            height: 4mm !important;
+            line-height: 4mm !important;
+            border-bottom: 1px solid #000000 !important;
+            padding-bottom: 0.5mm !important;
+            display: flex !important;
+            justify-content: flex-start !important;
+            align-items: center !important;
+        }
+        body.printer-a4 .store-name {
             font-size: 8pt !important;
             font-weight: bold !important;
             color: #000000 !important;
+            line-height: 1 !important;
         }
-        .print-grid-a4 .barcode-svg {
+        body.printer-a4 .barcode-container {
+            height: 19mm !important;
+            max-height: 19mm !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            overflow: hidden !important;
+            padding: 0.5mm 0 !important;
+        }
+        body.printer-a4 .barcode-svg {
             max-height: 18mm !important;
+            width: 98% !important;
+            max-width: 98% !important;
         }
-        .print-grid-a4 .product-title {
+        body.printer-a4 .sticker-footer {
+            height: 4mm !important;
+            line-height: 4mm !important;
+            border-top: 1px solid #000000 !important;
+            padding-top: 0.5mm !important;
+            display: flex !important;
+            justify-content: space-between !important;
+            align-items: center !important;
+            gap: 2mm !important;
+        }
+        body.printer-a4 .product-title {
             font-size: 8pt !important;
             font-weight: bold !important;
             color: #000000 !important;
+            line-height: 1 !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            text-align: right !important;
+            flex: 1 !important;
         }
-        .print-grid-a4 .product-price {
+        body.printer-a4 .product-price {
             font-size: 8.5pt !important;
             font-weight: 900 !important;
             color: #000000 !important;
+            line-height: 1 !important;
+            font-family: monospace !important;
+            white-space: nowrap !important;
+            flex-shrink: 0 !important;
         }
 
-        /* 2. Dedicated Thermal Sticker Roll Printer (Auto-adapts to 38x25mm, 50x30mm, 58x40mm, etc.) */
+        /* ── 2. Dedicated Thermal Sticker Roll Printer (Single Label per Page, Zero Split) ── */
         body.printer-thermal {
             margin: 0 !important;
             padding: 0 !important;
             width: 100% !important;
-            height: 100% !important;
         }
-        body.printer-thermal main,
         body.printer-thermal .print-grid-thermal {
             display: block !important;
             width: 100% !important;
             margin: 0 !important;
             padding: 0 !important;
+            border: none !important;
         }
         body.printer-thermal .sticker-card {
             border: none !important;
             border-radius: 0 !important;
-            padding: 1mm 1.5mm !important;
+            padding: 0.8mm 1.5mm !important;
+            margin: 0 auto !important;
             box-shadow: none !important;
+            box-sizing: border-box !important;
+            width: 47mm !important;
+            max-width: 47mm !important;
+            height: 25mm !important;
+            max-height: 25mm !important;
+            overflow: hidden !important;
+            
+            /* Strict Page Break Settings */
             break-inside: avoid !important;
             page-break-inside: avoid !important;
             break-after: page !important;
             page-break-after: always !important;
-            width: 46mm !important;
-            max-width: 46mm !important;
-            height: 25mm !important;
-            max-height: 25mm !important;
-            margin: 1mm auto !important;
+            
             display: flex !important;
             flex-direction: column !important;
             justify-content: space-between !important;
-            overflow: hidden !important;
-            box-sizing: border-box !important;
+            background: #ffffff !important;
         }
         body.printer-thermal .sticker-header {
             border-bottom: 1px solid #000000 !important;
-            padding-bottom: 1px !important;
+            padding: 0 0 0.5mm 0 !important;
+            margin: 0 !important;
             width: 100% !important;
-            height: 4mm !important;
+            height: 3.8mm !important;
+            line-height: 3.8mm !important;
             display: flex !important;
             align-items: center !important;
             justify-content: flex-start !important;
         }
         body.printer-thermal .store-name {
             font-size: 7.5pt !important;
-            font-weight: bold !important;
+            font-weight: 900 !important;
             color: #000000 !important;
             line-height: 1 !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
         }
         body.printer-thermal .barcode-container {
-            height: 15mm !important;
-            max-height: 15mm !important;
+            height: 14.5mm !important;
+            max-height: 14.5mm !important;
             display: flex !important;
             align-items: center !important;
             justify-content: center !important;
-            padding: 0.5mm 0 !important;
+            padding: 0 !important;
+            margin: 0 !important;
             width: 100% !important;
             overflow: hidden !important;
         }
         body.printer-thermal .barcode-svg {
             max-height: 14mm !important;
-            width: 96% !important;
-            max-width: 96% !important;
+            width: 100% !important;
+            max-width: 100% !important;
         }
         body.printer-thermal .sticker-footer {
             border-top: 1px solid #000000 !important;
-            padding-top: 1px !important;
+            padding: 0.5mm 0 0 0 !important;
+            margin: 0 !important;
             width: 100% !important;
-            height: 4mm !important;
+            height: 3.8mm !important;
+            line-height: 3.8mm !important;
             display: flex !important;
             align-items: center !important;
             justify-content: space-between !important;
+            gap: 2mm !important;
         }
         body.printer-thermal .product-title {
             font-size: 7.5pt !important;
-            font-weight: bold !important;
+            font-weight: 900 !important;
             color: #000000 !important;
             line-height: 1 !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            flex: 1 !important;
+            text-align: right !important;
         }
         body.printer-thermal .product-price {
             font-size: 8pt !important;
             font-weight: 900 !important;
             color: #000000 !important;
             line-height: 1 !important;
+            font-family: monospace !important;
+            white-space: nowrap !important;
+            flex-shrink: 0 !important;
         }
     }
 </style>
@@ -315,6 +398,19 @@
                 <label class="block text-xs font-bold text-on-surface-variant">اسم المحل المطبوع أعلى الملصق:</label>
                 <input type="text" x-model="storeName" @input="renderBarcodes()" 
                        class="w-full bg-surface-container-high border border-white/15 rounded-xl py-2 px-3 text-xs font-bold text-on-surface focus:outline-none focus:border-primary">
+            </div>
+
+            <!-- Thermal Roll Size Selector (Shown when printerType === 'thermal') -->
+            <div x-show="printerType === 'thermal'" class="space-y-1.5 pt-2 border-t border-white/10">
+                <label class="block text-xs font-bold text-on-surface-variant">مقاس ورقة رول الملصقات الحرارية:</label>
+                <select x-model="thermalSize" @change="updateBodyClass(); renderBarcodes();" 
+                        class="w-full bg-surface-container-high border border-white/15 rounded-xl py-2 px-3 text-xs font-bold text-primary focus:outline-none focus:border-primary">
+                    <option value="50x30">50 × 30 مم (القياسي الأكثر انتشاراً)</option>
+                    <option value="50x25">50 × 25 مم</option>
+                    <option value="40x30">40 × 30 مم</option>
+                    <option value="38x25">38 × 25 مم (ملصق صغير)</option>
+                    <option value="58x40">58 × 40 مم (ملصق كبير)</option>
+                </select>
             </div>
         </div>
 
@@ -510,6 +606,7 @@ function barcodeApp() {
         products: formattedProds,
         printerType: 'a4', // 'a4' or 'thermal'
         printMode: 'single', // 'single' or 'bulk'
+        thermalSize: '50x30', // '50x30', '50x25', '40x30', '38x25', '58x40'
         
         storeName: '{{ request.tenant.name|default:"مؤسسة النماء للمعدات"|escapejs }}',
         
@@ -545,11 +642,53 @@ function barcodeApp() {
                 document.head.appendChild(styleTag);
             }
             if (this.printerType === 'thermal') {
-                styleTag.innerHTML = '@media print { @page { size: 50mm 30mm; margin: 0; } html, body { margin: 0 !important; padding: 0 !important; } }';
+                const parts = (this.thermalSize || '50x30').split('x').map(Number);
+                const w = parts[0] || 50;
+                const h = parts[1] || 30;
+                const cardW = Math.max(28, w - 3);
+                const cardH = Math.max(18, h - 5);
+                const barH = Math.max(10, cardH - 10);
+                styleTag.innerHTML = `
+                    @media print {
+                        @page {
+                            size: ${w}mm ${h}mm !important;
+                            margin: 0mm !important;
+                        }
+                        html, body {
+                            margin: 0 !important;
+                            padding: 0 !important;
+                            width: ${w}mm !important;
+                        }
+                        body.printer-thermal .sticker-card {
+                            width: ${cardW}mm !important;
+                            max-width: ${cardW}mm !important;
+                            height: ${cardH}mm !important;
+                            max-height: ${cardH}mm !important;
+                        }
+                        body.printer-thermal .barcode-container {
+                            height: ${barH}mm !important;
+                            max-height: ${barH}mm !important;
+                        }
+                        body.printer-thermal .barcode-svg {
+                            max-height: ${barH - 0.5}mm !important;
+                        }
+                    }
+                `;
                 document.body.classList.remove('printer-a4');
                 document.body.classList.add('printer-thermal');
             } else {
-                styleTag.innerHTML = '@media print { @page { size: A4 portrait; margin: 8mm 6mm 8mm 6mm; } html, body { margin: 0 !important; padding: 0 !important; } }';
+                styleTag.innerHTML = `
+                    @media print {
+                        @page {
+                            size: A4 portrait !important;
+                            margin: 8mm 6mm 8mm 6mm !important;
+                        }
+                        html, body {
+                            margin: 0 !important;
+                            padding: 0 !important;
+                        }
+                    }
+                `;
                 document.body.classList.remove('printer-thermal');
                 document.body.classList.add('printer-a4');
             }
@@ -642,9 +781,9 @@ function barcodeApp() {
             this.$nextTick(() => {
                 const elements = document.querySelectorAll('.barcode-svg');
                 const isThermal = (this.printerType === 'thermal');
-                const bHeight = isThermal ? 25 : 44;
-                const bWidth = isThermal ? 1.15 : 1.7;
-                const bFontSize = isThermal ? 8 : 10;
+                const bHeight = isThermal ? 28 : 46;
+                const bWidth = isThermal ? 1.25 : 1.7;
+                const bFontSize = isThermal ? 9 : 10;
                 elements.forEach(el => {
                     const val = el.getAttribute('data-barcode') || this.singleBarcode || '62910001';
                     try {
