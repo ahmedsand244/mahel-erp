@@ -142,7 +142,7 @@
                 <tbody class="text-sm">
                     {% for p in products %}
                     <tr class="border-b border-slate-200 dark:border-white/5 hover:bg-black/5 dark:hover:bg-white/5 transition-colors group"
-                        x-show="(searchVal === '' || '{{ p.name|escapejs }}'.toLowerCase().includes(searchVal.toLowerCase()) || '{{ p.sku|escapejs }}'.toLowerCase().includes(searchVal.toLowerCase()) || '{{ p.barcode|default:''|escapejs }}'.includes(searchVal)) && (selectedCategory === '' || selectedCategory === '{{ p.category }}')">
+                        x-show="(searchVal === '' || window.smartMatchProduct({name: '{{ p.name|escapejs }}', sku: '{{ p.sku|escapejs }}', barcode: '{{ p.barcode|default:''|escapejs }}', category: '{{ p.category|escapejs }}'}, searchVal).match) && (selectedCategory === '' || selectedCategory === '{{ p.category }}')">
                         <td class="p-4 text-center">
                             <input type="checkbox" value="{{ p.id }}" x-model="selectedIds" class="w-5 h-5 rounded accent-emerald-500 text-emerald-500 bg-slate-200 dark:bg-slate-800 border-slate-400 dark:border-slate-600 focus:ring-2 focus:ring-emerald-500 cursor-pointer">
                         </td>

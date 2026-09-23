@@ -838,8 +838,7 @@ function purchaseOrderApp() {
             }
 
             if (this.productSearchQuery && this.productSearchQuery.trim()) {
-                const q = this.productSearchQuery.trim().toLowerCase();
-                list = list.filter(p => p.name.toLowerCase().includes(q));
+                list = window.smartFilterProducts(list, this.productSearchQuery);
             }
             return list;
         },

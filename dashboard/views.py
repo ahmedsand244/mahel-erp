@@ -150,6 +150,8 @@ class DashboardView(TemplateView):
         return context
 
 
+from core_project.arabic_search import build_arabic_search_q
+
 class GlobalSearchView(View):
     """البحث المباشر الشامل في كافة أرجاء النظام (منتجات، عملاء، موردين، فواتير، صيانة، طلبات بضاعة)"""
     def get(self, request, *args, **kwargs):
@@ -178,10 +180,9 @@ class GlobalSearchView(View):
             prefix = f"/t/{tenant.slug}" if tenant else ""
             results = []
 
-            # 1. المنتجات والمخزون
-            products = Product.objects.filter(
-                Q(name__icontains=query) | Q(sku__icontains=query) | Q(barcode__icontains=query) | Q(category__icontains=query)
-            )[:5]
+            # 1. المنتجات والمخزون مع المطابقة الذكية
+            prod_q = build_arabic_search_q(query, ['name', 'sku', 'barcode', 'category'])
+            products = Product.objects.filter(prod_q)[:8]
             if products.exists():
                 items = []
                 for p in products:
@@ -199,9 +200,8 @@ class GlobalSearchView(View):
                 })
 
             # 2. حسابات العملاء والشكك
-            customers = Customer.objects.filter(
-                Q(name__icontains=query) | Q(phone__icontains=query) | Q(workplace__icontains=query) | Q(address__icontains=query)
-            )[:5]
+            cust_q = build_arabic_search_q(query, ['name', 'phone', 'workplace', 'address'])
+            customers = Customer.objects.filter(cust_q)[:6]
             if customers.exists():
                 items = []
                 for c in customers:
@@ -219,9 +219,8 @@ class GlobalSearchView(View):
                 })
 
             # 3. حسابات الموردين والشركات
-            suppliers = Supplier.objects.filter(
-                Q(name__icontains=query) | Q(phone__icontains=query) | Q(company__icontains=query)
-            )[:5]
+            supp_q = build_arabic_search_q(query, ['name', 'phone', 'company'])
+            suppliers = Supplier.objects.filter(supp_q)[:6]
             if suppliers.exists():
                 items = []
                 for s in suppliers:
@@ -239,9 +238,8 @@ class GlobalSearchView(View):
                 })
 
             # 4. تذاكر الورشة والصيانة
-            tickets = MaintenanceTicket.objects.select_related('customer').filter(
-                Q(ticket_number__icontains=query) | Q(device_name__icontains=query) | Q(customer__name__icontains=query)
-            )[:5]
+            ticket_q = build_arabic_search_q(query, ['ticket_number', 'device_name', 'customer__name'])
+            tickets = MaintenanceTicket.objects.select_related('customer').filter(ticket_q)[:6]
             if tickets.exists():
                 items = []
                 for t in tickets:
@@ -260,9 +258,8 @@ class GlobalSearchView(View):
                 })
 
             # 5. فواتير المبيعات (POS)
-            orders = Order.objects.select_related('customer').filter(
-                Q(order_number__icontains=query) | Q(customer__name__icontains=query)
-            )[:5]
+            order_q = build_arabic_search_q(query, ['order_number', 'customer__name'])
+            orders = Order.objects.select_related('customer').filter(order_q)[:6]
             if orders.exists():
                 items = []
                 for o in orders:
@@ -271,7 +268,7 @@ class GlobalSearchView(View):
                         'title': f"فاتورة مبيعات #{o.order_number}",
                         'subtitle': f"العميل: {cust_name} | {o.created_at.strftime('%Y-%m-%d %H:%M')}",
                         'url': f'{prefix}/pos/invoices/?q={o.order_number}',
-                        'badge': f"{o.total_amount:,.2f} ج.م",
+                        'badge': f"{o.grand_total:,.2f} ج.م",
                         'badge_type': 'primary'
                     })
                 results.append({
@@ -282,22 +279,21 @@ class GlobalSearchView(View):
 
             # 6. طلبات البضاعة والنواقص للموردين
             from inventory.models import PurchaseOrder
-            purchase_orders = PurchaseOrder.objects.select_related('supplier').filter(
-                Q(order_number__icontains=query) | Q(supplier__name__icontains=query) | Q(notes__icontains=query)
-            )[:5]
+            po_q = build_arabic_search_q(query, ['order_number', 'supplier__name', 'notes'])
+            purchase_orders = PurchaseOrder.objects.select_related('supplier').filter(po_q)[:6]
             if purchase_orders.exists():
                 items = []
                 for po in purchase_orders:
                     supp_name = po.supplier.name if po.supplier else "عدة شركات"
                     items.append({
-                        'title': f"طلب بضاعة #{po.order_number} ({supp_name})",
-                        'subtitle': f"الحالة: {po.get_status_display()} | {po.created_at.strftime('%Y-%m-%d')}",
-                        'url': f'{prefix}/inventory/orders/{po.id}/',
-                        'badge': po.get_status_display(),
-                        'badge_type': 'primary' if po.status == 'received' else 'tertiary'
+                        'title': f"طلب توريد #{po.order_number}",
+                        'subtitle': f"المورد: {supp_name} | التكلفة: {po.total_cost:,.2f} ج.م",
+                        'url': f'{prefix}/inventory/orders/',
+                        'badge': po.get_status_display() if hasattr(po, 'get_status_display') else 'طلب بضاعة',
+                        'badge_type': 'tertiary'
                     })
                 results.append({
-                    'category': 'طلبات البضاعة والنواقص',
+                    'category': 'طلبات البضاعة والتوريد',
                     'icon': 'local_shipping',
                     'items': items
                 })

@@ -35,9 +35,8 @@
          x-data="{ 
              lowStockSearch: '',
              matchesSearch(name, sku) {
-                 if (!this.lowStockSearch) return true;
-                 const q = this.lowStockSearch.toLowerCase().trim();
-                 return name.toLowerCase().includes(q) || sku.toLowerCase().includes(q);
+                 if (!this.lowStockSearch || !this.lowStockSearch.trim()) return true;
+                 return window.smartMatchProduct({ name: name, sku: sku }, this.lowStockSearch).match;
              }
          }">
         

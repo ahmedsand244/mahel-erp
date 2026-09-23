@@ -238,7 +238,7 @@
                             <tbody class="text-sm divide-y divide-white/5">
                                 {% for cust in customers %}
                                 <tr class="hover:bg-white/[0.04] transition-colors"
-                                    x-show="(filterStatus === 'all' || (filterStatus === 'debt_only' && {{ cust.balance }} > 0) || (filterStatus === 'settled_only' && {{ cust.balance }} <= 0)) && ('{{ cust.name|escapejs }} {{ cust.phone|default:'' }} {{ cust.workplace|default:'' }} {{ cust.address|default:'' }}'.toLowerCase().includes(searchQuery.toLowerCase()))">
+                                    x-show="(filterStatus === 'all' || (filterStatus === 'debt_only' && {{ cust.balance }} > 0) || (filterStatus === 'settled_only' && {{ cust.balance }} <= 0)) && (searchQuery === '' || window.smartMatchText('{{ cust.name|escapejs }} {{ cust.phone|default:'' }} {{ cust.workplace|default:'' }} {{ cust.address|default:'' }}', searchQuery))">
                                     
                                     <!-- Avatar -->
                                     <td class="p-4">
@@ -383,7 +383,7 @@
                             <tbody class="text-sm divide-y divide-white/5">
                                 {% for sup in suppliers %}
                                 <tr class="hover:bg-white/[0.04] transition-colors"
-                                    x-show="(filterStatus === 'all' || (filterStatus === 'debt_only' && {{ sup.balance }} > 0) || (filterStatus === 'settled_only' && {{ sup.balance }} <= 0)) && ('{{ sup.name|escapejs }} {{ sup.phone|default:'' }} {{ sup.company|default:'' }} {{ sup.address|default:'' }}'.toLowerCase().includes(searchQuery.toLowerCase()))">
+                                    x-show="(filterStatus === 'all' || (filterStatus === 'debt_only' && {{ sup.balance }} > 0) || (filterStatus === 'settled_only' && {{ sup.balance }} <= 0)) && (searchQuery === '' || window.smartMatchText('{{ sup.name|escapejs }} {{ sup.phone|default:'' }} {{ sup.company|default:'' }} {{ sup.address|default:'' }}', searchQuery))">
                                     
                                     <!-- Avatar -->
                                     <td class="p-4">

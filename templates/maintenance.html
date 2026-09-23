@@ -858,8 +858,7 @@ function maintenanceApp() {
 
         getFilteredCustomers() {
             if (!this.customerSearchQuery || !this.customerSearchQuery.trim()) return this.customers;
-            const q = this.customerSearchQuery.trim().toLowerCase();
-            return this.customers.filter(c => c.name.toLowerCase().includes(q));
+            return window.smartFilterList(this.customers, this.customerSearchQuery, (c) => c.name);
         },
 
         getSelectedProductLabel() {
@@ -870,8 +869,7 @@ function maintenanceApp() {
 
         getFilteredProducts() {
             if (!this.productSearchQuery || !this.productSearchQuery.trim()) return this.products;
-            const q = this.productSearchQuery.trim().toLowerCase();
-            return this.products.filter(p => p.name.toLowerCase().includes(q));
+            return window.smartFilterProducts(this.products, this.productSearchQuery);
         }
     };
 }

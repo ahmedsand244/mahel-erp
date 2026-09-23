@@ -731,8 +731,7 @@ function barcodeApp() {
 
         getFilteredBulkProducts() {
             if (!this.bulkSearch.trim()) return this.products;
-            const q = this.bulkSearch.trim().toLowerCase();
-            return this.products.filter(p => p.name.toLowerCase().includes(q) || p.barcode.toLowerCase().includes(q));
+            return window.smartFilterProducts(this.products, this.bulkSearch);
         },
 
         getSelectedProductsCount() {
