@@ -221,9 +221,34 @@
                     </div>
                 </div>
 
-                <div class="space-y-1.5">
-                    <label class="block text-xs font-bold text-on-surface-variant">اسم المعدة / الموتور:</label>
-                    <input type="text" name="device_name" required placeholder="مثال: موتور رش ياماها" class="w-full bg-surface-container-high border border-white/10 rounded-xl py-2.5 px-3.5 focus:outline-none focus:border-primary text-right text-xs">
+                <div class="space-y-1.5" x-data="{ deviceInput: '' }">
+                    <div class="flex items-center justify-between">
+                        <label class="block text-xs font-bold text-on-surface-variant">اسم المعدة / الموتور:</label>
+                        <span class="text-[10px] text-primary font-bold">اختر أو اكتب جديد</span>
+                    </div>
+                    <input type="text" 
+                           name="device_name" 
+                           list="deviceSuggestionsList" 
+                           x-model="deviceInput" 
+                           required 
+                           placeholder="مثال: موتور رش ياماها، طلمبة 3 بوصة..." 
+                           class="w-full bg-surface-container-high border border-white/10 rounded-xl py-2.5 px-3.5 focus:outline-none focus:border-primary text-right text-xs font-bold text-on-surface">
+                    <datalist id="deviceSuggestionsList">
+                        {% for dev in device_suggestions %}
+                            <option value="{{ dev }}"></option>
+                        {% endfor %}
+                    </datalist>
+
+                    <!-- Quick Suggestions Chips -->
+                    <div class="flex flex-wrap gap-1.5 pt-1">
+                        {% for dev in device_suggestions|slice:":6" %}
+                            <button type="button" 
+                                    @click="deviceInput = '{{ dev|escapejs }}'" 
+                                    class="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-primary/20 text-on-surface-variant hover:text-primary text-[11px] font-bold border border-white/5 transition-all">
+                                {{ dev }}
+                            </button>
+                        {% endfor %}
+                    </div>
                 </div>
 
                 <div class="space-y-1.5">
@@ -261,7 +286,7 @@
                              @click="isProductDropdownOpen = !isProductDropdownOpen">
                             <div class="flex items-center gap-2 truncate flex-1 min-w-0">
                                 <template x-if="selectedProductId">
-                                    <button type="button" @click.stop="selectedProductId = ''; productSearchQuery = '';" class="text-on-surface-variant hover:text-error transition-colors p-0.5 rounded-full hover:bg-white/10 shrink-0">
+                                    <button type="button" @click.stop="selectedProductId = ''; productSearchQuery = ''; selectedPartPrice = '0.00';" class="text-on-surface-variant hover:text-error transition-colors p-0.5 rounded-full hover:bg-white/10 shrink-0">
                                         <span class="material-symbols-outlined text-sm">close</span>
                                     </button>
                                 </template>
@@ -302,9 +327,10 @@
                                 <template x-for="prod in getFilteredProducts()" :key="prod.id">
                                     <div class="p-2.5 text-xs hover:bg-primary/20 cursor-pointer flex justify-between items-center transition-colors group"
                                          :class="selectedProductId == prod.id ? 'bg-primary/20 text-primary font-bold' : 'text-on-surface'"
-                                         @click="selectedProductId = prod.id; isProductDropdownOpen = false; productSearchQuery = '';">
+                                         @click="selectProductItem(prod)">
                                         <div class="flex flex-col text-right">
                                             <span class="font-bold group-hover:text-primary transition-colors" x-text="prod.name"></span>
+                                            <span class="text-[10px] text-tertiary font-mono" x-text="'السعر: ' + prod.price + ' ج.م'"></span>
                                         </div>
                                         <span class="px-2 py-0.5 rounded text-[10px] font-bold"
                                               :class="prod.stock <= 0 ? 'bg-error/20 text-error' : 'bg-white/10 text-on-surface-variant'"
@@ -323,9 +349,34 @@
                     </div>
                 </div>
 
+                <!-- Custom Selling Price Input (تعديل سعر بيع قطعة الغيار) -->
+                <div class="space-y-1.5">
+                    <div class="flex justify-between items-center">
+                        <label class="block text-xs font-bold text-on-surface-variant">سعر بيع القطعة للعميل (ج.م):</label>
+                        <span class="text-[10px] text-amber-500 font-bold">يمكنك تعديل السعر / عمل خصم</span>
+                    </div>
+                    <div class="relative">
+                        <input type="number" 
+                               step="0.01" 
+                               min="0" 
+                               name="custom_price" 
+                               x-model="selectedPartPrice" 
+                               required 
+                               placeholder="0.00" 
+                               class="w-full bg-surface-container-high border border-white/10 rounded-xl py-2.5 px-3.5 focus:outline-none focus:border-primary text-left font-mono text-xs font-bold text-primary">
+                        <span class="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-on-surface-variant pointer-events-none">ج.م للقطعة</span>
+                    </div>
+                </div>
+
                 <div class="space-y-1.5">
                     <label class="block text-xs font-bold text-on-surface-variant">الكمية المطلوبة:</label>
-                    <input type="number" name="quantity" value="1" min="1" required class="w-full bg-surface-container-high border border-white/10 rounded-xl py-2.5 px-3.5 focus:outline-none focus:border-primary text-right font-mono text-xs font-bold">
+                    <input type="number" name="quantity" x-model="selectedPartQty" value="1" min="1" required class="w-full bg-surface-container-high border border-white/10 rounded-xl py-2.5 px-3.5 focus:outline-none focus:border-primary text-right font-mono text-xs font-bold">
+                </div>
+
+                <!-- Total Part Charge Preview -->
+                <div class="p-2.5 rounded-xl bg-white/5 border border-white/10 flex justify-between items-center text-xs">
+                    <span class="text-on-surface-variant">إجمالي تكلفة هذه القطع للعميل:</span>
+                    <span class="font-mono font-bold text-emerald-400" x-text="((parseFloat(selectedPartPrice) || 0) * (parseInt(selectedPartQty) || 1)).toFixed(2) + ' ج.م'"></span>
                 </div>
 
                 <div class="flex gap-3 pt-3">
@@ -497,8 +548,18 @@ function maintenanceApp() {
         },
 
         selectedProductId: '',
+        selectedPartPrice: '0.00',
+        selectedPartQty: 1,
         productSearchQuery: '',
         isProductDropdownOpen: false,
+
+        selectProductItem(prod) {
+            this.selectedProductId = prod.id;
+            this.selectedPartPrice = Number(prod.price || 0).toFixed(2);
+            this.selectedPartQty = 1;
+            this.isProductDropdownOpen = false;
+            this.productSearchQuery = '';
+        },
 
         customers: [
             {% for c in customers %}
@@ -508,7 +569,7 @@ function maintenanceApp() {
 
         products: [
             {% for p in products %}
-            { id: "{{ p.id }}", name: "{{ p.name|escapejs }}", stock: {{ p.stock_quantity|default:0 }} },
+            { id: "{{ p.id }}", name: "{{ p.name|escapejs }}", price: {{ p.selling_price|default:0 }}, stock: {{ p.stock_quantity|default:0 }} },
             {% endfor %}
         ],
 

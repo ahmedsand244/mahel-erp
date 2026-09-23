@@ -994,6 +994,7 @@ class BarcodeGeneratorView(TemplateView):
                 'name': p.name,
                 'barcode': p.barcode or p.sku or f"PROD-{p.id}",
                 'price': str(p.selling_price),
+                'stock': p.stock_quantity,
                 'category': str(p.category) if p.category else 'عام'
             })
             

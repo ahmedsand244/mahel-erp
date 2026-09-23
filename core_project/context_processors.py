@@ -31,87 +31,129 @@ def smart_notifications(request):
 
     # 0. تنبيه انتهاء الاشتراك والتجديد (مثبّت في أعلى التنبيهات)
     tenant = getattr(request, 'tenant', None)
+    sub_alerts_count = 0
     if tenant:
         end_date = tenant.trial_ends_at or (tenant.created_at + timezone.timedelta(days=14))
         days_left = max(0, (end_date.date() - today).days)
-        days_str = "اليوم" if days_left == 0 else f"{days_left} يوم"
-        alerts.append({
-            'title': f"حالة الاشتراك: متبقي {days_str} على انتهاء التجديد",
-            'subtitle': f"تاريخ الانتهاء: {end_date.strftime('%Y-%m-%d')} | الباقة الحالية: {tenant.get_plan_display()}",
-            'url': f"https://api.whatsapp.com/send?phone=201011079572&text=مرحباً، أود تجديد اشتراك شركة: {tenant.name}",
-            'type': 'warning' if days_left > 3 else 'error',
-            'icon': 'hourglass_top',
-            'badge': 'تجديد الاشتراك'
-        })
+        if days_left <= 7:
+            sub_alerts_count = 1
+            days_str = "اليوم" if days_left == 0 else f"{days_left} يوم"
+            alerts.append({
+                'title': f"حالة الاشتراك: متبقي {days_str} على انتهاء التجديد",
+                'subtitle': f"تاريخ الانتهاء: {end_date.strftime('%Y-%m-%d')} | الباقة الحالية: {tenant.get_plan_display()}",
+                'url': f"https://api.whatsapp.com/send?phone=201011079572&text=مرحباً، أود تجديد اشتراك شركة: {tenant.name}",
+                'type': 'warning' if days_left > 3 else 'error',
+                'icon': 'hourglass_top',
+                'badge': 'تجديد الاشتراك'
+            })
 
-    # 1. تنبيهات استحقاق ديون العملاء (استعلام فائق السرعة)
-    overdue_customers = Customer.objects.filter(
+    # 0.5. تنبيه النسخ الاحتياطي الأسبوعي لحماية البيانات (Weekly Data Backup Reminder)
+    # يظهر للمدير والمسؤولين كل أسبوع للتذكير بتحميل نسخة احتياطية من قاعدة البيانات
+    backup_alerts_count = 1
+    backup_url = f"/t/{tenant.slug}/dashboard/backup/" if tenant else "/dashboard/backup/"
+    alerts.append({
+        'title': "🛡️ تذكير النسخ الاحتياطي الأسبوعي للبيانات",
+        'subtitle': "اضغط هنا لتحميل نسخة احتياطية آمنة (Backup) من قاعدة البيانات لضمان سلامة العمليات.",
+        'url': backup_url,
+        'type': 'warning',
+        'icon': 'cloud_download',
+        'badge': 'أمان البيانات'
+    })
+
+    # 1. تنبيهات استحقاق ديون العملاء
+    overdue_customers_qs = Customer.objects.filter(
         balance__gt=0,
         due_date__lte=today
-    ).only('id', 'name', 'balance', 'due_date').order_by('due_date')[:5]
+    )
+    overdue_customers_count = overdue_customers_qs.count()
+    overdue_customers = overdue_customers_qs.only('id', 'name', 'balance', 'due_date').order_by('due_date')[:5]
 
     for c in overdue_customers:
         days = (today - c.due_date).days if c.due_date else 0
         days_str = "اليوم" if days == 0 else f"منذ {days} يوم"
+        cust_url = f"/t/{tenant.slug}/ledger/customer/{c.id}/" if tenant else f"/ledger/customer/{c.id}/"
         alerts.append({
             'title': f"استحقاق دين عميل: {c.name}",
             'subtitle': f"المبلغ المستحق: {c.balance} ج.م | موعد الاستحقاق: {c.due_date} ({days_str})",
-            'url': f"/ledger/customer/{c.id}/",
+            'url': cust_url,
             'type': 'error',
             'icon': 'account_balance_wallet',
             'badge': 'استحقاق دين عميل'
         })
 
     # 2. تنبيهات استحقاق ديون الموردين
-    overdue_suppliers = Supplier.objects.filter(
+    overdue_suppliers_qs = Supplier.objects.filter(
         balance__gt=0,
         due_date__lte=today
-    ).only('id', 'name', 'balance', 'due_date').order_by('due_date')[:5]
+    )
+    overdue_suppliers_count = overdue_suppliers_qs.count()
+    overdue_suppliers = overdue_suppliers_qs.only('id', 'name', 'balance', 'due_date').order_by('due_date')[:5]
 
     for s in overdue_suppliers:
         days = (today - s.due_date).days if s.due_date else 0
         days_str = "اليوم" if days == 0 else f"منذ {days} يوم"
+        supp_url = f"/t/{tenant.slug}/ledger/supplier/{s.id}/" if tenant else f"/ledger/supplier/{s.id}/"
         alerts.append({
             'title': f"مستحقات مورد: {s.name}",
             'subtitle': f"المبلغ المطلوب سداده: {s.balance} ج.م | الموعد: {s.due_date} ({days_str})",
-            'url': f"/ledger/supplier/{s.id}/",
+            'url': supp_url,
             'type': 'warning',
             'icon': 'local_shipping',
             'badge': 'مستحقات مورد'
         })
 
     # 3. تنبيهات نقص المخزون والحد الأدنى
-    low_stock = Product.objects.filter(
+    low_stock_qs = Product.objects.filter(
         stock_quantity__lte=F('min_stock_threshold')
-    ).only('id', 'name', 'stock_quantity', 'min_stock_threshold').order_by('stock_quantity')[:5]
+    )
+    low_stock_count = low_stock_qs.count()
+    low_stock = low_stock_qs.only('id', 'name', 'stock_quantity', 'min_stock_threshold').order_by('stock_quantity')[:5]
 
+    inv_url = f"/t/{tenant.slug}/inventory/" if tenant else "/inventory/"
     for p in low_stock:
         alerts.append({
             'title': f"نقص مخزون: {p.name}",
             'subtitle': f"المتاح حالياً: {p.stock_quantity} قطعة | الحد الأدنى: {p.min_stock_threshold}",
-            'url': '/inventory/',
+            'url': inv_url,
             'type': 'warning' if p.stock_quantity > 0 else 'error',
             'icon': 'inventory_2',
             'badge': 'نقص مخزون'
         })
 
     # 4. تنبيهات تذاكر الصيانة والورشة المعلقة
-    active_tickets = MaintenanceTicket.objects.exclude(status='delivered').select_related('customer').only('id', 'ticket_number', 'device_name', 'status', 'customer__name', 'created_at').order_by('-created_at')[:5]
+    active_tickets_qs = MaintenanceTicket.objects.exclude(status='delivered')
+    active_tickets_count = active_tickets_qs.count()
+    active_tickets = active_tickets_qs.select_related('customer').only('id', 'ticket_number', 'device_name', 'status', 'customer__name', 'created_at').order_by('-created_at')[:5]
 
+    maint_url = f"/t/{tenant.slug}/maintenance/" if tenant else "/maintenance/"
     for t in active_tickets:
         cust_name = t.customer.name if t.customer else "عميل"
         alerts.append({
             'title': f"تذكرة صيانة #{t.ticket_number} — {t.device_name}",
             'subtitle': f"العميل: {cust_name} | الحالة: {t.get_status_display()}",
-            'url': '/maintenance/',
+            'url': maint_url,
             'type': 'warning',
             'icon': 'build',
             'badge': 'ورشة نشطة'
         })
 
+    # إجمالي العدد الفعلي الحقيقي لكافة التنبيهات في النظام (وليس فقط العناصر المعروضة)
+    total_true_count = (
+        sub_alerts_count +
+        backup_alerts_count +
+        overdue_customers_count +
+        overdue_suppliers_count +
+        low_stock_count +
+        active_tickets_count
+    )
+
     result = {
         'smart_alerts': alerts,
-        'smart_alerts_count': len(alerts)
+        'smart_alerts_count': total_true_count,
+        'overdue_customers_count': overdue_customers_count,
+        'overdue_suppliers_count': overdue_suppliers_count,
+        'low_stock_count': low_stock_count,
+        'active_tickets_count': active_tickets_count,
     }
     cache.set(cache_key, result, timeout=30)
     request._cached_smart_alerts = result

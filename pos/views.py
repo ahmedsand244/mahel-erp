@@ -62,6 +62,7 @@ class POSCheckoutAjaxView(View):
             data = json.loads(request.body)
             payment_method = data.get('payment_method')
             customer_id = data.get('customer_id') or None
+            due_date = data.get('due_date') or None
             cart = data.get('cart', [])
 
             if not cart:
@@ -75,7 +76,8 @@ class POSCheckoutAjaxView(View):
                 order_number=order_number,
                 payment_method=payment_method,
                 cart_items=cart,
-                customer_id=customer_id
+                customer_id=customer_id,
+                due_date=due_date
             )
 
             from dashboard.audit import log_activity

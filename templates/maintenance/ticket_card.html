@@ -62,7 +62,10 @@
             <p class="font-bold mb-1">القطع المركبة:</p>
             <ul class="list-disc list-inside">
                 {% for item in ticket.parts_consumed.all %}
-                    <li>{{ item.product.name }} (x{{ item.quantity }})</li>
+                    <li class="flex justify-between items-center py-0.5">
+                        <span>{{ item.product.name }} (x{{ item.quantity }})</span>
+                        <span class="font-mono font-bold text-tertiary">{{ item.price_charged }} ج.م</span>
+                    </li>
                 {% endfor %}
             </ul>
         </div>

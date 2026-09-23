@@ -7,12 +7,13 @@ from pos.models import Order, OrderItem
 from maintenance.models import MaintenanceTicket, TicketPartConsumption
 
 @transaction.atomic
-def pos_checkout(order_number, payment_method, cart_items, customer_id=None):
+def pos_checkout(order_number, payment_method, cart_items, customer_id=None, due_date=None):
     """
     Safely process order checkouts:
     - Calculates totals, costs, and profits.
     - Updates stock levels, generating alerts if thresholds are breached.
     - Records debit transactions in client ledgers if the checkout is dynamic credit/deferred.
+    - Updates customer debt due date if provided for credit sales.
     """
     customer = None
     if customer_id:
@@ -92,6 +93,15 @@ def pos_checkout(order_number, payment_method, cart_items, customer_id=None):
         
         # Increase customer debt balance
         customer.balance += total_amount
+        if due_date:
+            import datetime
+            if isinstance(due_date, str) and due_date.strip():
+                try:
+                    customer.due_date = datetime.datetime.strptime(due_date.strip(), '%Y-%m-%d').date()
+                except ValueError:
+                    pass
+            elif isinstance(due_date, datetime.date):
+                customer.due_date = due_date
         customer.save()
 
         # Write transaction record
@@ -105,9 +115,10 @@ def pos_checkout(order_number, payment_method, cart_items, customer_id=None):
 
 
 @transaction.atomic
-def add_maintenance_part(ticket_id, product_id, qty):
+def add_maintenance_part(ticket_id, product_id, qty, custom_price=None):
     """
     Consumes inventory parts inside maintenance ticket repairs, updating costs dynamically.
+    Allows specifying a custom selling price per unit.
     """
     ticket = MaintenanceTicket.objects.select_for_update().get(id=ticket_id)
     product = Product.objects.select_for_update().get(id=product_id)
@@ -115,7 +126,16 @@ def add_maintenance_part(ticket_id, product_id, qty):
     if product.stock_quantity < qty:
          raise ValueError(f"المخزون غير كافٍ لتركيب: {product.name}")
 
-    price_charged = product.selling_price
+    if custom_price is not None and str(custom_price).strip() != '':
+        try:
+            price_charged = Decimal(str(custom_price).strip())
+            if price_charged < Decimal('0.00'):
+                price_charged = product.selling_price
+        except (ValueError, TypeError):
+            price_charged = product.selling_price
+    else:
+        price_charged = product.selling_price
+
     cost = product.purchase_price
 
     # Deduct stock

@@ -494,11 +494,45 @@ class UserProfileView(View):
         return render(request, 'tenants/profile.html', context)
 
     def post(self, request):
-        """تحديث كلمة المرور"""
         if not request.user.is_authenticated:
             return redirect('/login/')
 
         user = request.user
+        action = request.POST.get('action', 'change_password')
+
+        # ── 1. تعديل اسم المحل/المؤسسة والاسم الشخصي ──
+        if action == 'update_store_info':
+            store_name = request.POST.get('store_name', '').strip()
+            first_name = request.POST.get('first_name', '').strip()
+
+            if first_name:
+                user.first_name = first_name
+                user.save()
+
+            membership = TenantUser.objects.filter(user=user).order_by('-joined_at').first()
+            tenant = membership.tenant if membership else Tenant.objects.filter(owner=user).first()
+
+            if tenant and store_name:
+                old_name = tenant.name
+                tenant.name = store_name
+                tenant.save()
+                from dashboard.audit import log_activity
+                log_activity(
+                    request,
+                    module='tenants',
+                    action_type='update',
+                    description=f"تعديل وتحديث اسم المنشأة/المحل من '{old_name}' إلى '{store_name}'",
+                    severity='info',
+                    user=user,
+                    tenant=tenant
+                )
+                messages.success(request, f"🎉 تم تحديث اسم المحل/المؤسسة بنجاح إلى '{store_name}' وحفظ بيانات الحساب.")
+            else:
+                messages.success(request, "🎉 تم حفظ بيانات الملف الشخصي بنجاح.")
+
+            return redirect('/profile/')
+
+        # ── 2. تحديث كلمة المرور ──
         old_password = request.POST.get('old_password', '')
         new_password = request.POST.get('new_password', '')
         confirm_password = request.POST.get('confirm_password', '')

@@ -22,6 +22,12 @@ class MaintenanceKanbanView(ListView):
         context['delivered_tickets'] = [t for t in all_tickets if t.status == 'delivered']
         context['customers'] = Customer.objects.only('id', 'name', 'phone').all()
         context['products'] = Product.objects.only('id', 'name', 'selling_price', 'stock_quantity').filter(stock_quantity__gt=0)
+        
+        # استخراج أسماء المعدات والمواتير المسجلة مسبقاً لاقتراحها تلقائياً
+        preset_devices = ["موتور رش ياماها", "طلمبة 3 بوصة", "موتور هوندا 6.5 حصان", "موتور بنزين روبن", "رشاش ظهر بطارية", "موتور ضغط عالي كوماتسو"]
+        db_devices = list(MaintenanceTicket.objects.values_list('device_name', flat=True).distinct())
+        all_unique_devices = list(dict.fromkeys([d.strip() for d in (db_devices + preset_devices) if d and d.strip()]))
+        context['device_suggestions'] = all_unique_devices
         return context
 
     def post(self, request, *args, **kwargs):
@@ -101,18 +107,19 @@ class AddPartsToTicketView(View):
         ticket = get_object_or_404(MaintenanceTicket, pk=pk)
         product_id = request.POST.get('product_id')
         qty = int(request.POST.get('quantity', 1))
+        custom_price = request.POST.get('custom_price')
 
         try:
-            part = add_maintenance_part(ticket.id, product_id, qty)
+            part = add_maintenance_part(ticket.id, product_id, qty, custom_price=custom_price)
             from dashboard.audit import log_activity
             log_activity(
                 request,
                 module='maintenance',
                 action_type='update',
-                description=f"استهلاك وتركيب قطعة الغيار '{part.product.name}' (الكمية: {qty}) لتذكرة الصيانة #{ticket.ticket_number}",
+                description=f"استهلاك وتركيب قطعة الغيار '{part.product.name}' (الكمية: {qty} - السعر: {part.price_charged} ج.م) لتذكرة الصيانة #{ticket.ticket_number}",
                 severity='info'
             )
-            messages.success(request, f"تم تركيب قطعة الغيار '{part.product.name}' (الكمية: {qty}) للتذكرة #{ticket.ticket_number} بنجاح!")
+            messages.success(request, f"تم تركيب قطعة الغيار '{part.product.name}' (الكمية: {qty} بسعر {part.price_charged} ج.م) للتذكرة #{ticket.ticket_number} بنجاح!")
         except ValueError as e:
             messages.error(request, f"فشلت عملية إضافة قطعة الغيار: {str(e)}")
         except Exception as e:

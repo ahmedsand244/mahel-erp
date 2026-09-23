@@ -249,7 +249,9 @@
     <aside class="hidden lg:flex fixed top-0 right-0 h-full w-72 xl:w-80 z-50 flex-col py-6 xl:py-8 bg-apple-surface/80 dark:bg-apple-surface/80 backdrop-blur-2xl border-l border-apple-border shadow-apple-lg transition-all duration-300">
         <!-- Brand Logo -->
         <div class="px-6 xl:px-8 mb-8 xl:mb-10 flex flex-col items-start text-right">
-            <h1 class="font-headline-lg text-2xl xl:text-3xl font-extrabold text-primary mb-1 tracking-tight">النمـــــاء</h1>
+            <h1 class="font-headline-lg text-2xl xl:text-3xl font-extrabold text-primary mb-1 tracking-tight truncate max-w-full" title="{{ request.tenant.name|default:'النمـــــاء' }}">
+                {{ request.tenant.name|default:'النمـــــاء' }}
+            </h1>
             <p class="text-xs text-apple-secondary font-medium">نظام إدارة المعدات والمخازن</p>
         </div>
 
@@ -408,7 +410,9 @@
                         aria-label="القائمة الشاملة">
                     <span class="material-symbols-outlined text-2xl" x-text="mobileMenuOpen ? 'close' : 'menu'"></span>
                 </button>
-                <a href="/" class="text-xl sm:text-2xl font-extrabold text-primary tracking-tight">النمـــــاء</a>
+                <a href="/" class="text-lg sm:text-xl font-extrabold text-primary tracking-tight truncate max-w-[180px] sm:max-w-[260px]" title="{{ request.tenant.name|default:'النمـــــاء' }}">
+                    {{ request.tenant.name|default:'النمـــــاء' }}
+                </a>
             </div>
 
             <!-- Right Controls: Notifications + Theme Toggle + Quick POS Button -->

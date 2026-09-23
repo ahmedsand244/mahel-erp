@@ -1,42 +1,87 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}مولد وطباعة ملصقات الباركود - النماء{% endblock %}
+{% block title %}مولد وطباعة ملصقات الباركود - {{ request.tenant.name|default:'النماء' }}{% endblock %}
 
 {% block extra_head %}
 <!-- JsBarcode Engine -->
 <script src="{% static 'vendor/js/jsbarcode.all.min.js' %}"></script>
 
 <style>
+    /* ── Screen Preview Styles ── */
+    .sticker-card {
+        background: #ffffff;
+        color: #0f172a;
+        border: 1px solid #e2e8f0;
+        border-radius: 0.75rem;
+        padding: 0.5rem;
+        text-align: center;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        user-select: none;
+    }
+
+    /* ── Print Engines ── */
     @media print {
-        @page {
-            size: A4 portrait;
-            margin: 5mm;
-        }
-        .no-print, header, aside, nav, button, .action-bar {
+        .no-print, header, aside, nav, button, .action-bar, footer {
             display: none !important;
         }
-        html, body {
+        html, body, main {
             background: #ffffff !important;
             color: #000000 !important;
             padding: 0 !important;
             margin: 0 !important;
-        }
-        .print-grid {
-            display: grid !important;
-            grid-template-columns: repeat(4, 1fr) !important;
-            gap: 6mm !important;
             width: 100% !important;
         }
-        .sticker-card {
-            border: 1px dashed #000000 !important;
-            background: #ffffff !important;
-            color: #000000 !important;
-            padding: 6px !important;
-            border-radius: 6px !important;
-            text-align: center !important;
+
+        /* 1. Standard A4 Paper Printer (Laser / Inkjet Grid Sheet) */
+        body.printer-a4 {
+            margin: 0 !important;
+        }
+        body.printer-a4 @page {
+            size: A4 portrait;
+            margin: 8mm 6mm 8mm 6mm;
+        }
+        .print-grid-a4 {
+            display: grid !important;
+            grid-template-columns: repeat(3, 1fr) !important;
+            gap: 4mm 4mm !important;
+            width: 100% !important;
+        }
+        .print-grid-a4 .sticker-card {
+            border: 1px dashed #94a3b8 !important;
+            border-radius: 4px !important;
+            padding: 4px 6px !important;
             box-shadow: none !important;
             break-inside: avoid !important;
+            page-break-inside: avoid !important;
+            height: 32mm !important;
+            max-height: 32mm !important;
+            overflow: hidden !important;
+        }
+
+        /* 2. Dedicated Thermal Sticker Roll Printer (Xprinter / Zebra 38x25mm / 50x30mm) */
+        body.printer-thermal @page {
+            size: 50mm 30mm;
+            margin: 1mm;
+        }
+        .print-grid-thermal {
+            display: block !important;
+            width: 100% !important;
+        }
+        .print-grid-thermal .sticker-card {
+            border: none !important;
+            border-radius: 0 !important;
+            padding: 1mm 2mm !important;
+            box-shadow: none !important;
+            break-after: page !important;
+            page-break-after: always !important;
+            width: 48mm !important;
+            height: 28mm !important;
+            margin: 0 auto !important;
+            overflow: hidden !important;
         }
     }
 </style>
@@ -45,130 +90,420 @@
 {% block content %}
 {{ products_json|json_script:"products-barcode-db-json" }}
 
-<div class="space-y-6" x-data="{
-    products: JSON.parse(document.getElementById('products-barcode-db-json').textContent || '[]'),
-    selectedProductId: '{{ initial_id }}',
-    storeName: 'مؤسسة النماء للمعدات',
-    productTitle: '{{ initial_title|escapejs }}',
-    barcodeValue: '{{ initial_barcode }}',
-    priceVal: '{{ initial_price }}',
-    copiesCount: 12,
-    init() {
-        this.updateBarcode();
-    },
-    onProductChange() {
-        const p = this.products.find(item => item.id == this.selectedProductId);
-        if (p) {
-            this.productTitle = p.name;
-            this.barcodeValue = p.barcode || ('PROD-' + p.id);
-            this.priceVal = p.price;
-            this.updateBarcode();
-        }
-    },
-    updateBarcode() {
-        this.$nextTick(() => {
-            const val = this.barcodeValue || '62910001';
-            const elements = document.querySelectorAll('.barcode-svg');
-            elements.forEach(el => {
-                try {
-                    JsBarcode(el, val, {
-                        format: 'CODE128',
-                        width: 1.6,
-                        height: 48,
-                        displayValue: true,
-                        fontSize: 11,
-                        margin: 10
-                    });
-                } catch(e) {}
-            });
-        });
-    }
-}" x-init="init()" dir="rtl">
+<div class="space-y-6" x-data="barcodeApp()" x-init="init()" dir="rtl">
 
     <!-- Top Action Bar (No Print) -->
-    <header class="no-print glass-card p-6 rounded-3xl border border-white/10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+    <header class="no-print glass-card p-5 sm:p-7 rounded-3xl border border-white/10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-apple-sm">
         <div>
             <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold mb-2">
-                <span class="material-symbols-outlined text-[16px]">label</span>
-                أداة تصميم وطباعة ملصقات الباركود
+                <span class="material-symbols-outlined text-base">qr_code_scanner</span>
+                أداة تصميم وتوليد ملصقات الباركود الذكية
             </div>
-            <h1 class="text-2xl font-extrabold text-on-background">مولد ملصقات الباركود (Sticker Generator)</h1>
-            <p class="text-xs text-on-surface-variant mt-1">اختر أي منتج وطبّع ملصقات الباركود للصقها على المنتجات أو الأجهزة المصلحة لسرعة البيع بالكاميرا</p>
+            <h1 class="text-xl sm:text-2xl font-black text-on-background">طباعة ملصقات الباركود (Barcode Studio)</h1>
+            <p class="text-xs text-on-surface-variant mt-1 font-medium">يدعم الطابعات العادية A4 وطابعات الرول والملصقات الحرارية مع إمكانية طباعة كافة بضائع المخزن دفعة واحدة</p>
         </div>
 
-        <div class="flex items-center gap-3">
-            <button @click="window.print()" class="bg-primary text-white px-6 py-3 rounded-2xl font-bold hover:brightness-110 active:scale-95 transition-all flex items-center gap-2 shadow-lg shadow-primary/25 text-sm">
-                <span class="material-symbols-outlined">print</span>
-                طباعة الملصقات الآن
+        <div class="flex items-center gap-3 w-full md:w-auto flex-wrap">
+            <button @click="triggerPrint()" class="flex-1 md:flex-initial bg-primary hover:bg-primary/90 text-white px-7 py-3 rounded-2xl font-black transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary/25 text-sm active:scale-95 cursor-pointer">
+                <span class="material-symbols-outlined text-lg">print</span>
+                <span>طباعة الملصقات الآن (<span x-text="getTotalStickersCount()"></span> ملصق)</span>
             </button>
         </div>
     </header>
 
-    <!-- Customization Settings Box (No Print) -->
-    <div class="no-print glass-card p-6 rounded-3xl border border-white/10 space-y-4">
-        <h3 class="text-sm font-bold text-primary flex items-center gap-2 border-b border-white/10 pb-3">
-            <span class="material-symbols-outlined text-lg">tune</span>
-            إعدادات وتخصيص الملصق
-        </h3>
+    <!-- Control & Settings Panels (No Print) -->
+    <div class="no-print grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <!-- Product Selector -->
-            <div>
-                <label class="block text-xs font-bold text-on-surface mb-1.5">اختر المنتج من المخزن:</label>
-                <select x-model="selectedProductId" @change="onProductChange()" class="w-full bg-surface-container-high border border-white/15 rounded-xl py-2.5 px-3 text-xs text-on-surface font-semibold focus:outline-none">
-                    <option value="">-- اختر منتجاً لتوليد الباركود --</option>
-                    <template x-for="p in products" :key="p.id">
-                        <option :value="p.id" x-text="p.name + ' (' + p.price + ' ج.م)'"></option>
-                    </template>
-                </select>
+        <!-- Panel 1: Printer Type & Mode Selection -->
+        <div class="glass-card p-5 sm:p-6 rounded-3xl border border-white/10 space-y-4">
+            <h3 class="text-xs font-bold text-primary flex items-center gap-1.5 border-b border-white/10 pb-2.5">
+                <span class="material-symbols-outlined text-base">settings_suggest</span>
+                1. نوع الطابعة ونظام التشغيل
+            </h3>
+
+            <!-- Printer Type Radio Cards -->
+            <div class="space-y-2.5">
+                <label class="block text-xs font-bold text-on-surface-variant">اختر نوع الطابعة المتوفرة لديك:</label>
+                
+                <div class="grid grid-cols-2 gap-2.5">
+                    <!-- Option 1: Regular A4 Paper Printer -->
+                    <div @click="printerType = 'a4'; updateBodyClass(); renderBarcodes();" 
+                         :class="printerType === 'a4' ? 'bg-primary/15 border-primary text-primary shadow-sm' : 'bg-surface-container-high border-white/10 text-on-surface hover:border-white/20'"
+                         class="p-3 rounded-2xl border cursor-pointer transition-all flex flex-col items-center justify-center text-center gap-1.5 select-none">
+                        <span class="material-symbols-outlined text-2xl">description</span>
+                        <div class="font-bold text-xs">طابعة أوراق عادية A4</div>
+                        <span class="text-[10px] opacity-75">مطبوعة / ليزر / ورق لاصق</span>
+                    </div>
+
+                    <!-- Option 2: Dedicated Thermal Roll Sticker Printer -->
+                    <div @click="printerType = 'thermal'; updateBodyClass(); renderBarcodes();" 
+                         :class="printerType === 'thermal' ? 'bg-primary/15 border-primary text-primary shadow-sm' : 'bg-surface-container-high border-white/10 text-on-surface hover:border-white/20'"
+                         class="p-3 rounded-2xl border cursor-pointer transition-all flex flex-col items-center justify-center text-center gap-1.5 select-none">
+                        <span class="material-symbols-outlined text-2xl">receipt_long</span>
+                        <div class="font-bold text-xs">طابعة ملصقات حرارية</div>
+                        <span class="text-[10px] opacity-75">رول ملصقات Xprinter</span>
+                    </div>
+                </div>
             </div>
 
-            <!-- Custom Title -->
-            <div>
-                <label class="block text-xs font-bold text-on-surface mb-1.5">اسم المحل / العلامة التجاري:</label>
-                <input type="text" x-model="storeName" class="w-full bg-surface-container-high border border-white/15 rounded-xl py-2 px-3 text-xs font-bold text-on-surface">
+            <!-- Print Mode: Single Product vs. Bulk All Products -->
+            <div class="space-y-2 pt-2 border-t border-white/10">
+                <label class="block text-xs font-bold text-on-surface-variant">طريقة الطباعة:</label>
+                <div class="grid grid-cols-2 gap-2">
+                    <button type="button" @click="printMode = 'single'; renderBarcodes();" 
+                            :class="printMode === 'single' ? 'bg-blue-600 text-white font-bold' : 'bg-white/5 text-on-surface-variant font-medium border border-white/5'"
+                            class="py-2 px-3 rounded-xl text-xs transition-all flex items-center justify-center gap-1.5">
+                        <span class="material-symbols-outlined text-sm">filter_1</span>
+                        <span>منتج مخصص</span>
+                    </button>
+                    <button type="button" @click="printMode = 'bulk'; renderBarcodes();" 
+                            :class="printMode === 'bulk' ? 'bg-blue-600 text-white font-bold' : 'bg-white/5 text-on-surface-variant font-medium border border-white/5'"
+                            class="py-2 px-3 rounded-xl text-xs transition-all flex items-center justify-center gap-1.5">
+                        <span class="material-symbols-outlined text-sm">inventory_2</span>
+                        <span>كل بضائع المخزن</span>
+                    </button>
+                </div>
             </div>
 
-            <!-- Custom Barcode Value -->
-            <div>
-                <label class="block text-xs font-bold text-on-surface mb-1.5">كود الباركود (Barcode / SKU):</label>
-                <input type="text" x-model="barcodeValue" @input="updateBarcode()" class="w-full bg-surface-container-high border border-white/15 rounded-xl py-2 px-3 text-xs font-mono font-bold text-primary">
+            <!-- Store Brand Name Input -->
+            <div class="space-y-1.5 pt-2 border-t border-white/10">
+                <label class="block text-xs font-bold text-on-surface-variant">اسم المحل المطبوع أعلى الملصق:</label>
+                <input type="text" x-model="storeName" @input="renderBarcodes()" 
+                       class="w-full bg-surface-container-high border border-white/15 rounded-xl py-2 px-3 text-xs font-bold text-on-surface focus:outline-none focus:border-primary">
+            </div>
+        </div>
+
+        <!-- Panel 2: Single Product Options (Shown if printMode === 'single') -->
+        <div x-show="printMode === 'single'" class="glass-card p-5 sm:p-6 rounded-3xl border border-white/10 space-y-4 lg:col-span-2">
+            <h3 class="text-xs font-bold text-primary flex items-center gap-1.5 border-b border-white/10 pb-2.5">
+                <span class="material-symbols-outlined text-base">label</span>
+                2. اختيار وتخصيص المنتج الفردي
+            </h3>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <!-- Product Dropdown -->
+                <div class="space-y-1.5 sm:col-span-2">
+                    <label class="block text-xs font-bold text-on-surface">اختر الصنف من المخزن:</label>
+                    <select x-model="selectedProductId" @change="onSingleProductChange()" 
+                            class="w-full bg-surface-container-high border border-white/15 rounded-xl py-2.5 px-3 text-xs text-on-surface font-bold focus:outline-none focus:border-primary">
+                        <option value="">-- اختر منتجاً لتوليد الباركود فوراً --</option>
+                        <template x-for="p in products" :key="p.id">
+                            <option :value="p.id" x-text="p.name + ' (السعر: ' + p.price + ' ج.م | متاح: ' + p.stock + ')'"></option>
+                        </template>
+                    </select>
+                </div>
+
+                <!-- Custom Product Title -->
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-bold text-on-surface">اسم الصنف على الملصق:</label>
+                    <input type="text" x-model="singleTitle" @input="renderBarcodes()" 
+                           class="w-full bg-surface-container-high border border-white/15 rounded-xl py-2 px-3 text-xs font-bold text-on-surface">
+                </div>
+
+                <!-- Custom Barcode Value -->
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-bold text-on-surface">قيمة الباركود (Barcode / SKU):</label>
+                    <input type="text" x-model="singleBarcode" @input="renderBarcodes()" 
+                           class="w-full bg-surface-container-high border border-white/15 rounded-xl py-2 px-3 text-xs font-mono font-bold text-primary">
+                </div>
+
+                <!-- Custom Price Value -->
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-bold text-on-surface">السعر (ج.م):</label>
+                    <input type="number" step="0.01" x-model="singlePrice" @input="renderBarcodes()" 
+                           class="w-full bg-surface-container-high border border-white/15 rounded-xl py-2 px-3 text-xs font-mono font-bold text-emerald-400">
+                </div>
+
+                <!-- Single Copies Count -->
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-bold text-on-surface">عدد الملصقات المطلوب طباعتها:</label>
+                    <div class="flex items-center gap-2">
+                        <input type="number" min="1" max="500" x-model="singleCopies" @input="renderBarcodes()" 
+                               class="w-full bg-surface-container-high border border-white/15 rounded-xl py-2 px-3 text-xs font-mono font-bold text-on-surface">
+                        <button type="button" @click="singleCopies = 24; renderBarcodes();" class="px-2.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-bold border border-white/10 shrink-0">
+                            24 (صفحة A4)
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Panel 3: Bulk All Products Controls (Shown if printMode === 'bulk') -->
+        <div x-show="printMode === 'bulk'" class="glass-card p-5 sm:p-6 rounded-3xl border border-white/10 space-y-4 lg:col-span-2">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/10 pb-3">
+                <h3 class="text-xs font-bold text-primary flex items-center gap-1.5">
+                    <span class="material-symbols-outlined text-base">inventory</span>
+                    <span>2. تحديد بضائع المخزن وكميات الملصقات دفعة واحدة</span>
+                </h3>
+                <div class="flex items-center gap-2">
+                    <button type="button" @click="selectAllProducts(true)" class="px-2.5 py-1 rounded-lg bg-primary/15 hover:bg-primary/25 text-primary text-xs font-bold border border-primary/20 transition-all">
+                        تحديد الكل (<span x-text="products.length"></span>)
+                    </button>
+                    <button type="button" @click="selectAllProducts(false)" class="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-on-surface-variant text-xs font-bold border border-white/10 transition-all">
+                        إلغاء التحديد
+                    </button>
+                </div>
             </div>
 
-            <!-- Copies Count -->
-            <div>
-                <label class="block text-xs font-bold text-on-surface mb-1.5">عدد الملصقات للطباعة:</label>
-                <input type="number" min="1" max="100" x-model="copiesCount" @input="updateBarcode()" class="w-full bg-surface-container-high border border-white/15 rounded-xl py-2 px-3 text-xs font-mono font-bold text-on-surface">
+            <!-- Bulk Strategy Controls -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 bg-white/5 rounded-2xl border border-white/5">
+                <div class="space-y-1">
+                    <label class="block text-[11px] font-bold text-on-surface-variant">تطبيق كمية ملصقات موحدة للمحددين:</label>
+                    <div class="flex items-center gap-1.5">
+                        <input type="number" min="1" max="100" x-model="bulkDefaultQty" 
+                               class="w-20 bg-surface-container-high border border-white/15 rounded-xl py-1.5 px-2.5 text-xs font-mono font-bold text-center">
+                        <button type="button" @click="applyBulkQtyToAllSelected()" class="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all shadow-sm">
+                            تطبيق للكل
+                        </button>
+                    </div>
+                </div>
+
+                <div class="space-y-1">
+                    <label class="block text-[11px] font-bold text-on-surface-variant">أو طباعة حسب كمية المخزون المتاحة:</label>
+                    <button type="button" @click="setQtyFromStock()" class="w-full py-2 px-3 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 text-xs font-bold transition-all flex items-center justify-center gap-1.5">
+                        <span class="material-symbols-outlined text-sm">sync</span>
+                        <span>مطابقة الملصقات مع كمية رصيد المخزن</span>
+                    </button>
+                </div>
             </div>
+
+            <!-- Filter / Search within Products -->
+            <div class="flex items-center gap-3">
+                <div class="relative flex-1">
+                    <input type="text" x-model="bulkSearch" placeholder="ابحث باسم المنتج لتحديده..." 
+                           class="w-full bg-surface-container-high border border-white/15 rounded-xl pr-8 pl-3 py-2 text-xs text-on-surface focus:outline-none focus:border-primary">
+                    <span class="material-symbols-outlined absolute right-2.5 top-1/2 -translate-y-1/2 text-on-surface-variant text-sm pointer-events-none">search</span>
+                </div>
+                <span class="text-xs font-bold text-on-surface-variant shrink-0">
+                    محدد: <span class="text-primary font-mono font-black" x-text="getSelectedProductsCount()"></span> منتج
+                </span>
+            </div>
+
+            <!-- Scrollable Products Selection Table -->
+            <div class="max-h-52 overflow-y-auto divide-y divide-white/5 border border-white/10 rounded-2xl bg-surface-container-high/40">
+                <template x-for="p in getFilteredBulkProducts()" :key="p.id">
+                    <div class="p-2.5 flex items-center justify-between gap-3 hover:bg-white/5 transition-colors">
+                        <label class="flex items-center gap-2.5 cursor-pointer flex-1 min-w-0">
+                            <input type="checkbox" :checked="p.selected" @change="toggleProductSelection(p)" class="rounded text-primary">
+                            <span class="text-xs font-bold text-on-surface truncate" x-text="p.name"></span>
+                        </label>
+                        <div class="flex items-center gap-2 shrink-0">
+                            <span class="text-[10px] text-tertiary font-mono" x-text="p.price + ' ج.م'"></span>
+                            <span class="text-[10px] text-on-surface-variant font-mono" x-text="'مخزن: ' + p.stock"></span>
+                            <div class="flex items-center gap-1">
+                                <span class="text-[10px] text-on-surface-variant">الملصقات:</span>
+                                <input type="number" min="1" max="200" x-model="p.printQty" @input="renderBarcodes()" 
+                                       class="w-14 bg-surface-container border border-white/15 rounded-lg py-0.5 px-1.5 text-xs font-mono font-bold text-center text-primary">
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Live Preview Header (No Print) -->
+    <div class="no-print glass-card p-4 rounded-2xl border border-white/10 flex items-center justify-between">
+        <div class="flex items-center gap-2 text-xs font-bold text-on-surface">
+            <span class="material-symbols-outlined text-emerald-400 text-base">visibility</span>
+            <span>معاينة ورقة الطباعة الحية:</span>
+            <span class="px-2 py-0.5 rounded-full bg-primary/20 text-primary font-mono text-[11px]" x-text="getTotalStickersCount() + ' ملصق جاهز'"></span>
+        </div>
+        <div class="text-xs text-on-surface-variant">
+            نوع الطباعة الحالي: 
+            <span class="font-bold text-white font-mono" x-text="printerType === 'a4' ? 'ورق A4 عادي (شبكة)' : 'ملصقات رول حراري'"></span>
         </div>
     </div>
 
-    <!-- Live Preview & Printable Sticker Sheet -->
-    <div class="glass-card p-6 rounded-3xl border border-white/10 space-y-4">
-        <div class="no-print flex items-center justify-between border-b border-white/10 pb-3">
-            <h3 class="text-sm font-bold text-on-surface flex items-center gap-2">
-                <span class="material-symbols-outlined text-emerald-400">preview</span>
-                معاينة ورقة ملصقات الباركود الحية (<span class="font-mono text-primary font-bold" x-text="copiesCount"></span> ملصق)
-            </h3>
-        </div>
-
-        <!-- Printable Grid of Barcode Stickers -->
-        <div class="print-grid grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 p-2 bg-slate-950/40 rounded-2xl border border-white/5">
-            <template x-for="i in parseInt(copiesCount || 1)" :key="i">
-                <div class="sticker-card bg-white text-slate-900 border border-slate-300 rounded-xl p-3 text-center space-y-1 shadow-md hover:scale-[1.02] transition-transform">
-                    <p class="text-[11px] font-black text-slate-900 leading-none" x-text="storeName"></p>
-                    <p class="text-xs font-bold text-slate-800 truncate" x-text="productTitle || 'منتج عام'"></p>
-                    <div class="flex items-center justify-center my-1">
-                        <svg class="barcode-svg max-w-full h-12"></svg>
-                    </div>
-                    <div class="flex items-center justify-between border-t border-slate-200 pt-1 text-[11px] font-bold">
-                        <span class="text-slate-600 font-mono" x-text="barcodeValue"></span>
-                        <span class="text-emerald-700 font-mono font-extrabold" x-text="parseFloat(priceVal || 0).toFixed(2) + ' ج.م'"></span>
-                    </div>
+    <!-- ── Print & Preview Grid of Barcode Stickers ── -->
+    <div :class="printerType === 'a4' ? 'print-grid-a4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 gap-3 p-3 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800' : 'print-grid-thermal space-y-3 p-3 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800'">
+        
+        <template x-for="(stk, idx) in getRenderStickersList()" :key="idx">
+            <div class="sticker-card bg-white text-slate-900 border border-slate-300 rounded-xl p-2.5 text-center space-y-1 shadow-sm">
+                <p class="text-[10px] font-black text-slate-900 leading-none truncate" x-text="storeName"></p>
+                <p class="text-xs font-bold text-slate-800 truncate" x-text="stk.title"></p>
+                
+                <div class="flex items-center justify-center my-0.5">
+                    <svg class="barcode-svg max-w-full h-9" :data-barcode="stk.barcode"></svg>
                 </div>
-            </template>
-        </div>
+                
+                <div class="flex items-center justify-between border-t border-slate-200 pt-1 text-[10px] font-bold">
+                    <span class="text-slate-600 font-mono" x-text="stk.barcode"></span>
+                    <span class="text-emerald-700 font-mono font-black" x-text="parseFloat(stk.price || 0).toFixed(2) + ' ج.م'"></span>
+                </div>
+            </div>
+        </template>
+
     </div>
 
 </div>
+{% endblock %}
+
+{% block extra_js %}
+{% load l10n %}
+<script>
+{% localize off %}
+function barcodeApp() {
+    const rawProds = JSON.parse(document.getElementById('products-barcode-db-json').textContent || '[]');
+    const formattedProds = rawProds.map(p => ({
+        id: p.id,
+        name: p.name,
+        barcode: p.barcode || ('PROD-' + p.id),
+        price: p.price,
+        stock: p.stock || 0,
+        category: p.category,
+        selected: true,
+        printQty: Math.max(1, Math.min(p.stock || 1, 20))
+    }));
+
+    return {
+        products: formattedProds,
+        printerType: 'a4', // 'a4' or 'thermal'
+        printMode: 'single', // 'single' or 'bulk'
+        
+        storeName: '{{ request.tenant.name|default:"مؤسسة النماء للمعدات"|escapejs }}',
+        
+        // Single Product Mode fields
+        selectedProductId: '{{ initial_id }}',
+        singleTitle: '{{ initial_title|escapejs }}',
+        singleBarcode: '{{ initial_barcode }}',
+        singlePrice: '{{ initial_price }}',
+        singleCopies: 24,
+
+        // Bulk Mode fields
+        bulkSearch: '',
+        bulkDefaultQty: 2,
+
+        init() {
+            this.updateBodyClass();
+            if (this.selectedProductId) {
+                this.onSingleProductChange();
+            } else if (this.products.length > 0) {
+                this.selectedProductId = this.products[0].id;
+                this.onSingleProductChange();
+            }
+            this.$nextTick(() => {
+                this.renderBarcodes();
+            });
+        },
+
+        updateBodyClass() {
+            document.body.classList.remove('printer-a4', 'printer-thermal');
+            document.body.classList.add(this.printerType === 'thermal' ? 'printer-thermal' : 'printer-a4');
+        },
+
+        onSingleProductChange() {
+            const p = this.products.find(item => item.id == this.selectedProductId);
+            if (p) {
+                this.singleTitle = p.name;
+                this.singleBarcode = p.barcode;
+                this.singlePrice = p.price;
+                this.renderBarcodes();
+            }
+        },
+
+        selectAllProducts(state) {
+            this.products.forEach(p => p.selected = state);
+            this.renderBarcodes();
+        },
+
+        toggleProductSelection(p) {
+            p.selected = !p.selected;
+            this.renderBarcodes();
+        },
+
+        applyBulkQtyToAllSelected() {
+            const q = parseInt(this.bulkDefaultQty) || 1;
+            this.products.forEach(p => {
+                if (p.selected) p.printQty = q;
+            });
+            this.renderBarcodes();
+        },
+
+        setQtyFromStock() {
+            this.products.forEach(p => {
+                if (p.selected) p.printQty = Math.max(1, p.stock || 1);
+            });
+            this.renderBarcodes();
+        },
+
+        getFilteredBulkProducts() {
+            if (!this.bulkSearch.trim()) return this.products;
+            const q = this.bulkSearch.trim().toLowerCase();
+            return this.products.filter(p => p.name.toLowerCase().includes(q) || p.barcode.toLowerCase().includes(q));
+        },
+
+        getSelectedProductsCount() {
+            return this.products.filter(p => p.selected).length;
+        },
+
+        getTotalStickersCount() {
+            if (this.printMode === 'single') {
+                return parseInt(this.singleCopies) || 1;
+            } else {
+                return this.products
+                    .filter(p => p.selected)
+                    .reduce((sum, p) => sum + (parseInt(p.printQty) || 1), 0);
+            }
+        },
+
+        getRenderStickersList() {
+            const list = [];
+            if (this.printMode === 'single') {
+                const count = Math.min(500, parseInt(this.singleCopies) || 1);
+                for (let i = 0; i < count; i++) {
+                    list.push({
+                        title: this.singleTitle || 'صنف عام',
+                        barcode: this.singleBarcode || '62910001',
+                        price: this.singlePrice || '0.00'
+                    });
+                }
+            } else {
+                const selected = this.products.filter(p => p.selected);
+                selected.forEach(p => {
+                    const count = Math.min(200, parseInt(p.printQty) || 1);
+                    for (let i = 0; i < count; i++) {
+                        list.push({
+                            title: p.name,
+                            barcode: p.barcode,
+                            price: p.price
+                        });
+                    }
+                });
+            }
+            return list;
+        },
+
+        renderBarcodes() {
+            this.updateBodyClass();
+            this.$nextTick(() => {
+                const elements = document.querySelectorAll('.barcode-svg');
+                elements.forEach(el => {
+                    const val = el.getAttribute('data-barcode') || this.singleBarcode || '62910001';
+                    try {
+                        JsBarcode(el, val, {
+                            format: 'CODE128',
+                            width: 1.4,
+                            height: 38,
+                            displayValue: true,
+                            fontSize: 10,
+                            margin: 4
+                        });
+                    } catch(e) {}
+                });
+            });
+        },
+
+        triggerPrint() {
+            this.updateBodyClass();
+            this.renderBarcodes();
+            setTimeout(() => {
+                window.print();
+            }, 250);
+        }
+    };
+}
+{% endlocalize %}
+</script>
 {% endblock %}
