@@ -78,7 +78,7 @@
                 </div>
 
                 <div class="space-y-3.5 text-xs sm:text-sm">
-                    <form method="post" action="{% url 'profile' %}" class="space-y-3">
+                    <form method="post" action="{% url 'tenants:profile' %}" class="space-y-3">
                         {% csrf_token %}
                         <input type="hidden" name="action" value="update_store_info">
 
