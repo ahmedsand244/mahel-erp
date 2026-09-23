@@ -88,11 +88,6 @@
 
     /* ── Print Engines ── */
     @media print {
-        @page {
-            size: A4 portrait;
-            margin: 8mm 6mm 8mm 6mm;
-        }
-
         .no-print, header, aside, nav, button, .action-bar, footer {
             display: none !important;
         }
@@ -102,6 +97,7 @@
             padding: 0 !important;
             margin: 0 !important;
             width: 100% !important;
+            height: auto !important;
         }
 
         /* 1. Standard A4 Paper Printer (24 stickers per sheet: 3 columns x 8 rows) */
@@ -110,6 +106,8 @@
             grid-template-columns: repeat(3, 1fr) !important;
             gap: 2mm 3mm !important;
             width: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
         }
         .print-grid-a4 .sticker-card {
             border: 1px dashed #94a3b8 !important;
@@ -145,20 +143,26 @@
             color: #000000 !important;
         }
 
-        /* 2. Dedicated Thermal Sticker Roll Printer (Xprinter / Zebra 38x25mm / 50x30mm) */
+        /* 2. Dedicated Thermal Sticker Roll Printer (50x30mm or 38x25mm) */
         .print-grid-thermal {
             display: block !important;
             width: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
         }
         .print-grid-thermal .sticker-card {
             border: none !important;
             border-radius: 0 !important;
             padding: 1mm 2mm !important;
             box-shadow: none !important;
+            break-inside: avoid !important;
+            page-break-inside: avoid !important;
             break-after: page !important;
             page-break-after: always !important;
             width: 48mm !important;
-            height: 28mm !important;
+            max-width: 48mm !important;
+            height: 26mm !important;
+            max-height: 26mm !important;
             margin: 0 auto !important;
             display: flex !important;
             flex-direction: column !important;
@@ -166,20 +170,40 @@
             overflow: hidden !important;
             box-sizing: border-box !important;
         }
+        .print-grid-thermal .sticker-header {
+            border-bottom: 1px solid #000000 !important;
+            padding-bottom: 1px !important;
+        }
         .print-grid-thermal .store-name {
             font-size: 7.5pt !important;
             font-weight: bold !important;
+            color: #000000 !important;
+        }
+        .print-grid-thermal .barcode-container {
+            flex: 1 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            padding: 1px 0 !important;
+            overflow: hidden !important;
         }
         .print-grid-thermal .barcode-svg {
-            max-height: 16mm !important;
+            max-height: 14mm !important;
+            width: 98% !important;
+        }
+        .print-grid-thermal .sticker-footer {
+            border-top: 1px solid #000000 !important;
+            padding-top: 1px !important;
         }
         .print-grid-thermal .product-title {
             font-size: 7.5pt !important;
             font-weight: bold !important;
+            color: #000000 !important;
         }
         .print-grid-thermal .product-price {
             font-size: 8pt !important;
             font-weight: 900 !important;
+            color: #000000 !important;
         }
     }
 </style>
@@ -594,15 +618,19 @@ function barcodeApp() {
             this.updateBodyClass();
             this.$nextTick(() => {
                 const elements = document.querySelectorAll('.barcode-svg');
+                const isThermal = (this.printerType === 'thermal');
+                const bHeight = isThermal ? 34 : 46;
+                const bWidth = isThermal ? 1.5 : 1.8;
+                const bFontSize = isThermal ? 9 : 10;
                 elements.forEach(el => {
                     const val = el.getAttribute('data-barcode') || this.singleBarcode || '62910001';
                     try {
                         JsBarcode(el, val, {
                             format: 'CODE128',
-                            width: 1.8,
-                            height: 48,
+                            width: bWidth,
+                            height: bHeight,
                             displayValue: true,
-                            fontSize: 10,
+                            fontSize: bFontSize,
                             textMargin: 1,
                             margin: 1
                         });
