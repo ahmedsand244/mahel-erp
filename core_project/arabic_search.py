@@ -1,6 +1,39 @@
 import re
 from django.db.models import Q
 
+# Domain Synonyms Dictionary for Equipment & Spare Parts
+SYNONYM_GROUPS = [
+    ['بخاخة', 'بخاخ', 'رشاش', 'رشاشة', 'طلمبة رش', 'بشبوري', 'فونية', 'نوزل'],
+    ['بستم', 'بيستم', 'مكبس', 'شمبر', 'شنابر', 'حلقات مكبس'],
+    ['موبينة', 'موبينا', 'مبينة', 'مبينه', 'ملف اشعال', 'ملف الاشعال', 'كويل', 'بوبينة', 'بوبينا'],
+    ['كربراتير', 'كاربراتير', 'كربيراتير', 'كاربيراتير', 'مغذي وقود', 'كربوريتر'],
+    ['بوجيه', 'بوجي', 'بواجي', 'شمعة احتراق', 'شمعات احتراق', 'شمعة'],
+    ['تانك', 'تنك', 'خزان', 'تانكي', 'تنكي', 'خزان وقود'],
+    ['دينامو', 'دينمو', 'دنمو', 'مولد', 'جنريتر', 'مولد كهرباء'],
+    ['مارش', 'سلف', 'موتور تشغيل', 'ستارتر', 'بادئ حركة'],
+    ['اويل سيل', 'اويلسيل', 'اولسيل', 'مانع تسريب', 'مانع زيت', 'صوفة', 'صوفه'],
+    ['جوان', 'جوانات', 'كشكيت', 'جاسكيت', 'حشوة', 'جوان وش سلندر', 'جوان كارتيرة'],
+    ['بلية', 'بيلية', 'بلي', 'رمان بلي', 'رولمان', 'بيرنج', 'رولمان بلي'],
+    ['سوستة', 'سوسته', 'ياي', 'يايات', 'زنبرك', 'زمبرك', 'سبرنج'],
+    ['خرطوم', 'خراطيم', 'هوز', 'لي', 'انبوب', 'وصلة خرطوم'],
+    ['شنيور', 'دريل', 'مثقاب', 'هيلتي', 'دقاق'],
+    ['صاروخ', 'جلخ', 'صاروخ جلخ', 'قطعية', 'قرص قطعية', 'حجر جلخ'],
+    ['صباب', 'صبابات', 'صمام', 'صمامات', 'فالف'],
+    ['سير', 'سيور', 'قشاط', 'حزام'],
+    ['طلمبة', 'طرمبة', 'مضخة', 'بمب', 'طلمبه', 'طرمبه'],
+    ['عصفورة', 'عصفوره', 'تاكيه', 'تاكيهات', 'شواكيش', 'شاكوش'],
+    ['كرنك', 'عمود كرنك', 'عامود كرنك', 'كردان', 'عمود مرفق'],
+    ['كامة', 'كامه', 'عمود كامات', 'عامود كامات', 'شجرة كامات'],
+    ['طنبورة', 'طنبوره', 'بكرة', 'بكره', 'بولي'],
+    ['حبل شداد', 'شداد', 'هندل', 'منافيل', 'مانفيل', 'منفيل', 'حبل تشغيل'],
+    ['فلتر', 'فيلتر', 'منقي', 'مصفاة', 'مصفاه', 'فلتر زيت', 'فلتر بنزين', 'فلتر هواء'],
+    ['شاحن', 'ادابتر', 'شاحنة', 'ترانس', 'محول'],
+    ['مفتاح', 'لقمة', 'بنسة', 'زرادية', 'كماشة', 'مفك'],
+    ['ماطور', 'موتور', 'مطور', 'محرك', 'انجير'],
+    ['غاطس', 'طلمبة غاطسة', 'موتور غاطس', 'غطاس'],
+    ['منشار', 'شجر', 'منشار شجر', 'شاكي', 'منشار بنزين', 'منشار كهرباء']
+]
+
 def normalize_arabic(text: str) -> str:
     """
     Standard Arabic normalization:
@@ -30,16 +63,7 @@ def normalize_arabic(text: str) -> str:
 
 def get_arabic_variants(query: str) -> list[str]:
     """
-    Generates all common spelling variants of a search query in Arabic.
-    Handles:
-    - Tanak vs Tank (تانك / تنك)
-    - Motor vs Mator (موتور / ماطور / مطور)
-    - Bougie vs Bougy (بوجيه / بوجي / بجه)
-    - Filter vs Fylter (فلتر / فيلتر)
-    - Cable vs Kbl (كابل / كبل)
-    - Alef variants (احمد / أحمد / إحمد / آحمد)
-    - Taa Marbuta variants (ماكينة / ماكينه / مكنة / مكنه)
-    - Yaa variants (علي / على)
+    Generates all common spelling variants and synonyms of a search query.
     """
     if not query:
         return []
@@ -51,7 +75,14 @@ def get_arabic_variants(query: str) -> list[str]:
     variants.add(clean_q)
     variants.add(norm_q)
 
-    # 1. Alef variants at start
+    # 1. Synonyms expansion
+    for group in SYNONYM_GROUPS:
+        norm_group = [normalize_arabic(w) for w in group]
+        if any(norm_q == w or norm_q in w or w in norm_q for w in norm_group):
+            for syn in norm_group:
+                variants.add(syn)
+
+    # 2. Alef variants at start
     if norm_q.startswith('ا'):
         rest = norm_q[1:]
         variants.add('أ' + rest)
@@ -61,7 +92,7 @@ def get_arabic_variants(query: str) -> list[str]:
         rest = norm_q[1:]
         variants.add('ا' + rest)
 
-    # 2. Endings (ة vs ه vs ي vs ى)
+    # 3. Endings (ة vs ه vs ي vs ى)
     if norm_q.endswith('ه'):
         variants.add(norm_q[:-1] + 'ة')
     elif norm_q.endswith('ة'):
@@ -72,22 +103,15 @@ def get_arabic_variants(query: str) -> list[str]:
     elif norm_q.endswith('ى'):
         variants.add(norm_q[:-1] + 'ي')
 
-    # 3. Long Vowels expansion/collapse (Phonetic variants)
-    # E.g., 'تنك' -> 'تانك', 'تونك', 'تينك'
-    # E.g., 'تانك' -> 'تنك'
-    # E.g., 'موتور' -> 'ماطور', 'مطور'
-    # E.g., 'بوجيه' -> 'بوجي', 'بجه'
-    # E.g., 'كبل' -> 'كابل'
-    # E.g., 'فلتر' -> 'فيلتر'
-    # Strip internal 'ا', 'و', 'ي' to create root skeleton
+    # 4. Long Vowels expansion/collapse (Phonetic variants)
     vowels_stripped = re.sub(r'[اوية]', '', norm_q)
     if vowels_stripped and len(vowels_stripped) >= 2:
         variants.add(vowels_stripped)
 
-    # Insert Alif between 1st and 2nd char if 3+ chars: e.g. تنك -> تانك, كبل -> كابل, شنش -> شانش
+    # Insert Alif between 1st and 2nd char if 3+ chars: e.g. تنك -> تانك, صب -> صباب
     if len(norm_q) >= 3 and 'ا' not in norm_q:
         variants.add(norm_q[0] + 'ا' + norm_q[1:])
-    # Remove Alif after 1st char: e.g. تانك -> تنك, كابل -> كبل
+    # Remove Alif after 1st char: e.g. تانك -> تنك, صباب -> صب
     if len(norm_q) >= 3 and norm_q[1] == 'ا':
         variants.add(norm_q[0] + norm_q[2:])
         

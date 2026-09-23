@@ -18,6 +18,20 @@
     currentSingleProduct: { id: null, name: '', selling_price: 0 },
     currentRestockProduct: { id: null, name: '', stock_quantity: 0 },
     selectedIds: [],
+    matchesProduct(name, sku, barcode, category) {
+        if (!this.searchVal || !this.searchVal.trim()) return true;
+        if (window.ArabicSmartSearch && window.ArabicSmartSearch.matchProduct) {
+            return window.ArabicSmartSearch.matchProduct({ name: name, sku: sku, barcode: barcode, category: category }, this.searchVal).match;
+        }
+        if (window.smartMatchProduct) {
+            return window.smartMatchProduct({ name: name, sku: sku, barcode: barcode, category: category }, this.searchVal).match;
+        }
+        if (window.smartMatchText) {
+            return window.smartMatchText(`${name} ${sku} ${barcode} ${category}`, this.searchVal);
+        }
+        const q = this.searchVal.toLowerCase().trim();
+        return (name || '').toLowerCase().includes(q) || (sku || '').toLowerCase().includes(q) || (barcode || '').includes(q) || (category || '').toLowerCase().includes(q);
+    },
     toggleAll(event) {
         if (event.target.checked) {
             this.selectedIds = [{% for p in products %}'{{ p.id }}',{% endfor %}];
@@ -142,7 +156,7 @@
                 <tbody class="text-sm">
                     {% for p in products %}
                     <tr class="border-b border-slate-200 dark:border-white/5 hover:bg-black/5 dark:hover:bg-white/5 transition-colors group"
-                        x-show="(searchVal === '' || window.smartMatchProduct({name: '{{ p.name|escapejs }}', sku: '{{ p.sku|escapejs }}', barcode: '{{ p.barcode|default:''|escapejs }}', category: '{{ p.category|escapejs }}'}, searchVal).match) && (selectedCategory === '' || selectedCategory === '{{ p.category }}')">
+                        x-show="matchesProduct('{{ p.name|escapejs }}', '{{ p.sku|escapejs }}', '{{ p.barcode|default:''|escapejs }}', '{{ p.category|escapejs }}') && (selectedCategory === '' || selectedCategory === '{{ p.category|escapejs }}')">
                         <td class="p-4 text-center">
                             <input type="checkbox" value="{{ p.id }}" x-model="selectedIds" class="w-5 h-5 rounded accent-emerald-500 text-emerald-500 bg-slate-200 dark:bg-slate-800 border-slate-400 dark:border-slate-600 focus:ring-2 focus:ring-emerald-500 cursor-pointer">
                         </td>

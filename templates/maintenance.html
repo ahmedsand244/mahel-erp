@@ -15,6 +15,20 @@
             فتح تذكرة صيانة جديدة
         </button>
     </header>
+    <!-- Smart Search Bar for Maintenance Kanban -->
+    <div class="glass-card rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 border border-white/5 bg-surface-container-low/40" dir="rtl">
+        <div class="relative w-full sm:w-80">
+            <input class="w-full bg-white/5 border border-white/10 rounded-xl py-2 px-4 pr-10 text-on-surface text-xs font-bold focus:outline-none focus:border-primary text-right placeholder:text-on-surface-variant/50" 
+                   placeholder="ابحث برقم التذكرة، العميل، اسم المعدة..." 
+                   type="text" 
+                   x-model="boardSearchQuery">
+            <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-base pointer-events-none">search</span>
+        </div>
+        <div class="text-xs text-on-surface-variant font-medium flex items-center gap-1.5">
+            <span class="material-symbols-outlined text-primary text-base">manage_search</span>
+            <span>لوحة الصيانة التفاعلية بنظام المطابقة الذكية للقطع والمعدات</span>
+        </div>
+    </div>
 
     <!-- Kanban Board Grid -->
     <div class="flex flex-col lg:flex-row-reverse gap-6 overflow-x-auto pb-6" dir="rtl">
@@ -870,6 +884,22 @@ function maintenanceApp() {
         getFilteredProducts() {
             if (!this.productSearchQuery || !this.productSearchQuery.trim()) return this.products;
             return window.smartFilterProducts(this.products, this.productSearchQuery);
+        },
+
+        boardSearchQuery: '',
+        matchesTicket(ticketNum, devName, custName, problem) {
+            if (!this.boardSearchQuery || !this.boardSearchQuery.trim()) return true;
+            if (window.ArabicSmartSearch && window.ArabicSmartSearch.matchText) {
+                return window.ArabicSmartSearch.matchText(`${ticketNum} ${devName} ${custName} ${problem}`, this.boardSearchQuery);
+            }
+            if (window.smartMatchText) {
+                return window.smartMatchText(`${ticketNum} ${devName} ${custName} ${problem}`, this.boardSearchQuery);
+            }
+            const q = this.boardSearchQuery.toLowerCase().trim();
+            return (ticketNum || '').toLowerCase().includes(q) ||
+                   (devName || '').toLowerCase().includes(q) ||
+                   (custName || '').toLowerCase().includes(q) ||
+                   (problem || '').toLowerCase().includes(q);
         }
     };
 }

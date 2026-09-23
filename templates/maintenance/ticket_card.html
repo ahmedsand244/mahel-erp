@@ -1,4 +1,5 @@
-<div class="glass-card rounded-xl p-4 flex flex-col gap-3 hover:bg-white/5 transition-all duration-200">
+<div class="glass-card rounded-xl p-4 flex flex-col gap-3 hover:bg-white/5 transition-all duration-200"
+     x-show="matchesTicket('{{ ticket.ticket_number|escapejs }}', '{{ ticket.device_name|escapejs }}', '{{ ticket.customer.name|default:'عميل نقدي'|escapejs }}', '{{ ticket.problem_description|default:''|escapejs }}')">
     <div class="flex justify-between items-start">
         <span class="bg-white/5 text-secondary px-2 py-0.5 rounded text-xs font-mono font-bold border border-white/5">
             #{{ ticket.ticket_number }}

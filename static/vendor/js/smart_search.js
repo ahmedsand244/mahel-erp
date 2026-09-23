@@ -1,17 +1,73 @@
 /**
  * =========================================================================
- * MAHEL ERP - Universal Arabic NLP & Smart Search Engine
+ * MAHEL ERP - Universal Arabic NLP & Hybrid Smart Search Engine
  * =========================================================================
- * Provides phonetics, vowel skeleton reduction, typo tolerance (Levenshtein),
- * and comprehensive Arabic character normalization across all modules.
+ * Designed for Agricultural / Industrial Equipment, Spare Parts & Inventory.
+ * Features:
+ *  1. Deep Arabic Normalization (Alef, Taa, Yaa, Hamzas, Diacritics, Digits)
+ *  2. Vowel Skeleton & Consonant Reduction (تانك <-> تنك, صباب <-> صب, موبينة <-> مبينه)
+ *  3. Equipment & Spare Parts Domain Synonyms Dictionary (بخاخة <-> رشاش, بستم <-> مكبس, موبينة <-> كويل)
+ *  4. Typo Tolerance & Levenshtein Distance Matrix
+ *  5. Multi-tiered Relevance Scoring
+ * =========================================================================
  */
 
 (function(window) {
     'use strict';
 
     /**
+     * ── Domain Synonyms & Aliases Dictionary for Equipment & Spare Parts ──
+     * Maps colloquial, market, and technical terms bidirectionally.
+     */
+    const SYNONYM_GROUPS = [
+        ['بخاخة', 'بخاخ', 'رشاش', 'رشاشة', 'طلمبة رش', 'بشبوري', 'فونية', 'نوزل'],
+        ['بستم', 'بيستم', 'مكبس', 'شمبر', 'شنابر', 'حلقات مكبس'],
+        ['موبينة', 'موبينا', 'مبينة', 'مبينه', 'ملف اشعال', 'ملف الاشعال', 'كويل', 'بوبينة', 'بوبينا'],
+        ['كربراتير', 'كاربراتير', 'كربيراتير', 'كاربيراتير', 'مغذي وقود', 'كربوريتر'],
+        ['بوجيه', 'بوجي', 'بواجي', 'شمعة احتراق', 'شمعات احتراق', 'شمعة'],
+        ['تانك', 'تنك', 'خزان', 'تانكي', 'تنكي', 'خزان وقود'],
+        ['دينامو', 'دينمو', 'دنمو', 'مولد', 'جنريتر', 'مولد كهرباء'],
+        ['مارش', 'سلف', 'موتور تشغيل', 'ستارتر', 'بادئ حركة'],
+        ['اويل سيل', 'اويلسيل', 'اولسيل', 'مانع تسريب', 'مانع زيت', 'صوفة', 'صوفه'],
+        ['جوان', 'جوانات', 'كشكيت', 'جاسكيت', 'حشوة', 'جوان وش سلندر', 'جوان كارتيرة'],
+        ['بلية', 'بيلية', 'بلي', 'رمان بلي', 'رولمان', 'بيرنج', 'رولمان بلي'],
+        ['سوستة', 'سوسته', 'ياي', 'يايات', 'زنبرك', 'زمبرك', 'سبرنج'],
+        ['خرطوم', 'خراطيم', 'هوز', 'لي', 'انبوب', 'وصلة خرطوم'],
+        ['شنيور', 'دريل', 'مثقاب', 'هيلتي', 'دقاق'],
+        ['صاروخ', 'جلخ', 'صاروخ جلخ', 'قطعية', 'قرص قطعية', 'حجر جلخ'],
+        ['صباب', 'صبابات', 'صمام', 'صمامات', 'فالف'],
+        ['سير', 'سيور', 'قشاط', 'حزام'],
+        ['طلمبة', 'طرمبة', 'مضخة', 'بمب', 'طلمبه', 'طرمبه'],
+        ['عصفورة', 'عصفوره', 'تاكيه', 'تاكيهات', 'شواكيش', 'شاكوش'],
+        ['كرنك', 'عمود كرنك', 'عامود كرنك', 'كردان', 'عمود مرفق'],
+        ['كامة', 'كامه', 'عمود كامات', 'عامود كامات', 'شجرة كامات'],
+        ['طنبورة', 'طنبوره', 'بكرة', 'بكره', 'بولي'],
+        ['حبل شداد', 'شداد', 'هندل', 'منافيل', 'مانفيل', 'منفيل', 'حبل تشغيل'],
+        ['فلتر', 'فيلتر', 'منقي', 'مصفاة', 'مصفاه', 'فلتر زيت', 'فلتر بنزين', 'فلتر هواء'],
+        ['شاحن', 'ادابتر', 'شاحنة', 'ترانس', 'محول'],
+        ['مفتاح', 'لقمة', 'بنسة', 'زرادية', 'كماشة', 'مفك'],
+        ['ماطور', 'موتور', 'مطور', 'محرك', 'انجير'],
+        ['غاطس', 'طلمبة غاطسة', 'موتور غاطس', 'غطاس'],
+        ['منشار', 'شجر', 'منشار شجر', 'شاكي', 'منشار بنزين', 'منشار كهرباء']
+    ];
+
+    // Build Fast Lookup Synonyms Map
+    const SYNONYM_MAP = new Map();
+    for (const group of SYNONYM_GROUPS) {
+        const normalizedGroup = group.map(normalizeArabic);
+        for (const word of normalizedGroup) {
+            if (!SYNONYM_MAP.has(word)) {
+                SYNONYM_MAP.set(word, new Set());
+            }
+            const set = SYNONYM_MAP.get(word);
+            for (const syn of normalizedGroup) {
+                if (syn !== word) set.add(syn);
+            }
+        }
+    }
+
+    /**
      * 1. Arabic Text Normalization
-     * Normalizes all variations of Alef, Yaa, Taa Marbuta, Hamzas, Tashkeel, etc.
      */
     function normalizeArabic(str) {
         if (str === null || str === undefined) return '';
@@ -19,35 +75,25 @@
             .toString()
             .toLowerCase()
             .trim()
-            .replace(/[\u064B-\u065F\u0670\u0640]/g, '') // Remove Arabic Diacritics (Tashkeel) & Tatweel
-            .replace(/[أإآٱ]/g, 'ا') // Normalize all Alef forms to plain ا
-            .replace(/ة/g, 'ه') // Normalize Taa Marbuta to Haa
-            .replace(/ى/g, 'ي') // Normalize Alef Maksura to Yaa
+            .replace(/[\u064B-\u065F\u0670\u0640]/g, '') // Remove Tashkeel & Tatweel
+            .replace(/[أإآٱ]/g, 'ا') // Normalize Alefs
+            .replace(/ة/g, 'ه') // Normalize Taa Marbuta
+            .replace(/ى/g, 'ي') // Normalize Alef Maksura
             .replace(/[ؤئ]/g, 'ء') // Normalize Hamzas
-            .replace(/[٠-٩]/g, d => d.charCodeAt(0) - 1632) // Convert Eastern Arabic digits to standard ASCII 0-9
-            .replace(/[۰-۹]/g, d => d.charCodeAt(0) - 1776) // Convert Persian digits to standard ASCII 0-9
+            .replace(/[٠-٩]/g, d => d.charCodeAt(0) - 1632) // Eastern Arabic digits
+            .replace(/[۰-۹]/g, d => d.charCodeAt(0) - 1776) // Persian digits
             .replace(/گ/g, 'ك')
             .replace(/پ/g, 'ب')
             .replace(/چ/g, 'ج')
             .replace(/ژ/g, 'ز')
             .replace(/ڤ/g, 'ف')
-            .replace(/[\s\-_/\\,.]+/g, ' '); // Clean excess symbols
+            .replace(/[\s\-_/\\,.:;()[\]{}|<>+=*&^%$#@!~`"']+/g, ' ') // Punctuation & spaces
+            .trim();
     }
 
     /**
-     * 2. Arabic Consonant & Phonetic Skeleton
-     * Drops long vowels (ا, و, ي, ه, a, e, i, o, u) and collapses duplicate letters.
-     * Examples:
-     *   "تانك"  -> "تنك"
-     *   "تنك"   -> "تنك"  (Exact skeleton match!)
-     *   "بوجيه" -> "بج"
-     *   "بوجي"  -> "بج"   (Exact skeleton match!)
-     *   "ماطور" -> "مطر"
-     *   "موتور" -> "مطر"  (Exact skeleton match!)
-     *   "فيلتر" -> "فلتر"
-     *   "فلتر"  -> "فلتر" (Exact skeleton match!)
-     *   "كابل"  -> "كبل"
-     *   "كبل"   -> "كبل"  (Exact skeleton match!)
+     * 2. Vowel Skeleton & Consonant Extraction
+     * Strips long vowels (ا, و, ي, ه, a, e, i, o, u) and duplicate letters.
      */
     function getArabicSkeleton(str) {
         const norm = normalizeArabic(str);
@@ -80,7 +126,22 @@
     }
 
     /**
-     * 4. Smart Single Text Matcher with Scoring
+     * 4. Synonyms Expansion Helper
+     * Expands a normalized token into itself + any known synonyms.
+     */
+    function getSynonymsForToken(tok) {
+        const normTok = normalizeArabic(tok);
+        const set = new Set([normTok]);
+        if (SYNONYM_MAP.has(normTok)) {
+            for (const syn of SYNONYM_MAP.get(normTok)) {
+                set.add(syn);
+            }
+        }
+        return Array.from(set);
+    }
+
+    /**
+     * 5. Smart Single Text Matcher with Comprehensive Scoring
      * Evaluates how well target text matches query string.
      * Returns: { match: boolean, score: number }
      */
@@ -110,7 +171,7 @@
             return { match: true, score: 900 };
         }
 
-        // Tier 4: Vowel Skeleton Match on entire string
+        // Tier 4: Vowel Skeleton Match on full phrase (e.g. تانك بنزين == تنك بنزين)
         const skelTarget = getArabicSkeleton(normTarget);
         const skelQuery = getArabicSkeleton(normQuery);
         if (skelQuery && skelTarget) {
@@ -118,11 +179,11 @@
                 return { match: true, score: 850 };
             }
             if (skelQuery.length >= 2 && skelTarget.includes(skelQuery)) {
-                return { match: true, score: 800 };
+                return { match: true, score: 750 };
             }
         }
 
-        // Tier 5: Multi-word Token Matching with Phonetic and Typo Tolerance
+        // Tier 5: Multi-word Token Matching with Synonyms & Phonetic & Typo Tolerance
         const qTokens = normQuery.split(' ').filter(Boolean);
         const targetTokens = normTarget.split(' ').filter(Boolean);
 
@@ -135,37 +196,43 @@
             let tokMatched = false;
             let bestTokScore = 0;
             const qTokSkel = getArabicSkeleton(qTok);
+            const qTokSynonyms = getSynonymsForToken(qTok);
 
             for (const tTok of targetTokens) {
                 const tTokSkel = getArabicSkeleton(tTok);
 
-                // Exact token
+                // A. Exact Token
                 if (tTok === qTok) {
                     tokMatched = true;
                     bestTokScore = Math.max(bestTokScore, 300);
+                    break;
                 }
-                // Token starts with query token
+                // B. Token starts with or contains query token
                 else if (tTok.startsWith(qTok)) {
                     tokMatched = true;
                     bestTokScore = Math.max(bestTokScore, 240);
                 }
-                // Token contains query token
                 else if (tTok.includes(qTok)) {
                     tokMatched = true;
                     bestTokScore = Math.max(bestTokScore, 180);
                 }
-                // Vowel skeleton match (تانك == تنك, ماطور == موتور, بوجيه == بوجي)
+                // C. Synonyms Match (e.g. بخاخة <-> رشاش, بستم <-> مكبس, موبينة <-> كويل)
+                else if (qTokSynonyms.some(syn => tTok === syn || tTok.includes(syn) || syn.includes(tTok))) {
+                    tokMatched = true;
+                    bestTokScore = Math.max(bestTokScore, 260);
+                }
+                // D. Vowel Skeleton Match (تانك == تنك, صباب == صب, ماطور == موتور, بوجيه == بوجي)
                 else if (qTokSkel && tTokSkel && (qTokSkel === tTokSkel || (qTokSkel.length >= 2 && tTokSkel.includes(qTokSkel)))) {
                     tokMatched = true;
-                    bestTokScore = Math.max(bestTokScore, 200);
+                    bestTokScore = Math.max(bestTokScore, 220);
                 }
-                // Typo / Levenshtein Tolerance
+                // E. Typo Tolerance / Levenshtein Distance
                 else if (qTok.length >= 3) {
                     const maxDist = qTok.length <= 4 ? 1 : 2;
                     const dist = levenshteinDist(qTok, tTok);
                     if (dist <= maxDist) {
                         tokMatched = true;
-                        bestTokScore = Math.max(bestTokScore, 140 - (dist * 20));
+                        bestTokScore = Math.max(bestTokScore, 150 - (dist * 30));
                     }
                 }
             }
@@ -176,12 +243,12 @@
             }
         }
 
-        // All query tokens must match for multi-token queries
+        // All query tokens matched
         if (totalMatchedTokens === qTokens.length) {
             return { match: true, score: 400 + cumulativeScore };
         }
 
-        // Character subsequence fallback for quick typing
+        // Character subsequence fallback
         if (normQuery.length >= 3) {
             let qIdx = 0;
             for (let i = 0; i < normTarget.length && qIdx < normQuery.length; i++) {
@@ -198,12 +265,15 @@
     }
 
     /**
-     * 5. Smart Product Matcher
+     * 6. Smart Product Matcher
      * Matches across Product Name, SKU, Barcode, and Category.
      */
     function smartMatchProduct(product, query) {
         if (!query || !query.toString().trim()) {
             return { match: true, score: 100 };
+        }
+        if (!product) {
+            return { match: false, score: 0 };
         }
 
         const normQuery = normalizeArabic(query);
@@ -234,7 +304,7 @@
     }
 
     /**
-     * 6. Universal Smart List Filter
+     * 7. Universal Smart List Filter
      * Filters and sorts any array of objects based on smart scoring.
      */
     function smartFilterList(items, query, extractors) {
@@ -284,31 +354,33 @@
     }
 
     /**
-     * 7. Simple Boolean Checker
-     * Convenient single-line check: window.smartMatchText("تانك بنزين", "تنك") -> true
+     * 8. Boolean Matcher Helper
      */
     function smartMatchText(target, query) {
         return calculateArabicMatchScore(target, query).match;
     }
 
-    // Expose all utilities globally
+    // Expose Global Object
     window.ArabicSmartSearch = {
         normalize: normalizeArabic,
         getSkeleton: getArabicSkeleton,
         levenshtein: levenshteinDist,
+        synonyms: SYNONYM_MAP,
+        getSynonyms: getSynonymsForToken,
         calculateScore: calculateArabicMatchScore,
         matchProduct: smartMatchProduct,
         filterList: smartFilterList,
         matchText: smartMatchText
     };
 
-    // Global Top-Level Shorthands for convenient use in Alpine.js / vanilla JS
+    // Shorthands attached to window
     window.normalizeArabicText = normalizeArabic;
     window.getArabicVowelSkeleton = getArabicSkeleton;
     window.calculateProductMatchScore = smartMatchProduct;
     window.calculateArabicMatchScore = calculateArabicMatchScore;
+    window.smartMatchProduct = smartMatchProduct;
     window.smartFilterProducts = (list, q) => smartFilterList(list, q, null);
     window.smartFilterList = smartFilterList;
     window.smartMatchText = smartMatchText;
 
-})(window);
+})(typeof window !== 'undefined' ? window : this);
