@@ -332,15 +332,16 @@ class TicketInvoiceDetailJsonView(View):
             ticket = MaintenanceTicket.objects.select_related('customer').prefetch_related('parts_consumed__product').get(pk=pk)
             parts_list = []
             for item in ticket.parts_consumed.all():
+                p_sell = getattr(item, 'price_charged', getattr(item, 'sell_price', Decimal('0.00'))) or Decimal('0.00')
                 parts_list.append({
                     'product_name': item.product.name if item.product else 'صنف محذوف',
                     'product_sku': item.product.sku if item.product else '—',
                     'quantity': item.quantity,
-                    'sell_price': str(item.sell_price),
-                    'total_price': str(item.sell_price * item.quantity),
+                    'sell_price': str(p_sell),
+                    'total_price': str(p_sell * item.quantity),
                 })
 
-            total_bill = ticket.labor_fees + ticket.parts_sell
+            total_bill = (ticket.labor_fees or Decimal('0.00')) + (ticket.parts_sell or Decimal('0.00'))
 
             return JsonResponse({
                 'success': True,
@@ -351,8 +352,8 @@ class TicketInvoiceDetailJsonView(View):
                     'status': ticket.status,
                     'status_display': ticket.get_status_display(),
                     'created_at': ticket.created_at.strftime('%Y-%m-%d %H:%M'),
-                    'labor_fees': str(ticket.labor_fees),
-                    'parts_sell': str(ticket.parts_sell),
+                    'labor_fees': str(ticket.labor_fees or '0.00'),
+                    'parts_sell': str(ticket.parts_sell or '0.00'),
                     'total_amount': str(total_bill),
                     'customer': {
                         'name': ticket.customer.name if ticket.customer else 'عميل نقدي / ورشة',

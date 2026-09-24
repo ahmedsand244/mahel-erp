@@ -52,5 +52,13 @@ class TicketPartConsumption(models.Model):
     price_charged = models.DecimalField(max_digits=12, decimal_places=2, verbose_name="السعر المطلوب")
     cost = models.DecimalField(max_digits=12, decimal_places=2, verbose_name="التكلفة الفعلية")
 
+    @property
+    def sell_price(self):
+        return self.price_charged or Decimal('0.00')
+
+    @property
+    def total_price(self):
+        return (self.price_charged or Decimal('0.00')) * self.quantity
+
     def __str__(self):
         return f"تركيب {self.product.name} x {self.quantity} للتذكرة {self.ticket.ticket_number}"
