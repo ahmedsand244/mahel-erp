@@ -592,20 +592,20 @@
 {% localize off %}
 function barcodeApp() {
     const rawProds = JSON.parse(document.getElementById('products-barcode-db-json').textContent || '[]');
-    const formattedProds = rawProds.map(p => ({
+    const formattedProds = rawProds.map((p, idx) => ({
         id: p.id,
         name: p.name,
         barcode: p.barcode || ('PROD-' + p.id),
         price: p.price,
         stock: p.stock || 0,
         category: p.category,
-        selected: true,
+        selected: false, // Default to false to avoid massive DOM explosion on mobile
         printQty: Math.max(1, Math.min(p.stock || 1, 20))
     }));
 
     return {
         products: formattedProds,
-        printerType: 'a4', // 'a4' or 'thermal'
+        printerType: 'thermal', // Default to thermal
         printMode: 'single', // 'single' or 'bulk'
         thermalSize: '50x30', // '50x30', '50x25', '40x30', '38x25', '58x40'
         
@@ -621,6 +621,10 @@ function barcodeApp() {
         // Bulk Mode fields
         bulkSearch: '',
         bulkDefaultQty: 2,
+        
+        // Performance & Mobile safeguards
+        renderTimeout: null,
+        isPrinting: false,
 
         init() {
             this.updateBodyClass();
@@ -630,9 +634,7 @@ function barcodeApp() {
                 this.selectedProductId = this.products[0].id;
                 this.onSingleProductChange();
             }
-            this.$nextTick(() => {
-                this.renderBarcodes();
-            });
+            this.renderBarcodesDebounced();
         },
 
         updateBodyClass() {
@@ -710,18 +712,18 @@ function barcodeApp() {
                 this.singleTitle = p.name;
                 this.singleBarcode = p.barcode;
                 this.singlePrice = p.price;
-                this.renderBarcodes();
+                this.renderBarcodesDebounced();
             }
         },
 
         selectAllProducts(state) {
             this.products.forEach(p => p.selected = state);
-            this.renderBarcodes();
+            this.renderBarcodesDebounced();
         },
 
         toggleProductSelection(p) {
             p.selected = !p.selected;
-            this.renderBarcodes();
+            this.renderBarcodesDebounced();
         },
 
         applyBulkQtyToAllSelected() {
@@ -729,14 +731,14 @@ function barcodeApp() {
             this.products.forEach(p => {
                 if (p.selected) p.printQty = q;
             });
-            this.renderBarcodes();
+            this.renderBarcodesDebounced();
         },
 
         setQtyFromStock() {
             this.products.forEach(p => {
                 if (p.selected) p.printQty = Math.max(1, p.stock || 1);
             });
-            this.renderBarcodes();
+            this.renderBarcodesDebounced();
         },
 
         getFilteredBulkProducts() {
@@ -761,7 +763,7 @@ function barcodeApp() {
         getRenderStickersList() {
             const list = [];
             if (this.printMode === 'single') {
-                const count = Math.min(500, parseInt(this.singleCopies) || 1);
+                const count = Math.min(200, parseInt(this.singleCopies) || 1);
                 for (let i = 0; i < count; i++) {
                     list.push({
                         title: this.singleTitle || 'صنف عام',
@@ -772,7 +774,7 @@ function barcodeApp() {
             } else {
                 const selected = this.products.filter(p => p.selected);
                 selected.forEach(p => {
-                    const count = Math.min(200, parseInt(p.printQty) || 1);
+                    const count = Math.min(100, parseInt(p.printQty) || 1);
                     for (let i = 0; i < count; i++) {
                         list.push({
                             title: p.name,
@@ -785,28 +787,56 @@ function barcodeApp() {
             return list;
         },
 
+        renderBarcodesDebounced() {
+            if (this.renderTimeout) clearTimeout(this.renderTimeout);
+            this.renderTimeout = setTimeout(() => {
+                this.renderBarcodes();
+            }, 120);
+        },
+
         renderBarcodes() {
             this.updateBodyClass();
             this.$nextTick(() => {
                 const elements = document.querySelectorAll('.barcode-svg');
                 const isThermal = (this.printerType === 'thermal');
                 const bHeight = isThermal ? 28 : 46;
-                const bWidth = isThermal ? 1.25 : 1.7;
+                const bWidth = isThermal ? 1.2 : 1.6;
                 const bFontSize = isThermal ? 9 : 10;
-                elements.forEach(el => {
-                    const val = el.getAttribute('data-barcode') || this.singleBarcode || '62910001';
-                    try {
-                        JsBarcode(el, val, {
-                            format: 'CODE128',
-                            width: bWidth,
-                            height: bHeight,
-                            displayValue: true,
-                            fontSize: bFontSize,
-                            textMargin: 1,
-                            margin: 0
-                        });
-                    } catch(e) {}
-                });
+                
+                // Process in lightweight chunks
+                let idx = 0;
+                const batchSize = 20;
+                
+                function processBatch() {
+                    const limit = Math.min(idx + batchSize, elements.length);
+                    for (; idx < limit; idx++) {
+                        const el = elements[idx];
+                        const val = el.getAttribute('data-barcode') || '62910001';
+                        try {
+                            JsBarcode(el, String(val).trim(), {
+                                format: 'CODE128',
+                                width: bWidth,
+                                height: bHeight,
+                                displayValue: true,
+                                fontSize: bFontSize,
+                                textMargin: 1,
+                                margin: 0,
+                                valid: function(valid) {}
+                            });
+                        } catch(e) {
+                            try {
+                                JsBarcode(el, '62910001', { format: 'CODE128', width: bWidth, height: bHeight });
+                            } catch(err) {}
+                        }
+                    }
+                    if (idx < elements.length) {
+                        requestAnimationFrame(processBatch);
+                    }
+                }
+                
+                if (elements.length > 0) {
+                    processBatch();
+                }
             });
         },
 
@@ -814,8 +844,12 @@ function barcodeApp() {
             this.updateBodyClass();
             this.renderBarcodes();
             setTimeout(() => {
-                window.print();
-            }, 250);
+                try {
+                    window.print();
+                } catch(e) {
+                    alert("يرجى المحاولة مجدداً عبر متصفح الهاتف");
+                }
+            }, 300);
         }
     };
 }

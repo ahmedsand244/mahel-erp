@@ -64,7 +64,7 @@ def smart_notifications(request):
         low_stock_qs = Product.objects.filter(low_stock_filter)
 
     low_stock_count = low_stock_qs.count()
-    low_stock = low_stock_qs.only('id', 'name', 'stock_quantity', 'min_stock_threshold').order_by('stock_quantity')[:6]
+    low_stock = low_stock_qs.only('id', 'name', 'stock_quantity', 'min_stock_threshold').order_by('stock_quantity')[:100]
     inv_url = f"/t/{tenant.slug}/inventory/" if tenant else "/inventory/"
 
     for p in low_stock:
@@ -75,7 +75,8 @@ def smart_notifications(request):
             'url': inv_url,
             'type': 'error' if is_zero else 'warning',
             'icon': 'inventory_2',
-            'badge': 'نفاد تام' if is_zero else 'وصل للحد الأدنى'
+            'badge': 'نفاد تام' if is_zero else 'وصل للحد الأدنى',
+            'category': 'inventory'
         })
 
     # 2. تنبيهات استحقاق ديون العملاء
@@ -86,7 +87,7 @@ def smart_notifications(request):
         cust_qs = Customer.objects.filter(cust_filter)
 
     cust_count = cust_qs.count()
-    overdue_customers = cust_qs.only('id', 'name', 'balance', 'due_date').order_by('due_date')[:4]
+    overdue_customers = cust_qs.only('id', 'name', 'balance', 'due_date').order_by('due_date')[:50]
 
     for c in overdue_customers:
         days = (today - c.due_date).days if c.due_date else None
@@ -98,7 +99,8 @@ def smart_notifications(request):
             'url': cust_url,
             'type': 'error',
             'icon': 'account_balance_wallet',
-            'badge': 'استحقاق دين عميل'
+            'badge': 'استحقاق دين عميل',
+            'category': 'ledger'
         })
 
     # 3. تنبيهات مستحقات الموردين
@@ -109,7 +111,7 @@ def smart_notifications(request):
         supp_qs = Supplier.objects.filter(supp_filter)
 
     supp_count = supp_qs.count()
-    overdue_suppliers = supp_qs.only('id', 'name', 'balance', 'due_date').order_by('due_date')[:4]
+    overdue_suppliers = supp_qs.only('id', 'name', 'balance', 'due_date').order_by('due_date')[:50]
 
     for s in overdue_suppliers:
         days = (today - s.due_date).days if s.due_date else None
@@ -121,7 +123,8 @@ def smart_notifications(request):
             'url': supp_url,
             'type': 'warning',
             'icon': 'local_shipping',
-            'badge': 'مستحقات مورد'
+            'badge': 'مستحقات مورد',
+            'category': 'ledger'
         })
 
     # 4. تنبيهات تذاكر الصيانة والورشة المعلقة
@@ -132,7 +135,7 @@ def smart_notifications(request):
         maint_qs = MaintenanceTicket.objects.filter(maint_filter)
 
     maint_count = maint_qs.count()
-    active_tickets = maint_qs.select_related('customer').only('id', 'ticket_number', 'device_name', 'status', 'customer__name', 'created_at').order_by('-created_at')[:4]
+    active_tickets = maint_qs.select_related('customer').only('id', 'ticket_number', 'device_name', 'status', 'customer__name', 'created_at').order_by('-created_at')[:50]
 
     maint_url = f"/t/{tenant.slug}/maintenance/" if tenant else "/maintenance/"
     for t in active_tickets:
@@ -143,7 +146,8 @@ def smart_notifications(request):
             'url': maint_url,
             'type': 'warning',
             'icon': 'build',
-            'badge': 'ورشة نشطة'
+            'badge': 'ورشة نشطة',
+            'category': 'maintenance'
         })
 
     # 5. تنبيه النسخ الاحتياطي الأسبوعي للبيانات
@@ -157,14 +161,20 @@ def smart_notifications(request):
             'url': backup_url,
             'type': 'warning',
             'icon': 'cloud_download',
-            'badge': 'أمان البيانات'
+            'badge': 'أمان البيانات',
+            'category': 'system'
         })
 
-    total_true_count = low_stock_count + cust_count + supp_count + maint_count + (1 if has_backup_alert else 0)
+    total_true_count = len(alerts)
 
     result = {
         'smart_alerts': alerts,
         'smart_alerts_count': total_true_count,
+        'alerts_counts': {
+            'inventory': low_stock_count,
+            'ledger': cust_count + supp_count,
+            'maintenance': maint_count
+        }
     }
     cache.set(cache_key, result, timeout=120)
     request._cached_smart_alerts = result

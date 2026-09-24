@@ -987,7 +987,15 @@ class BarcodeGeneratorView(TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        products = Product.objects.all().order_by('name')
+        tenant = getattr(self.request, 'tenant', None)
+        if tenant:
+            products = Product.objects.filter(tenant=tenant).select_related('category').only(
+                'id', 'name', 'barcode', 'sku', 'selling_price', 'stock_quantity', 'category__name'
+            ).order_by('name')
+        else:
+            products = Product.objects.all().select_related('category').only(
+                'id', 'name', 'barcode', 'sku', 'selling_price', 'stock_quantity', 'category__name'
+            ).order_by('name')
         
         # Format JSON products for instant Alpine JS selector
         prod_json = []
@@ -998,7 +1006,7 @@ class BarcodeGeneratorView(TemplateView):
                 'barcode': p.barcode or p.sku or f"PROD-{p.id}",
                 'price': str(p.selling_price),
                 'stock': p.stock_quantity,
-                'category': str(p.category) if p.category else 'عام'
+                'category': str(p.category.name) if p.category else 'عام'
             })
             
         context['products'] = products
@@ -1008,6 +1016,8 @@ class BarcodeGeneratorView(TemplateView):
         selected_prod = None
         if selected_id and str(selected_id).isdigit():
             selected_prod = products.filter(id=int(selected_id)).first()
+        elif products.exists():
+            selected_prod = products.first()
 
         context['selected_product'] = selected_prod
         context['initial_id'] = selected_prod.id if selected_prod else ''
